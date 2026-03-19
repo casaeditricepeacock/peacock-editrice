@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Casa Editrice Peacock</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&display=swap');
+:root{
+  --ink:#0a1628;
+  --ink2:#1a3a6b;
+  --paper:#f0f4f8;
+  --cream:#e2eaf3;
+  --gold:#c4922a;
+  --gold-light:#e8c97a;
+  --red:#8b2635;--red-bg:rgba(139,38,53,0.07);
+  --green:#2d5a3d;--green-bg:rgba(45,90,61,0.07);
+  --muted:#5a6e8a;--border:#c2d0e0;
+  --blue-mid:#2456a4;--blue-light:#eef3fa;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Mono',monospace;background:var(--paper);color:var(--ink);min-height:100vh;}
+
+.header{background:var(--ink);color:var(--paper);padding:20px 36px;display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid var(--gold);}
+.header h1{font-family:'Cormorant Garamond',serif;font-size:1.7rem;font-weight:300;letter-spacing:0.15em;text-transform:uppercase;}
+.header-sub{font-size:0.58rem;color:var(--gold-light);letter-spacing:0.3em;text-transform:uppercase;display:block;margin-top:3px;}
+.header-right{text-align:right;font-size:0.62rem;color:var(--gold-light);letter-spacing:0.1em;}
+#hdr-date{font-family:'Cormorant Garamond',serif;font-size:0.95rem;color:var(--paper);font-style:italic;}
+
+.nav{background:var(--ink2);border-bottom:1px solid var(--border);padding:0 36px;display:flex;gap:0;justify-content:space-between;align-items:center;}
+.nav-left{display:flex;}
+.nav-tab{padding:12px 26px;font-size:0.68rem;letter-spacing:0.18em;text-transform:uppercase;cursor:pointer;border:none;background:transparent;color:rgba(255,255,255,0.6);border-bottom:3px solid transparent;transition:all 0.2s;font-family:'DM Mono',monospace;}
+.nav-tab.active{color:var(--gold-light);border-bottom-color:var(--gold);background:rgba(0,0,0,0.15);}
+.nav-tab:hover:not(.active){color:white;background:rgba(255,255,255,0.08);}
+.nav-right{display:flex;gap:8px;align-items:center;}
+.btn-io{padding:6px 14px;font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;cursor:pointer;border:1px solid rgba(255,255,255,0.3);background:transparent;color:rgba(255,255,255,0.7);font-family:'DM Mono',monospace;transition:all 0.15s;}
+.btn-io:hover{background:var(--gold);color:var(--ink);border-color:var(--gold);}
+.btn-io.export{border-color:rgba(125,220,150,0.5);color:rgba(125,220,150,0.9);}
+.btn-io.export:hover{background:var(--green);color:white;border-color:var(--green);}
+
+.selectors{background:var(--cream);border-bottom:1px solid var(--border);padding:10px 36px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;}
+.sel-label{font-size:0.58rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);}
+.sel-group{display:flex;gap:5px;align-items:center;}
+.sel-btn{padding:5px 12px;font-size:0.6rem;letter-spacing:0.1em;cursor:pointer;border:1px solid var(--border);background:white;color:var(--muted);font-family:'DM Mono',monospace;transition:all 0.15s;}
+.sel-btn.active{background:var(--ink);color:var(--gold-light);border-color:var(--ink);}
+.sel-btn:hover:not(.active){border-color:var(--ink2);color:var(--ink);}
+
+.main{padding:24px 36px;max-width:1400px;margin:0 auto;}
+.page{display:none;}.page.active{display:block;}
+.sec-title{font-family:'Cormorant Garamond',serif;font-size:0.7rem;letter-spacing:0.28em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;padding-bottom:7px;border-bottom:1px solid var(--border);}
+
+/* CARDS */
+.cards-row{display:grid;gap:12px;margin-bottom:20px;}
+.cards-4{grid-template-columns:repeat(4,1fr);}
+.cards-5{grid-template-columns:repeat(5,1fr);}
+.cards-6{grid-template-columns:repeat(6,1fr);}
+.card{background:var(--ink);color:var(--paper);padding:14px 16px;position:relative;}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--gold);}
+.card.accent{background:var(--ink2);}
+.card.gold{background:var(--ink);}
+.card.gold::before{background:linear-gradient(90deg,var(--gold),var(--gold-light));height:3px;}
+.card.light{background:white;border:1px solid var(--border);}
+.card-label{font-size:0.54rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold-light);margin-bottom:6px;}
+.card.light .card-label{color:var(--muted);}
+.card-val{font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:300;line-height:1;}
+.card-val.pos{color:#7ecfa0;}.card-val.neg{color:#e07070;}.card-val.gold{color:var(--gold-light);}
+.card.light .card-val{color:var(--ink);font-size:1.1rem;}
+.card.light .card-val.pos{color:var(--green);}
+.card-edit{position:absolute;top:8px;right:8px;background:transparent;border:none;color:rgba(255,255,255,0.3);cursor:pointer;font-size:0.7rem;padding:2px 5px;transition:color 0.15s;}
+.card-edit:hover{color:var(--gold-light);}
+.card.light .card-edit{color:var(--muted);}
+.card.light .card-edit:hover{color:var(--ink2);}
+
+/* SALDI */
+.saldi-cards{grid-template-columns:repeat(4,1fr);}
+.saldi-cards .card-val{font-size:1.6rem;}
+.saldi-cards .card.gold .card-val{font-size:1.9rem;}
+
+/* INLINE EDIT */
+.inline-edit{display:none;margin-top:6px;}
+.inline-edit input{width:100%;padding:4px 8px;border:1px solid var(--gold);background:rgba(255,255,255,0.1);color:var(--paper);font-family:'DM Mono',monospace;font-size:0.9rem;}
+.card.light .inline-edit input{background:white;color:var(--ink);}
+.inline-edit-btns{display:flex;gap:4px;margin-top:4px;}
+.btn-ok,.btn-cancel{padding:3px 10px;font-size:0.58rem;cursor:pointer;border:none;font-family:'DM Mono',monospace;}
+.btn-ok{background:var(--gold);color:var(--ink);}
+.btn-cancel{background:rgba(255,255,255,0.15);color:var(--paper);}
+.card.light .btn-cancel{background:var(--cream);color:var(--ink);}
+
+/* UTILE BANNER */
+.utile-banner{background:var(--ink2);border-left:5px solid var(--gold);padding:14px 22px;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+.ub-label{font-size:0.58rem;letter-spacing:0.25em;text-transform:uppercase;color:var(--gold-light);}
+.ub-val{font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:300;}
+.ub-val.pos{color:#7ecfa0;}.ub-val.neg{color:#e07070;}
+.ub-right{text-align:right;}
+.ub-prog-label{font-size:0.56rem;color:rgba(255,255,255,0.5);letter-spacing:0.2em;text-transform:uppercase;}
+.ub-prog-val{font-family:'Cormorant Garamond',serif;font-size:1.2rem;color:var(--gold-light);}
+
+/* FATTURE DA RICEVERE */
+.fatture-section{background:white;border:1px solid var(--border);border-left:4px solid var(--gold);padding:18px;margin-bottom:20px;}
+.fatture-title{font-family:'Cormorant Garamond',serif;font-size:1rem;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.fatture-tot{font-size:0.72rem;color:var(--muted);}
+.fatture-tot span{color:var(--gold);font-weight:500;}
+.fattura-form{display:grid;grid-template-columns:1fr 100px 120px 36px;gap:8px;margin-bottom:12px;align-items:end;}
+.ff-small label{display:block;font-size:0.52rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:3px;}
+.ff-small input{width:100%;padding:6px 9px;border:1px solid var(--border);background:var(--paper);font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--ink);}
+.ff-small input:focus{outline:none;border-color:var(--ink2);}
+.btn-add-f{background:var(--ink2);color:white;border:none;padding:6px;cursor:pointer;font-size:1rem;width:100%;height:30px;display:flex;align-items:center;justify-content:center;margin-top:19px;}
+.btn-add-f:hover{background:var(--gold);color:var(--ink);}
+.fattura-list{display:flex;flex-direction:column;gap:6px;}
+.fattura-item{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--blue-light);border:1px solid var(--border);border-left:3px solid var(--gold);}
+.fattura-item.incassata{background:var(--green-bg);border-left-color:var(--green);opacity:0.7;}
+.fattura-desc{font-size:0.72rem;color:var(--ink);}
+.fattura-imp{font-family:'Cormorant Garamond',serif;font-size:1rem;color:var(--gold);font-weight:600;}
+.fattura-item.incassata .fattura-imp{color:var(--green);}
+.fattura-scad{font-size:0.6rem;color:var(--muted);}
+.fattura-actions{display:flex;gap:6px;align-items:center;}
+.btn-incassa{padding:4px 10px;font-size:0.58rem;background:var(--green);color:white;border:none;cursor:pointer;font-family:'DM Mono',monospace;}
+.btn-incassa:hover{background:var(--ink);}
+.fattura-item.incassata .btn-incassa{background:var(--muted);cursor:default;}
+.btn-del-f{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:0.75rem;padding:2px 5px;}
+.btn-del-f:hover{color:var(--red);}
+
+/* TWO COL */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:20px;}
+.panel{background:white;border:1px solid var(--border);padding:20px;}
+.panel-title{font-family:'Cormorant Garamond',serif;font-size:1rem;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:baseline;}
+.panel-tot{font-size:0.72rem;font-family:'DM Mono',monospace;color:var(--muted);}
+.panel-tot.pos{color:var(--green);}.panel-tot.neg{color:var(--red);}
+.line-item{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px dotted var(--border);font-size:0.7rem;}
+.line-item:last-child{border-bottom:none;}
+.li-label{color:var(--muted);letter-spacing:0.05em;text-transform:uppercase;font-size:0.62rem;}
+.li-val{font-weight:500;}.li-val.pos{color:var(--green);}.li-val.neg{color:var(--red);}
+.ricavi-sub{margin-top:6px;padding:8px 0 0 10px;border-left:2px solid var(--gold);}
+.ricavi-tot-line{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);margin-bottom:4px;}
+.ricavi-tot-label{font-family:'Cormorant Garamond',serif;font-size:0.95rem;font-weight:600;}
+.ricavi-tot-val{font-family:'Cormorant Garamond',serif;font-size:0.95rem;font-weight:600;color:var(--green);}
+
+/* CHART + TABLE */
+.chart-panel{background:white;border:1px solid var(--border);padding:20px;margin-bottom:20px;}
+.chart-wrap{position:relative;height:240px;margin-bottom:16px;}
+.resa-table{width:100%;border-collapse:collapse;font-size:0.68rem;margin-top:8px;}
+.resa-table th{padding:7px 10px;text-align:left;font-size:0.54rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);background:var(--cream);border-bottom:2px solid var(--border);font-weight:400;}
+.resa-table td{padding:7px 10px;border-bottom:1px solid rgba(194,208,224,0.5);font-family:'DM Mono',monospace;}
+.resa-table tr:hover td{background:var(--blue-light);}
+.resa-pct{font-weight:500;}
+.resa-pct.good{color:var(--green);}.resa-pct.mid{color:var(--gold);}.resa-pct.bad{color:var(--red);}
+.resa-bar{display:inline-block;height:8px;background:var(--ink2);vertical-align:middle;margin-left:6px;border-radius:1px;}
+
+/* MASTRO FORM */
+.form-section{background:white;border:1px solid var(--border);padding:18px;margin-bottom:18px;}
+.form-title{font-family:'Cormorant Garamond',serif;font-size:1rem;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+.tipo-row{display:flex;gap:5px;align-items:center;}
+.tipo-label{font-size:0.56rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-right:4px;}
+.tipo-btn{padding:4px 11px;font-size:0.58rem;letter-spacing:0.1em;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'DM Mono',monospace;transition:all 0.12s;}
+.tipo-btn.ae{background:var(--green);color:white;border-color:var(--green);}
+.tipo-btn.au{background:var(--red);color:white;border-color:var(--red);}
+.form-grid{display:grid;grid-template-columns:110px 100px 150px 1fr 70px 70px 70px 70px 90px 38px;gap:7px;align-items:end;}
+.ff label{display:block;font-size:0.52rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:3px;}
+.ff input,.ff select{width:100%;padding:6px 9px;border:1px solid var(--border);background:var(--paper);font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--ink);}
+.ff input:focus,.ff select:focus{outline:none;border-color:var(--ink2);background:white;}
+.btn-add{background:var(--ink2);color:white;border:none;padding:6px;cursor:pointer;font-size:1.1rem;font-weight:bold;width:100%;height:30px;display:flex;align-items:center;justify-content:center;margin-top:19px;}
+.btn-add:hover{background:var(--gold);color:var(--ink);}
+.form-section.editing{border-color:var(--gold);border-width:2px;}
+.edit-banner{background:var(--gold);color:var(--ink);padding:6px 12px;font-size:0.62rem;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:10px;display:none;}
+.edit-banner.show{display:block;}
+.btn-cancel-edit{float:right;background:var(--ink);color:var(--gold-light);border:none;padding:3px 10px;cursor:pointer;font-family:'DM Mono',monospace;font-size:0.6rem;}
+
+/* TABLE */
+.table-wrap{background:white;border:1px solid var(--border);overflow-x:auto;margin-bottom:16px;}
+.table-hdr{padding:12px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.table-hdr-title{font-family:'Cormorant Garamond',serif;font-size:0.95rem;}
+.table-hdr-count{font-size:0.6rem;color:var(--muted);letter-spacing:0.1em;}
+table{width:100%;border-collapse:collapse;font-size:0.68rem;}
+thead tr{background:var(--cream);border-bottom:2px solid var(--border);}
+th{padding:8px 10px;text-align:left;font-size:0.52rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);font-weight:400;white-space:nowrap;}
+td{padding:7px 10px;border-bottom:1px solid rgba(194,208,224,0.4);vertical-align:middle;}
+tr:hover td{background:var(--blue-light);}
+tr.tr-e td{background:var(--green-bg);}tr.tr-e:hover td{background:rgba(45,90,61,0.12);}
+tr.tr-u td{background:var(--red-bg);}tr.tr-u:hover td{background:rgba(139,38,53,0.12);}
+.tag{display:inline-block;padding:2px 7px;font-size:0.52rem;letter-spacing:0.08em;text-transform:uppercase;}
+.t-distributori{background:rgba(10,22,40,0.1);color:var(--ink);}
+.t-ecommerce{background:rgba(196,146,42,0.2);color:#7a4a00;}
+.t-eventi{background:rgba(45,90,61,0.15);color:var(--green);}
+.t-ebook{background:rgba(36,86,164,0.12);color:var(--blue-mid);}
+.t-stampa{background:rgba(139,38,53,0.15);color:var(--red);}
+.t-spedizioni{background:rgba(90,110,138,0.15);color:var(--muted);}
+.t-campagne{background:rgba(80,60,120,0.1);color:#4a3a70;}
+.t-quote{background:rgba(36,86,164,0.1);color:var(--ink2);}
+.t-admin{background:rgba(130,100,40,0.1);color:#6a5010;}
+.t-altro{background:rgba(180,180,180,0.15);color:#666;}
+.vpos{color:var(--green);font-weight:500;}.vneg{color:var(--red);font-weight:500;}
+.btn-del{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:0.75rem;padding:2px 4px;transition:color 0.15s;}
+.btn-del:hover{color:var(--red);}
+.btn-edit-row{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:0.75rem;padding:2px 4px;transition:color 0.15s;}
+.btn-edit-row:hover{color:var(--ink2);}
+tfoot tr{background:var(--ink)!important;}
+tfoot td{color:var(--paper)!important;background:var(--ink)!important;border-bottom:none!important;font-weight:500;font-size:0.7rem;}
+tfoot td:first-child{font-family:'Cormorant Garamond',serif;font-size:0.78rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold-light)!important;}
+
+/* PROG BAR */
+.prog-bar{background:var(--cream);border:1px solid var(--border);padding:12px 18px;display:flex;gap:32px;align-items:center;flex-wrap:wrap;margin-bottom:14px;}
+.pi .pi-label{font-size:0.55rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);}
+.pi .pi-val{font-family:'Cormorant Garamond',serif;font-size:1.1rem;}
+.pi .pi-val.pos{color:var(--green);}.pi .pi-val.neg{color:var(--red);}.pi .pi-val.gold{color:var(--gold);}
+
+/* NOTE */
+.note-box{background:white;border:1px solid var(--border);padding:14px 18px;margin-bottom:16px;}
+.note-box .nl{font-size:0.55rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.note-box textarea{width:100%;border:none;background:transparent;font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--ink);resize:vertical;min-height:44px;}
+.note-box textarea:focus{outline:none;}
+
+.empty-msg{text-align:center;padding:28px;color:var(--muted);font-size:0.7rem;letter-spacing:0.1em;}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--ink);color:var(--gold-light);padding:10px 20px;font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;border-left:3px solid var(--gold);opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:999;}
+.toast.show{opacity:1;}
+
+@media(max-width:900px){
+  .cards-5,.cards-6{grid-template-columns:repeat(2,1fr);}
+  .cards-4,.saldi-cards{grid-template-columns:repeat(2,1fr);}
+  .two-col{grid-template-columns:1fr;}
+  .form-grid{grid-template-columns:1fr 1fr;}
+  .fattura-form{grid-template-columns:1fr 1fr;}
+  .main{padding:14px;}.header{padding:14px;}.selectors{padding:8px 14px;}.nav{padding:0 14px;}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>Casa Editrice Peacock</h1>
+    <span class="header-sub">Gestione Editoriale</span>
+  </div>
+  <div class="header-right">
+    <div id="hdr-date"></div>
+    <div style="margin-top:3px;font-size:0.56rem;letter-spacing:0.2em;">PADOVA — ITALIA</div>
+  </div>
+</div>
+
+<div class="nav">
+  <div class="nav-left">
+    <button class="nav-tab active" onclick="showPage('dashboard',this)">Dashboard</button>
+    <button class="nav-tab" onclick="showPage('mastro',this)">Libro Mastro</button>
+  </div>
+  <div class="nav-right">
+    <span id="save-indicator" style="font-size:0.58rem;letter-spacing:0.1em;color:rgba(125,220,150,0.9);margin-right:8px;">● Salvato</span>
+    <button class="btn-io" onclick="caricaDaDisco()" title="Carica dati da file JSON">⬆ Carica dati</button>
+    <button class="btn-io export" onclick="salvaSuDisco()" title="Scarica backup JSON">⬇ Backup JSON</button>
+    <button class="btn-io" onclick="exportData()">⬇ Export</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+    <input type="file" id="loadFile" accept=".html,.json" style="display:none" onchange="handleLoadFile(event)">
+  </div>
+</div>
+<div id="save-banner" style="display:none;background:#8b2635;color:white;text-align:center;padding:7px 32px;font-size:0.62rem;letter-spacing:0.1em;">
+  ⚠ Errore di connessione — i dati potrebbero non essere salvati sul cloud!
+</div>
+
+<div class="selectors">
+  <div class="sel-group">
+    <span class="sel-label">Anno</span>
+    <button class="sel-btn" onclick="setYear(2024,this)">2024</button>
+    <button class="sel-btn" onclick="setYear(2025,this)">2025</button>
+    <button class="sel-btn active" onclick="setYear(2026,this)">2026</button>
+  </div>
+  <div class="sel-group" id="monthSel"></div>
+</div>
+
+<div class="main">
+
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+  <!-- SALDI ATTUALI - sempre visibili, inserimento manuale -->
+  <div class="sec-title" style="display:flex;justify-content:space-between;align-items:center;">
+    <span>Liquidità Attuale</span>
+    <span style="font-size:0.58rem;color:var(--muted);font-family:'DM Mono',monospace;letter-spacing:0.1em;">aggiornato: <span id="saldo_aggiornato">—</span></span>
+  </div>
+  <div class="cards-row saldi-cards" style="margin-bottom:8px;">
+    <div class="card" style="background:var(--ink2);">
+      <div class="card-label">Banca BBVA — Oggi</div>
+      <div class="card-val gold" id="sa_banca">—</div>
+      <button class="card-edit" onclick="editSaldoAttuale('banca')" title="Aggiorna">✎</button>
+      <div class="inline-edit" id="iea_banca">
+        <input type="number" id="iva_banca" step="0.01" placeholder="0.00">
+        <div class="inline-edit-btns"><button class="btn-ok" onclick="saveSaldoAttuale('banca')">✓</button><button class="btn-cancel" onclick="cancelSaldoAttuale('banca')">✕</button></div>
+      </div>
+    </div>
+    <div class="card" style="background:var(--ink2);">
+      <div class="card-label">PayPal — Oggi</div>
+      <div class="card-val gold" id="sa_paypal">—</div>
+      <button class="card-edit" onclick="editSaldoAttuale('paypal')" title="Aggiorna">✎</button>
+      <div class="inline-edit" id="iea_paypal">
+        <input type="number" id="iva_paypal" step="0.01" placeholder="0.00">
+        <div class="inline-edit-btns"><button class="btn-ok" onclick="saveSaldoAttuale('paypal')">✓</button><button class="btn-cancel" onclick="cancelSaldoAttuale('paypal')">✕</button></div>
+      </div>
+    </div>
+    <div class="card" style="background:var(--ink2);">
+      <div class="card-label">Cassa — Oggi</div>
+      <div class="card-val gold" id="sa_cassa">—</div>
+      <button class="card-edit" onclick="editSaldoAttuale('cassa')" title="Aggiorna">✎</button>
+      <div class="inline-edit" id="iea_cassa">
+        <input type="number" id="iva_cassa" step="0.01" placeholder="0.00">
+        <div class="inline-edit-btns"><button class="btn-ok" onclick="saveSaldoAttuale('cassa')">✓</button><button class="btn-cancel" onclick="cancelSaldoAttuale('cassa')">✕</button></div>
+      </div>
+    </div>
+    <div class="card gold">
+      <div class="card-label">Totale Liquidità Oggi</div>
+      <div class="card-val gold" id="sa_totale">—</div>
+      <div style="margin-top:4px;font-size:0.56rem;color:rgba(232,201,122,0.5);" id="sa_attesa"></div>
+    </div>
+  </div>
+  <div style="height:1px;background:var(--border);margin-bottom:20px;"></div>
+
+  <div class="sec-title">Situazione Cassa — Mese Selezionato</div>
+  <div class="cards-row saldi-cards">
+    <div class="card accent" id="sc_banca">
+      <div class="card-label">Banca BBVA</div>
+      <div class="card-val gold" id="d_banca">—</div>
+      <button class="card-edit" onclick="editSaldo('banca')" title="Modifica">✎</button>
+      <div class="inline-edit" id="ie_banca">
+        <input type="number" id="iv_banca" step="0.01" placeholder="0.00">
+        <div class="inline-edit-btns">
+          <button class="btn-ok" onclick="saveSaldo('banca')">✓</button>
+          <button class="btn-cancel" onclick="cancelSaldo('banca')">✕</button>
+        </div>
+      </div>
+    </div>
+    <div class="card accent" id="sc_paypal">
+      <div class="card-label">PayPal</div>
+      <div class="card-val gold" id="d_paypal">—</div>
+      <button class="card-edit" onclick="editSaldo('paypal')" title="Modifica">✎</button>
+      <div class="inline-edit" id="ie_paypal">
+        <input type="number" id="iv_paypal" step="0.01" placeholder="0.00">
+        <div class="inline-edit-btns">
+          <button class="btn-ok" onclick="saveSaldo('paypal')">✓</button>
+          <button class="btn-cancel" onclick="cancelSaldo('paypal')">✕</button>
+        </div>
+      </div>
+    </div>
+    <div class="card accent" id="sc_cassa">
+      <div class="card-label">Cassa</div>
+      <div class="card-val gold" id="d_cassa">—</div>
+      <button class="card-edit" onclick="editSaldo('cassa')" title="Modifica">✎</button>
+      <div class="inline-edit" id="ie_cassa">
+        <input type="number" id="iv_cassa" step="0.01" placeholder="0.00">
+        <div class="inline-edit-btns">
+          <button class="btn-ok" onclick="saveSaldo('cassa')">✓</button>
+          <button class="btn-cancel" onclick="cancelSaldo('cassa')">✕</button>
+        </div>
+      </div>
+    </div>
+    <div class="card gold">
+      <div class="card-label">Totale Liquidità</div>
+      <div class="card-val gold" id="d_totale">—</div>
+      <div style="margin-top:4px;font-size:0.58rem;color:rgba(232,201,122,0.6);" id="d_totale_attesa"></div>
+    </div>
+  </div>
+
+  <div class="utile-banner">
+    <div>
+      <div class="ub-label">Utile / Perdita Mese</div>
+      <div class="ub-val pos" id="d_utile">—</div>
+    </div>
+    <div class="ub-right">
+      <div class="ub-prog-label">Progressivo Anno</div>
+      <div class="ub-prog-val" id="d_prog">—</div>
+    </div>
+  </div>
+
+  <!-- Fatture da ricevere -->
+  <div class="fatture-section">
+    <div class="fatture-title">
+      Fatture da Ricevere
+      <span class="fatture-tot">In attesa: <span id="ft_tot">€ 0</span> &nbsp;|&nbsp; Incassate: <span id="ft_inc">€ 0</span></span>
+    </div>
+    <div class="fattura-form">
+      <div class="ff-small"><label>Descrizione</label><input type="text" id="fat_desc" placeholder="es. Milano Q1 2026"></div>
+      <div class="ff-small"><label>Importo €</label><input type="number" id="fat_imp" placeholder="0.00" step="0.01" min="0"></div>
+      <div class="ff-small"><label>Scadenza prevista</label><input type="date" id="fat_scad"></div>
+      <div class="ff-small"><label>&nbsp;</label><button class="btn-add-f" onclick="addFattura()" title="Aggiungi">+</button></div>
+    </div>
+    <div class="fattura-list" id="fattura-list">
+      <div style="font-size:0.68rem;color:var(--muted);padding:8px 0;">Nessuna fattura in attesa.</div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="panel">
+      <div class="panel-title">Spese <span class="panel-tot neg" id="d_sp_tot">—</span></div>
+      <div class="line-item"><span class="li-label">Stampa</span><span class="li-val neg" id="d_sp_stampa">—</span></div>
+      <div class="line-item"><span class="li-label">Spedizioni</span><span class="li-val neg" id="d_sp_sped">—</span></div>
+      <div class="line-item"><span class="li-label">Campagne Pubblicitarie</span><span class="li-val neg" id="d_sp_camp">—</span></div>
+      <div class="line-item"><span class="li-label">Quote Associazioni</span><span class="li-val neg" id="d_sp_quote">—</span></div>
+      <div class="line-item"><span class="li-label">Compenso Amministratore</span><span class="li-val neg" id="d_sp_admin">—</span></div>
+      <div class="line-item"><span class="li-label">Altro</span><span class="li-val neg" id="d_sp_altro">—</span></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Ricavi <span class="panel-tot pos" id="d_ri_tot">—</span></div>
+      <div class="ricavi-tot-line">
+        <span class="ricavi-tot-label">Totale Ricavi</span>
+        <span class="ricavi-tot-val" id="d_ri_total2">—</span>
+      </div>
+      <div class="ricavi-sub">
+        <div class="line-item"><span class="li-label">Distributori</span><span class="li-val pos" id="d_ri_dist">—</span></div>
+        <div class="line-item"><span class="li-label">Ecommerce</span><span class="li-val pos" id="d_ri_eco">—</span></div>
+        <div class="line-item"><span class="li-label">Eventi / Diretti</span><span class="li-val pos" id="d_ri_ev">—</span></div>
+        <div class="line-item"><span class="li-label">Ebook</span><span class="li-val pos" id="d_ri_eb">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIEPILOGO ANNO -->
+  <div class="sec-title" style="margin-top:4px;">Riepilogo Anno <span id="riepilogo_anno_label" style="color:var(--gold);">2026</span></div>
+  <div class="cards-row cards-5" style="margin-bottom:12px;">
+    <div class="card gold"><div class="card-label">Totale Entrate Anno</div><div class="card-val pos" id="ann_entrate">—</div></div>
+    <div class="card gold"><div class="card-label">Totale Uscite Anno</div><div class="card-val neg" id="ann_uscite">—</div></div>
+    <div class="card gold"><div class="card-label">Utile / Perdita Anno</div><div class="card-val" id="ann_utile">—</div></div>
+    <div class="card gold"><div class="card-label">Copie Vendute Anno</div><div class="card-val gold" id="ann_vend">—</div></div>
+    <div class="card gold"><div class="card-label">Copie Stampate Anno</div><div class="card-val gold" id="ann_stamp">—</div></div>
+  </div>
+  <div class="two-col" style="margin-bottom:20px;">
+    <div class="panel">
+      <div class="panel-title">Spese Anno <span class="panel-tot neg" id="ann_sp_tot">—</span></div>
+      <div class="line-item"><span class="li-label">Stampa</span><span class="li-val neg" id="ann_sp_stampa">—</span></div>
+      <div class="line-item"><span class="li-label">Spedizioni</span><span class="li-val neg" id="ann_sp_sped">—</span></div>
+      <div class="line-item"><span class="li-label">Campagne Pubblicitarie</span><span class="li-val neg" id="ann_sp_camp">—</span></div>
+      <div class="line-item"><span class="li-label">Quote Associazioni</span><span class="li-val neg" id="ann_sp_quote">—</span></div>
+      <div class="line-item"><span class="li-label">Compenso Amministratore</span><span class="li-val neg" id="ann_sp_admin">—</span></div>
+      <div class="line-item"><span class="li-label">Altro</span><span class="li-val neg" id="ann_sp_altro">—</span></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Ricavi Anno <span class="panel-tot pos" id="ann_ri_tot">—</span></div>
+      <div class="ricavi-tot-line">
+        <span class="ricavi-tot-label">Totale Ricavi Anno</span>
+        <span class="ricavi-tot-val" id="ann_ri_total2">—</span>
+      </div>
+      <div class="ricavi-sub">
+        <div class="line-item"><span class="li-label">Distributori</span><span class="li-val pos" id="ann_ri_dist">—</span></div>
+        <div class="line-item"><span class="li-label">Ecommerce</span><span class="li-val pos" id="ann_ri_eco">—</span></div>
+        <div class="line-item"><span class="li-label">Eventi / Diretti</span><span class="li-val pos" id="ann_ri_ev">—</span></div>
+        <div class="line-item"><span class="li-label">Ebook</span><span class="li-val pos" id="ann_ri_eb">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart + Tabella Resa -->
+  <div class="chart-panel">
+    <div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;">
+      <span>Andamento Venduti vs Stampati — Serie storica</span>
+      <div style="display:flex;gap:8px;">
+        <button class="sel-btn active" id="chart_mode_cum" onclick="setChartMode('cum',this)">Progressivo</button>
+        <button class="sel-btn" id="chart_mode_mes" onclick="setChartMode('mes',this)">Per mese</button>
+      </div>
+    </div>
+    <div class="chart-wrap" style="height:280px;"><canvas id="mainChart"></canvas></div>
+    <table class="resa-table">
+      <thead><tr>
+        <th>Periodo</th><th>Venduti mese</th><th>Venduti tot.</th><th>Stampati tot.</th><th>Differenza</th><th>% Resa</th>
+      </tr></thead>
+      <tbody id="resa-tbody"></tbody>
+      <tfoot id="resa-tfoot"></tfoot>
+    </table>
+  </div>
+</div>
+
+<!-- MASTRO -->
+<div class="page" id="page-mastro">
+  <div class="cards-row cards-6">
+    <div class="card accent"><div class="card-label">Entrate</div><div class="card-val pos" id="m_entrate">€ 0</div></div>
+    <div class="card accent"><div class="card-label">Uscite</div><div class="card-val neg" id="m_uscite">€ 0</div></div>
+    <div class="card accent"><div class="card-label">Copie Vendute</div><div class="card-val gold" id="m_vendute">0</div></div>
+    <div class="card accent"><div class="card-label">Copie Stampate</div><div class="card-val gold" id="m_stampate">0</div></div>
+    <div class="card gold"><div class="card-label">Utile / Perdita</div><div class="card-val" id="m_utile">€ 0</div></div>
+    <div class="card gold"><div class="card-label">Prog. Anno</div><div class="card-val gold" id="m_prog">€ 0</div></div>
+  </div>
+
+  <div class="cards-row cards-4" style="margin-bottom:18px;">
+    <div class="card light"><div class="card-label">Distributori</div><div class="card-val pos" id="m_c_dist">€ 0</div></div>
+    <div class="card light"><div class="card-label">Ecommerce</div><div class="card-val pos" id="m_c_eco">€ 0</div></div>
+    <div class="card light"><div class="card-label">Eventi / Diretti</div><div class="card-val pos" id="m_c_ev">€ 0</div></div>
+    <div class="card light"><div class="card-label">Ebook</div><div class="card-val pos" id="m_c_eb">€ 0</div></div>
+  </div>
+
+  <div class="form-section" id="formSection">
+    <div class="edit-banner" id="editBanner">
+      ✎ Stai modificando un movimento — <button class="btn-cancel-edit" onclick="cancelEdit()">Annulla</button>
+    </div>
+    <div class="form-title">
+      <span id="formLabel">Inserisci movimento</span>
+      <div class="tipo-row">
+        <span class="tipo-label">Tipo:</span>
+        <button class="tipo-btn ae" id="tb_e" onclick="setTipo('entrata')">↑ Entrata</button>
+        <button class="tipo-btn" id="tb_u" onclick="setTipo('uscita')">↓ Uscita</button>
+      </div>
+    </div>
+    <div class="form-grid">
+      <div class="ff"><label>Data</label><input type="date" id="f_data"></div>
+      <div class="ff"><label>Importo €</label><input type="number" id="f_imp" placeholder="0.00" step="0.01" min="0"></div>
+      <div class="ff"><label>Canale / Categoria</label>
+        <select id="f_canale">
+          <optgroup label="— Entrate —">
+            <option value="distributori">Distributori</option>
+            <option value="ecommerce">Ecommerce</option>
+            <option value="eventi">Eventi / Diretti</option>
+            <option value="ebook">Ebook</option>
+          </optgroup>
+          <optgroup label="— Uscite —">
+            <option value="stampa">Stampa</option>
+            <option value="spedizioni">Spedizioni</option>
+            <option value="campagne">Campagne Pub.</option>
+            <option value="quote">Quote Assoc.</option>
+            <option value="admin">Compenso Amm.</option>
+            <option value="altro">Altro</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="ff"><label>Descrizione / Note</label><input type="text" id="f_note" placeholder="es. Fattura Milano, BRT spedizioni..."></div>
+      <div class="ff"><label>Vend.</label><input type="number" id="f_vend" placeholder="0" min="0"></div>
+      <div class="ff"><label>Stamp.</label><input type="number" id="f_stamp" placeholder="0" min="0"></div>
+      <div class="ff"><label>Dirette</label><input type="number" id="f_dir" placeholder="0" min="0"></div>
+      <div class="ff"><label>Ebook n.</label><input type="number" id="f_eb" placeholder="0" min="0"></div>
+      <div class="ff"><label>Autori</label><input type="text" id="f_aut" placeholder="nome"></div>
+      <div class="ff"><label>&nbsp;</label><button class="btn-add" id="btnAdd" onclick="addRow()">+</button></div>
+    </div>
+    <input type="hidden" id="f_editing_id" value="">
+  </div>
+
+  <div class="table-wrap">
+    <div class="table-hdr">
+      <span class="table-hdr-title">Movimenti del mese</span>
+      <span class="table-hdr-count" id="m_count"></span>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Data</th><th>Tipo</th><th>Importo</th><th>Canale</th>
+        <th>Descrizione</th><th>Vend.</th><th>Stamp.</th>
+        <th>Dirette</th><th>Ebook</th><th>Autori</th><th></th>
+      </tr></thead>
+      <tbody id="m_tbody"></tbody>
+      <tfoot id="m_tfoot"></tfoot>
+    </table>
+  </div>
+
+  <div class="prog-bar">
+    <div class="pi"><div class="pi-label">Riportato anno prec.</div><div class="pi-val gold" id="pg_riportato">—</div></div>
+    <div class="pi"><div class="pi-label">Progressivo anno</div><div class="pi-val pos" id="pg_anno">—</div></div>
+    <div class="pi"><div class="pi-label">Totale cumulato</div><div class="pi-val gold" id="pg_tot">—</div></div>
+    <div class="pi"><div class="pi-label">Copie vendute anno</div><div class="pi-val gold" id="pg_vend">—</div></div>
+    <div class="pi"><div class="pi-label">Copie stampate anno</div><div class="pi-val gold" id="pg_stamp">—</div></div>
+  </div>
+
+  <div class="note-box">
+    <div class="nl">Note mese</div>
+    <textarea id="m_note" placeholder="Annotazioni libere..." onchange="saveNotes()"></textarea>
+  </div>
+</div>
+</div><!-- /main -->
+<div class="toast" id="toast"></div>
+
+<script>
+const SEED={"2024": {"aprile": {"rows": [{"id": 243102, "data": "2024-04-01", "tipo": "uscita", "importo": 283.4, "canale": "distributori", "note": "ryokan elui II edizione", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 243201, "data": "2024-04-04", "tipo": "entrata", "importo": 19.0, "canale": "distributori", "note": "ryokan  e comerce ", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 243301, "data": "2024-04-04", "tipo": "entrata", "importo": 50.4, "canale": "distributori", "note": "fattura fast book gatto", "vendute": 7, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 243401, "data": "2024-04-10", "tipo": "entrata", "importo": 19.0, "canale": "distributori", "note": "ryokan  e comerce ", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 243501, "data": "2024-05-02", "tipo": "entrata", "importo": 176.8, "canale": "distributori", "note": "roma  gen marzo", "vendute": 23, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 243601, "data": "2024-04-30", "tipo": "entrata", "importo": 19.0, "canale": "distributori", "note": "ryokan  e comerce ", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 243701, "data": "2024-04-30", "tipo": "entrata", "importo": 19.0, "canale": "distributori", "note": "ryokan  e comerce ", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 243801, "data": "2024-04-30", "tipo": "entrata", "importo": 26.1, "canale": "distributori", "note": "fattura fast book marzo 2023", "vendute": 8, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 243902, "data": "2024-04-30", "tipo": "uscita", "importo": 408.98, "canale": "distributori", "note": "misteri svelati fat 505", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 244001, "data": "2024-05-01", "tipo": "entrata", "importo": 57.0, "canale": "admin", "note": "ryokan e commerce", "vendute": 3, "stampate": 0, "dirette": 3, "ebook_n": 0, "autori": ""}, {"id": 244101, "data": "2024-05-01", "tipo": "entrata", "importo": 57.0, "canale": "admin", "note": "ryokan  ota  sing e commerce", "vendute": 3, "stampate": 0, "dirette": 3, "ebook_n": 0, "autori": ""}, {"id": 244201, "data": "2024-05-03", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "ryokan e commerce", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 244301, "data": "2024-05-05", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "ryokan e commerce", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 244401, "data": "2024-05-05", "tipo": "entrata", "importo": 300.0, "canale": "distributori", "note": "bonifico emmanuelle", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 244501, "data": "2024-05-08", "tipo": "entrata", "importo": 191.35, "canale": "distributori", "note": "milano gen marzo piu resi", "vendute": 18, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 244601, "data": "2024-05-09", "tipo": "entrata", "importo": 67.0, "canale": "admin", "note": "ryokan e commerce", "vendute": 4, "stampate": 0, "dirette": 4, "ebook_n": 0, "autori": ""}, {"id": 244701, "data": "2024-05-13", "tipo": "entrata", "importo": 38.0, "canale": "admin", "note": "ryokan e commerce", "vendute": 2, "stampate": 0, "dirette": 2, "ebook_n": 0, "autori": ""}, {"id": 244801, "data": "2024-05-15", "tipo": "entrata", "importo": 38.0, "canale": "admin", "note": "ryokan e commerce", "vendute": 2, "stampate": 0, "dirette": 2, "ebook_n": 0, "autori": ""}, {"id": 244901, "data": "2024-05-16", "tipo": "entrata", "importo": 38.0, "canale": "distributori", "note": "ryokan", "vendute": 2, "stampate": 0, "dirette": 2, "ebook_n": 0, "autori": ""}, {"id": 245001, "data": "2024-05-21", "tipo": "entrata", "importo": 57.0, "canale": "distributori", "note": "ryokan", "vendute": 3, "stampate": 0, "dirette": 3, "ebook_n": 0, "autori": ""}, {"id": 245101, "data": "2024-05-22", "tipo": "entrata", "importo": 38.0, "canale": "distributori", "note": "ryokan", "vendute": 2, "stampate": 0, "dirette": 2, "ebook_n": 0, "autori": ""}, {"id": 245201, "data": "2024-05-23", "tipo": "entrata", "importo": 38.0, "canale": "distributori", "note": "ryokan", "vendute": 2, "stampate": 0, "dirette": 2, "ebook_n": 0, "autori": ""}, {"id": 245301, "data": "2024-05-25", "tipo": "entrata", "importo": 57.0, "canale": "distributori", "note": "ryokan", "vendute": 3, "stampate": 0, "dirette": 3, "ebook_n": 0, "autori": ""}, {"id": 245401, "data": "2024-05-28", "tipo": "entrata", "importo": 38.0, "canale": "distributori", "note": "ryokan", "vendute": 2, "stampate": 0, "dirette": 2, "ebook_n": 0, "autori": ""}, {"id": 245501, "data": "2024-05-27", "tipo": "entrata", "importo": 550.0, "canale": "distributori", "note": "autore rava ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}], "notes": ""}, "giugno": {"rows": [{"id": 246101, "data": "2024-06-01", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "ryokan e commerce", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 246201, "data": "2024-06-02", "tipo": "entrata", "importo": 38.0, "canale": "admin", "note": "ryokan e commerce", "vendute": 2, "stampate": 0, "dirette": 2, "ebook_n": 0, "autori": ""}, {"id": 246301, "data": "2024-06-03", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "ryokan e commerce", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 246401, "data": "2024-06-04", "tipo": "entrata", "importo": 57.0, "canale": "admin", "note": "ryokan e commerce", "vendute": 3, "stampate": 0, "dirette": 3, "ebook_n": 0, "autori": ""}, {"id": 246501, "data": "2024-06-05", "tipo": "entrata", "importo": 19.0, "canale": "distributori", "note": "ryokan e comerce", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 246601, "data": "2024-06-06", "tipo": "entrata", "importo": 38.0, "canale": "admin", "note": "ryokan e commerce", "vendute": 2, "stampate": 0, "dirette": 2, "ebook_n": 0, "autori": ""}, {"id": 246801, "data": "2024-06-08", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "ryokan e commerce", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 246901, "data": "2024-06-09", "tipo": "entrata", "importo": 38.0, "canale": "admin", "note": "ryokan luna piena e commerce", "vendute": 2, "stampate": 0, "dirette": 2, "ebook_n": 0, "autori": ""}, {"id": 247002, "data": "2024-06-11", "tipo": "uscita", "importo": 313.48, "canale": "stampa", "note": "III ristampa ryokan", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 247101, "data": "2024-06-11", "tipo": "entrata", "importo": 70.0, "canale": "eventi", "note": "fattura 10 salone torino", "vendute": 4, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 247201, "data": "2024-06-13", "tipo": "entrata", "importo": 40.0, "canale": "admin", "note": "blu oltremare e commerce", "vendute": 2, "stampate": 0, "dirette": 2, "ebook_n": 0, "autori": ""}, {"id": 247302, "data": "2024-06-13", "tipo": "uscita", "importo": 38.28, "canale": "spedizioni", "note": "spedizione libri", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 247401, "data": "2024-06-17", "tipo": "entrata", "importo": 38.0, "canale": "admin", "note": "ryokan e commerce", "vendute": 2, "stampate": 0, "dirette": 2, "ebook_n": 0, "autori": ""}, {"id": 247502, "data": "2024-06-18", "tipo": "uscita", "importo": 11.9, "canale": "spedizioni", "note": "spedizione libri", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 247601, "data": "2024-06-18", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "ryokan ecommerce", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 247702, "data": "2024-06-18", "tipo": "uscita", "importo": 41.9, "canale": "stampa", "note": "segnalibri print bee", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 247802, "data": "2024-06-18", "tipo": "uscita", "importo": 10.9, "canale": "spedizioni", "note": "spedizione libri", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 247901, "data": "2024-06-18", "tipo": "entrata", "importo": 60.0, "canale": "distributori", "note": "fattura  11 musque", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 248001, "data": "2024-06-19", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "ryokan e commerce", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 248101, "data": "2024-06-21", "tipo": "entrata", "importo": 38.0, "canale": "admin", "note": "ryokan e commerce", "vendute": 2, "stampate": 0, "dirette": 2, "ebook_n": 0, "autori": ""}, {"id": 248201, "data": "2024-06-22", "tipo": "entrata", "importo": 20.0, "canale": "admin", "note": "blu oltremare e commerce", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 248301, "data": "2024-06-22", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "luna piena e commerce", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 248302, "data": "2024-06-22", "tipo": "uscita", "importo": 10.9, "canale": "admin", "note": "luna piena e commerce", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 248401, "data": "2024-06-24", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "ryokan e commerce", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 248501, "data": "2024-06-30", "tipo": "entrata", "importo": 38.0, "canale": "admin", "note": "ryokan ota e commerce", "vendute": 2, "stampate": 0, "dirette": 2, "ebook_n": 0, "autori": ""}, {"id": 248602, "data": "2024-06-30", "tipo": "uscita", "importo": 10.8, "canale": "spedizioni", "note": "spedizione libri", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}], "notes": ""}, "luglio": {"rows": [{"id": 249202, "data": "2024-07-01", "tipo": "uscita", "importo": 577.52, "canale": "distributori", "note": "milano fantastica ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 249301, "data": "2024-07-03", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "ryokan  ecommerce", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 249401, "data": "2024-07-05", "tipo": "entrata", "importo": 29.0, "canale": "distributori", "note": "ryokan  burn e comerce", "vendute": 2, "stampate": 0, "dirette": 2, "ebook_n": 0, "autori": ""}, {"id": 249501, "data": "2024-07-05", "tipo": "entrata", "importo": 60.0, "canale": "admin", "note": "milano fantastica ecommerce", "vendute": 3, "stampate": 0, "dirette": 3, "ebook_n": 0, "autori": ""}, {"id": 249601, "data": "2024-07-08", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "ryokan ecommerce", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 249701, "data": "2024-07-10", "tipo": "entrata", "importo": 130.0, "canale": "distributori", "note": "toscana 2023 1 semestre fatt 13", "vendute": 11, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 249801, "data": "2024-07-12", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "ryokan ecommerce", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 249901, "data": "2024-07-15", "tipo": "entrata", "importo": 300.0, "canale": "distributori", "note": "ied  tesi", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2410001, "data": "2024-07-18", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "ryokan ecommerce", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 2410101, "data": "2024-07-21", "tipo": "entrata", "importo": 38.0, "canale": "admin", "note": " ryokan  ecommerce", "vendute": 2, "stampate": 0, "dirette": 2, "ebook_n": 0, "autori": ""}, {"id": 2410201, "data": "2024-07-22", "tipo": "entrata", "importo": 20.0, "canale": "admin", "note": "blu ecommerce", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 2410301, "data": "2024-07-23", "tipo": "entrata", "importo": 19.0, "canale": "ecommerce", "note": "la singolarità Giappone e comme", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 2410401, "data": "2024-07-23", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "ryokan ecommerce", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 2410501, "data": "2024-07-24", "tipo": "entrata", "importo": 115.2, "canale": "distributori", "note": "fattura 15  fast book ", "vendute": 12, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2410601, "data": "2024-07-27", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "ryokan e commerce", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 2410701, "data": "2024-07-28", "tipo": "entrata", "importo": 88.4, "canale": "distributori", "note": "fattura 16     roma aprile  giugno", "vendute": 15, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2410801, "data": "2024-07-28", "tipo": "entrata", "importo": 38.0, "canale": "admin", "note": "ryokan e commerce", "vendute": 2, "stampate": 0, "dirette": 2, "ebook_n": 0, "autori": ""}, {"id": 2410902, "data": "2024-07-28", "tipo": "uscita", "importo": 202.3, "canale": "stampa", "note": "ryokan  elui IV ristampa FATT  765", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2411002, "data": "2024-08-08", "tipo": "uscita", "importo": 184.0, "canale": "spedizioni", "note": "brt  fattura  luglio ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2411101, "data": "2024-08-09", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "ryokan e commerce", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 2411201, "data": "2024-08-18", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "ryokan e commerce", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 2411302, "data": "2024-08-22", "tipo": "uscita", "importo": 322.26, "canale": "stampa", "note": "milano fantastica II ristampa", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2411401, "data": "2024-08-28", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "ryokan e commerce", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 2425401, "data": "2024-07-01", "tipo": "entrata", "importo": 1435.0, "canale": "distributori", "note": "583", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2425402, "data": "2024-07-01", "tipo": "uscita", "importo": 852.0, "canale": "distributori", "note": "583", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}], "notes": ""}, "settembre": {"rows": [{"id": 2413102, "data": "2024-09-01", "tipo": "uscita", "importo": 291.35, "canale": "stampa", "note": "stampa luce", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2413201, "data": "2024-09-01", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "ryokan e commerce ", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 2413302, "data": "2024-09-03", "tipo": "uscita", "importo": 610.0, "canale": "distributori", "note": "borsette  250", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2413401, "data": "2024-09-04", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "ryokan e commerce ", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 2413501, "data": "2024-09-05", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "ryokan e commerce ", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 2413601, "data": "2024-09-07", "tipo": "entrata", "importo": 2091.52, "canale": "distributori", "note": "milano ", "vendute": 97, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2413701, "data": "2024-09-10", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "ryokan e commerce ", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 2413802, "data": "2024-09-11", "tipo": "uscita", "importo": 763.36, "canale": "stampa", "note": "ernesto prima stampa ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2413901, "data": "2024-09-12", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "ryokan e commerce ", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 2414001, "data": "2024-09-14", "tipo": "entrata", "importo": 228.0, "canale": "distributori", "note": "libreria bocca ", "vendute": 19, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2414101, "data": "2024-09-16", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "ryokan e commerce ", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 2414201, "data": "2024-09-16", "tipo": "entrata", "importo": 38.0, "canale": "admin", "note": "ryokan e commerce ", "vendute": 2, "stampate": 0, "dirette": 2, "ebook_n": 0, "autori": ""}, {"id": 2414301, "data": "2024-09-18", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "ryokan e commerce ", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 2414401, "data": "2024-09-19", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "ryokan e commerce ", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 2414501, "data": "2024-09-19", "tipo": "entrata", "importo": 20.0, "canale": "admin", "note": "luce e commerce ", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 2414601, "data": "2024-09-19", "tipo": "entrata", "importo": 20.0, "canale": "admin", "note": "luce e commerce", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 2414701, "data": "2024-09-20", "tipo": "entrata", "importo": 38.0, "canale": "admin", "note": "RYOKAN e commerce ", "vendute": 2, "stampate": 0, "dirette": 2, "ebook_n": 0, "autori": ""}, {"id": 2414802, "data": "2024-09-22", "tipo": "uscita", "importo": 98.0, "canale": "distributori", "note": "hiroko bernie natale 2023", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2414901, "data": "2024-09-27", "tipo": "entrata", "importo": 60.0, "canale": "admin", "note": "luce e commerce", "vendute": 3, "stampate": 0, "dirette": 3, "ebook_n": 0, "autori": ""}, {"id": 2415001, "data": "2024-09-27", "tipo": "entrata", "importo": 40.0, "canale": "admin", "note": "luce e commerce", "vendute": 2, "stampate": 0, "dirette": 2, "ebook_n": 0, "autori": ""}, {"id": 2415101, "data": "2024-09-28", "tipo": "entrata", "importo": 25.0, "canale": "distributori", "note": "milano fantastica  ", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 2415201, "data": "2024-09-30", "tipo": "entrata", "importo": 20.0, "canale": "distributori", "note": "luce ", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 2415301, "data": "2024-09-30", "tipo": "entrata", "importo": 20.0, "canale": "distributori", "note": "luce ", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 2425501, "data": "2024-09-01", "tipo": "entrata", "importo": 2305.0, "canale": "distributori", "note": "1155", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2425502, "data": "2024-09-01", "tipo": "uscita", "importo": 1150.0, "canale": "distributori", "note": "1155", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}], "notes": ""}, "ottobre": {"rows": [{"id": 2417101, "data": "2024-10-01", "tipo": "entrata", "importo": 108.0, "canale": "distributori", "note": "fattura 19  bocca  milano fantastica", "vendute": 9, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2417201, "data": "2024-10-02", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "ecommerce ryokan", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 2417302, "data": "2024-10-02", "tipo": "uscita", "importo": 350.0, "canale": "distributori", "note": "borsette ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2417401, "data": "2024-10-02", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "ecommerce ryokan", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 2417501, "data": "2024-10-03", "tipo": "entrata", "importo": 116.0, "canale": "distributori", "note": "settembre 2024 Torino ", "vendute": 14, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2417601, "data": "2024-10-03", "tipo": "entrata", "importo": 214.0, "canale": "distributori", "note": "settembre 2024 firenze", "vendute": 27, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2417701, "data": "2024-10-04", "tipo": "entrata", "importo": 38.0, "canale": "admin", "note": "ecommerce ryokan ota", "vendute": 2, "stampate": 0, "dirette": 2, "ebook_n": 0, "autori": ""}, {"id": 2417801, "data": "2024-10-05", "tipo": "entrata", "importo": 20.0, "canale": "admin", "note": "e commerce luce", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 2417901, "data": "2024-10-05", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "e commerce ryokan", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 2418001, "data": "2024-10-07", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "ecommerce singolartà", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 2418102, "data": "2024-10-07", "tipo": "uscita", "importo": 209.0, "canale": "stampa", "note": "ristampa  ryokan", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2418202, "data": "2024-10-07", "tipo": "uscita", "importo": 308.0, "canale": "spedizioni", "note": "brt settembre", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2418301, "data": "2024-10-08", "tipo": "entrata", "importo": 513.1, "canale": "distributori", "note": "marzo giugno settembre padova", "vendute": 66, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2418401, "data": "2024-10-13", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "  e commerce ryokan   ", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 2418502, "data": "2024-10-13", "tipo": "uscita", "importo": 270.0, "canale": "distributori", "note": "roma  LPLP", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2418601, "data": "2024-10-14", "tipo": "entrata", "importo": 20.0, "canale": "admin", "note": "e commerce luce", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 2418701, "data": "2024-10-15", "tipo": "entrata", "importo": 107.6, "canale": "distributori", "note": "rendiconto settembe Roma  22", "vendute": 14, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2418801, "data": "1900-10-22", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "e commerce luna piena", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 2418901, "data": "2024-10-23", "tipo": "entrata", "importo": 58.0, "canale": "admin", "note": "e commerce  luna ryokan blu", "vendute": 3, "stampate": 0, "dirette": 3, "ebook_n": 0, "autori": ""}, {"id": 2419002, "data": "2024-10-29", "tipo": "uscita", "importo": 390.0, "canale": "stampa", "note": "luce ristampa", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2419101, "data": "2024-10-01", "tipo": "entrata", "importo": 960.0, "canale": "distributori", "note": "luce  fatt  euro  12 a libro", "vendute": 80, "stampate": 0, "dirette": 80, "ebook_n": 0, "autori": ""}, {"id": 2419201, "data": "2024-10-30", "tipo": "entrata", "importo": 450.0, "canale": "distributori", "note": "masque  euro 9 a libro fat 23", "vendute": 50, "stampate": 0, "dirette": 50, "ebook_n": 0, "autori": ""}, {"id": 2419301, "data": "2024-11-01", "tipo": "entrata", "importo": 38.0, "canale": "admin", "note": "e commerce ryokan", "vendute": 2, "stampate": 0, "dirette": 2, "ebook_n": 0, "autori": ""}, {"id": 2419401, "data": "2024-10-01", "tipo": "entrata", "importo": 550.0, "canale": "distributori", "note": "hellen", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2419501, "data": "2024-10-01", "tipo": "entrata", "importo": 532.9, "canale": "eventi", "note": "salone", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2419601, "data": "2024-11-06", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "e commerce ryokan", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 2419701, "data": "2024-11-14", "tipo": "entrata", "importo": 160.0, "canale": "distributori", "note": "libreria bocca fattura n 24", "vendute": 16, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2419801, "data": "2024-11-14", "tipo": "entrata", "importo": 20.0, "canale": "admin", "note": "e commerce luce", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 2419902, "data": "2024-11-18", "tipo": "uscita", "importo": 326.34, "canale": "stampa", "note": "III ristampa milano fantastica", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2420001, "data": "2024-11-22", "tipo": "entrata", "importo": 150.0, "canale": "distributori", "note": "svizzera", "vendute": 10, "stampate": 0, "dirette": 10, "ebook_n": 0, "autori": ""}, {"id": 2420102, "data": "2024-11-19", "tipo": "uscita", "importo": 566.8, "canale": "stampa", "note": "II ristampa ernesto", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2420202, "data": "2024-11-21", "tipo": "uscita", "importo": 44.0, "canale": "distributori", "note": "folder promozionali milano fantastica", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2420301, "data": "2024-10-01", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "ecommerce ryokan", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 2420401, "data": "2024-11-28", "tipo": "entrata", "importo": 107.66, "canale": "distributori", "note": "pop goods and books  e book", "vendute": 38, "stampate": 0, "dirette": 0, "ebook_n": 38, "autori": ""}, {"id": 2420502, "data": "2024-12-02", "tipo": "uscita", "importo": 96.0, "canale": "distributori", "note": "30 codici isbn  ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2421102, "data": "2024-12-12", "tipo": "uscita", "importo": 244.65, "canale": "spedizioni", "note": "brt ottobre", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2421201, "data": "2024-12-12", "tipo": "entrata", "importo": 37.5, "canale": "distributori", "note": "ernesto libreria ragazzi", "vendute": 3, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2421301, "data": "2024-12-13", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "e commerce ryokan", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 2421402, "data": "2024-12-19", "tipo": "uscita", "importo": 367.38, "canale": "stampa", "note": "stampa il nuvolotto ciro  ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2421501, "data": "2024-12-22", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "e commerce ryokan", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 2421601, "data": "2024-12-27", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "e commerce ryokan", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 2421701, "data": "2024-12-28", "tipo": "entrata", "importo": 5.26, "canale": "ebook", "note": "amazon ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2421801, "data": "2024-12-31", "tipo": "entrata", "importo": 35.73, "canale": "ebook", "note": "kobo rakuten ", "vendute": 6, "stampate": 0, "dirette": 0, "ebook_n": 6, "autori": ""}, {"id": 2425201, "data": "2024-10-01", "tipo": "entrata", "importo": 735.0, "canale": "distributori", "note": "210", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2425202, "data": "2024-10-01", "tipo": "uscita", "importo": 525.0, "canale": "distributori", "note": "210", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2425301, "data": "2024-10-01", "tipo": "entrata", "importo": 1035.0, "canale": "distributori", "note": "478", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2425302, "data": "2024-10-01", "tipo": "uscita", "importo": 557.0, "canale": "distributori", "note": "478", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}], "notes": ""}, "dicembre": {"rows": [{"id": 2425601, "data": "2024-12-01", "tipo": "entrata", "importo": 2405.0, "canale": "distributori", "note": "1243", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2425602, "data": "2024-12-01", "tipo": "uscita", "importo": 1162.0, "canale": "distributori", "note": "1243", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}], "notes": ""}}, "2025": {"gennaio": {"rows": [{"id": 25401, "data": "2025-01-07", "tipo": "entrata", "importo": 547.5, "canale": "distributori", "note": "libreria bocca  fat 26", "vendute": 47, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 25501, "data": "2025-01-07", "tipo": "entrata", "importo": 68.0, "canale": "distributori", "note": "libreria dei ragazzi", "vendute": 7, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 25601, "data": "2025-01-08", "tipo": "entrata", "importo": 1242.27, "canale": "distributori", "note": "fattura milano ", "vendute": 136, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 25702, "data": "2025-01-10", "tipo": "uscita", "importo": 456.0, "canale": "altro", "note": "helene", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 25801, "data": "2025-01-10", "tipo": "entrata", "importo": 83.8, "canale": "stampa", "note": "fastbook", "vendute": 16, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 25901, "data": "2025-01-14", "tipo": "entrata", "importo": 157.0, "canale": "distributori", "note": "torino  fat  01", "vendute": 15, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 251001, "data": "2025-01-14", "tipo": "entrata", "importo": 496.0, "canale": "distributori", "note": "roma fat 03", "vendute": 52, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 251101, "data": "2025-01-14", "tipo": "entrata", "importo": 900.8, "canale": "distributori", "note": "padova ", "vendute": 99, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 251201, "data": "2025-01-14", "tipo": "entrata", "importo": 230.35, "canale": "distributori", "note": "firenze fat 9 ", "vendute": 27, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 251302, "data": "2025-01-20", "tipo": "uscita", "importo": 278.0, "canale": "altro", "note": "righe", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 251401, "data": "2025-01-21", "tipo": "entrata", "importo": 20.0, "canale": "admin", "note": "e commerce  milano fantastica", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 251502, "data": "2025-01-20", "tipo": "uscita", "importo": 141.12, "canale": "spedizioni", "note": "brt 760019 novembre 2024", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 251602, "data": "2025-01-21", "tipo": "uscita", "importo": 540.0, "canale": "altro", "note": "le mie ballerinette  1 edizione ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 251702, "data": "2025-01-24", "tipo": "uscita", "importo": 32.26, "canale": "altro", "note": "cartolina  forbidden colours", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 251801, "data": "2025-01-31", "tipo": "entrata", "importo": 21.0, "canale": "admin", "note": "e commerce  forbidden colours", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 251901, "data": "2025-01-29", "tipo": "entrata", "importo": 3.07, "canale": "distributori", "note": " e book ", "vendute": 1, "stampate": 0, "dirette": 0, "ebook_n": 1, "autori": ""}], "notes": ""}, "febbraio": {"rows": [{"id": 252501, "data": "2025-02-01", "tipo": "entrata", "importo": 21.0, "canale": "distributori", "note": "e comerce forbidden colours", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 252602, "data": "2025-02-05", "tipo": "uscita", "importo": 150.0, "canale": "quote", "note": "quota associazione editori veneti", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 252701, "data": "2025-02-05", "tipo": "entrata", "importo": 21.0, "canale": "admin", "note": "e commerce forbidden colours", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 252801, "data": "2025-02-10", "tipo": "entrata", "importo": 40.0, "canale": "admin", "note": "e commerce forbidden colours ryo", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 252901, "data": "2025-02-10", "tipo": "entrata", "importo": 42.0, "canale": "admin", "note": "e commerce righe", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 253001, "data": "2025-02-11", "tipo": "entrata", "importo": 21.0, "canale": "admin", "note": "e commerce righe", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 253101, "data": "2025-02-13", "tipo": "entrata", "importo": 21.0, "canale": "admin", "note": "e commerce forbidden", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 253201, "data": "2025-02-18", "tipo": "entrata", "importo": 60.0, "canale": "distributori", "note": "segnalibro padova fantastica", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 253202, "data": "2025-02-18", "tipo": "uscita", "importo": 38.0, "canale": "distributori", "note": "segnalibro padova fantastica", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 253301, "data": "2025-02-19", "tipo": "entrata", "importo": 21.0, "canale": "admin", "note": "e commerce righe", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 253402, "data": "2025-02-19", "tipo": "uscita", "importo": 82.06, "canale": "spedizioni", "note": "brt n 82962", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 253502, "data": "2025-02-21", "tipo": "uscita", "importo": 522.38, "canale": "stampa", "note": "padova fantastica I ristampa", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 253601, "data": "2025-02-22", "tipo": "entrata", "importo": 40.0, "canale": "distributori", "note": "padova fantastica", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 253701, "data": "1900-02-28", "tipo": "entrata", "importo": 21.0, "canale": "ecommerce", "note": "e comm forbidden", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}], "notes": ""}, "marzo": {"rows": [{"id": 254601, "data": "2025-03-01", "tipo": "entrata", "importo": 21.0, "canale": "admin", "note": "e commerce", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 254701, "data": "2025-03-05", "tipo": "entrata", "importo": 240.0, "canale": "distributori", "note": "bocca milano e ernesto fat 6", "vendute": 20, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 254801, "data": "2025-03-05", "tipo": "entrata", "importo": 21.0, "canale": "admin", "note": "e commerce  forbidden", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 254901, "data": "2025-03-05", "tipo": "entrata", "importo": 500.0, "canale": "distributori", "note": "vendita le mie ballerinette ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": "50"}, {"id": 255002, "data": "2025-03-05", "tipo": "uscita", "importo": 398.16, "canale": "stampa", "note": "stampa natura in festa", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 255101, "data": "2025-03-08", "tipo": "entrata", "importo": 20.0, "canale": "distributori", "note": "dir padova fantastica", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 255202, "data": "2025-03-11", "tipo": "uscita", "importo": 450.0, "canale": "altro", "note": "impaginazione ballerinette", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 255302, "data": "2025-03-12", "tipo": "uscita", "importo": 385.66, "canale": "stampa", "note": "stampa padova fantastica", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 255401, "data": "2025-03-12", "tipo": "entrata", "importo": 120.0, "canale": "admin", "note": "e commerce padova fantastica", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 255501, "data": "2025-03-18", "tipo": "entrata", "importo": 21.0, "canale": "admin", "note": "e commerce forbidden colo", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 255602, "data": "2025-03-18", "tipo": "uscita", "importo": 62.71, "canale": "altro", "note": "cancelleria", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 255701, "data": "2025-03-22", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "e commerce ryokan", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 255802, "data": "2025-03-26", "tipo": "uscita", "importo": 102.46, "canale": "spedizioni", "note": "brt fat 52032 52033", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 255902, "data": "2025-03-29", "tipo": "uscita", "importo": 270.0, "canale": "eventi", "note": "salone torino", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 256001, "data": "2025-03-30", "tipo": "entrata", "importo": 2.63, "canale": "ebook", "note": "e book amazon ", "vendute": 1, "stampate": 0, "dirette": 0, "ebook_n": 1, "autori": ""}], "notes": ""}, "aprile": {"rows": [{"id": 256802, "data": "2025-04-02", "tipo": "uscita", "importo": 672.57, "canale": "stampa", "note": "II ristampa forbidden colours", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 256902, "data": "2025-04-02", "tipo": "uscita", "importo": 322.0, "canale": "stampa", "note": "stampa tante storie per pensare", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 257001, "data": "2025-04-02", "tipo": "entrata", "importo": 22.0, "canale": "distributori", "note": "roma  fatt 11", "vendute": 5, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 257101, "data": "2025-04-04", "tipo": "entrata", "importo": 445.2, "canale": "distributori", "note": "padova fatt 9", "vendute": 58, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 257201, "data": "2025-04-01", "tipo": "entrata", "importo": 95.25, "canale": "distributori", "note": "firenze n 8 maggio ", "vendute": 11, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 257301, "data": "2025-04-07", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": " e commerce luna piena ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 257402, "data": "2025-04-08", "tipo": "uscita", "importo": 288.1, "canale": "distributori", "note": "milano fant  giulia lazzaron", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 257502, "data": "2025-04-08", "tipo": "uscita", "importo": 197.0, "canale": "distributori", "note": "milano fant  grazia", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 257602, "data": "2025-04-08", "tipo": "uscita", "importo": 126.9, "canale": "altro", "note": "luce Ravà", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 257701, "data": "2025-04-08", "tipo": "entrata", "importo": 600.0, "canale": "eventi", "note": "evento Genova Luce  ", "vendute": 30, "stampate": 0, "dirette": 30, "ebook_n": 0, "autori": ""}, {"id": 257901, "data": "2025-04-11", "tipo": "entrata", "importo": 34.0, "canale": "distributori", "note": "gatto esperienza", "vendute": 3, "stampate": 0, "dirette": 3, "ebook_n": 0, "autori": ""}, {"id": 258001, "data": "2025-04-11", "tipo": "entrata", "importo": 19.0, "canale": "distributori", "note": "ppll roma ryokan", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 258102, "data": "2025-04-20", "tipo": "uscita", "importo": 199.04, "canale": "spedizioni", "note": "brt febbraio ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 258201, "data": "2025-04-22", "tipo": "entrata", "importo": 19.0, "canale": "distributori", "note": "ecommece luna piena ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 258301, "data": "2025-04-23", "tipo": "entrata", "importo": 37.0, "canale": "distributori", "note": "ecommece luna piena  ryokan", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 258402, "data": "2025-04-20", "tipo": "uscita", "importo": 600.0, "canale": "altro", "note": "prelevamento aministratore", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}], "notes": ""}, "maggio": {"rows": [{"id": 259201, "data": "2025-05-04", "tipo": "entrata", "importo": 20.0, "canale": "admin", "note": "padova fantastica e commerce", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 259301, "data": "2025-05-05", "tipo": "entrata", "importo": 495.0, "canale": "distributori", "note": "bocca fatt 7", "vendute": 41, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 259401, "data": "2025-05-06", "tipo": "entrata", "importo": 651.88, "canale": "distributori", "note": "milano fatt 10", "vendute": 75, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 259501, "data": "2025-05-07", "tipo": "entrata", "importo": 200.0, "canale": "eventi", "note": "evento villa franca", "vendute": 10, "stampate": 0, "dirette": 10, "ebook_n": 0, "autori": ""}, {"id": 259602, "data": "2025-05-13", "tipo": "uscita", "importo": 539.24, "canale": "altro", "note": "testa contabilita 2024 ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 259701, "data": "2025-05-14", "tipo": "entrata", "importo": 45.5, "canale": "distributori", "note": " rend a marzo fast book", "vendute": 12, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 259902, "data": "2025-05-22", "tipo": "uscita", "importo": 200.0, "canale": "admin", "note": "prelevamento amministratore", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2510001, "data": "2025-05-22", "tipo": "entrata", "importo": 12.0, "canale": "distributori", "note": "ubik rovigo", "vendute": 1, "stampate": 0, "dirette": 1, "ebook_n": 0, "autori": ""}, {"id": 2510102, "data": "2025-05-22", "tipo": "uscita", "importo": 240.0, "canale": "altro", "note": "aika anvolea", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2510202, "data": "2025-05-22", "tipo": "uscita", "importo": 226.53, "canale": "spedizioni", "note": "brt marzo 2025", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2510301, "data": "2025-05-29", "tipo": "entrata", "importo": 2.63, "canale": "distributori", "note": "e book america ", "vendute": 1, "stampate": 0, "dirette": 0, "ebook_n": 1, "autori": ""}, {"id": 2510402, "data": "2025-05-29", "tipo": "uscita", "importo": 232.8, "canale": "stampa", "note": "II ristampa tante storie per pensare", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}], "notes": ""}, "giugno": {"rows": [{"id": 2511002, "data": "2025-06-03", "tipo": "uscita", "importo": 235.0, "canale": "altro", "note": "albergo cernobio ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2511101, "data": "2025-06-04", "tipo": "entrata", "importo": 20.0, "canale": "admin", "note": "e commerce  locanda nakamura", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2511201, "data": "2025-06-05", "tipo": "entrata", "importo": 20.0, "canale": "admin", "note": "e commerce  locanda nakamura", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2511301, "data": "2025-06-05", "tipo": "entrata", "importo": 20.0, "canale": "admin", "note": "e commerce  locanda nakamura", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2511401, "data": "2025-06-08", "tipo": "entrata", "importo": 215.0, "canale": "eventi", "note": "evento cernobbio le mie ballerinete", "vendute": 17, "stampate": 0, "dirette": 17, "ebook_n": 0, "autori": ""}, {"id": 2511501, "data": "2025-06-12", "tipo": "entrata", "importo": 80.0, "canale": "admin", "note": "e commerce  locanda nakamura", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2511702, "data": "2025-06-12", "tipo": "uscita", "importo": 100.0, "canale": "eventi", "note": "fiera venezia ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2511801, "data": "2025-06-13", "tipo": "entrata", "importo": 190.0, "canale": "distributori", "note": "righe teatro mantova", "vendute": 19, "stampate": 0, "dirette": 19, "ebook_n": 0, "autori": ""}, {"id": 2511901, "data": "2025-06-13", "tipo": "entrata", "importo": 20.0, "canale": "admin", "note": "e commerce  locanda nakamura", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2512001, "data": "2025-06-13", "tipo": "entrata", "importo": 120.0, "canale": "eventi", "note": "evento roma erbo", "vendute": 10, "stampate": 0, "dirette": 10, "ebook_n": 0, "autori": ""}, {"id": 2512101, "data": "2025-06-17", "tipo": "entrata", "importo": 366.0, "canale": "distributori", "note": "IED incarico ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2512201, "data": "2025-06-18", "tipo": "entrata", "importo": 19.0, "canale": "distributori", "note": "e comemrce ryokan", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2512301, "data": "2025-06-18", "tipo": "entrata", "importo": 20.0, "canale": "admin", "note": "e commerce  locanda nakamura", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2512401, "data": "2025-06-23", "tipo": "entrata", "importo": 354.0, "canale": "distributori", "note": "bocca ", "vendute": 27, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2512501, "data": "2025-06-20", "tipo": "entrata", "importo": 54.0, "canale": "eventi", "note": "evento ubik ostia", "vendute": 9, "stampate": 0, "dirette": 9, "ebook_n": 0, "autori": ""}, {"id": 2512602, "data": "2025-06-23", "tipo": "uscita", "importo": 145.86, "canale": "spedizioni", "note": "BRT APRILE 2025", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2512701, "data": "2025-06-27", "tipo": "entrata", "importo": 80.0, "canale": "eventi", "note": "evento roma bar", "vendute": 8, "stampate": 0, "dirette": 8, "ebook_n": 0, "autori": ""}, {"id": 2512801, "data": "2025-06-28", "tipo": "entrata", "importo": 20.0, "canale": "admin", "note": "e commerce  locanda nakamura", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2512901, "data": "2025-06-30", "tipo": "entrata", "importo": 50.0, "canale": "distributori", "note": "aika anvolea autore ", "vendute": 5, "stampate": 0, "dirette": 5, "ebook_n": 0, "autori": ""}, {"id": 2513002, "data": "2025-06-30", "tipo": "uscita", "importo": 20.0, "canale": "altro", "note": "aika rendiconto al 30 giugno", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2513401, "data": "2025-06-01", "tipo": "entrata", "importo": 1648.0, "canale": "distributori", "note": "inizio anno  ", "vendute": 21556, "stampate": 0, "dirette": 7496, "ebook_n": 14060, "autori": ""}, {"id": 2513402, "data": "2025-06-01", "tipo": "uscita", "importo": 265.86, "canale": "altro", "note": "inizio anno  ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2515701, "data": "2025-06-01", "tipo": "entrata", "importo": 735.0, "canale": "distributori", "note": "210", "vendute": 71, "stampate": 0, "dirette": 0, "ebook_n": 71, "autori": ""}, {"id": 2515702, "data": "2025-06-01", "tipo": "uscita", "importo": 525.0, "canale": "altro", "note": "210", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2515801, "data": "2025-06-01", "tipo": "entrata", "importo": 1035.0, "canale": "distributori", "note": "478", "vendute": 53, "stampate": 0, "dirette": 0, "ebook_n": 53, "autori": ""}, {"id": 2515802, "data": "2025-06-01", "tipo": "uscita", "importo": 557.0, "canale": "altro", "note": "478", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}], "notes": ""}, "luglio": {"rows": [{"id": 2515901, "data": "2025-07-01", "tipo": "entrata", "importo": 1435.0, "canale": "distributori", "note": "583", "vendute": 59, "stampate": 0, "dirette": 0, "ebook_n": 59, "autori": ""}, {"id": 2515902, "data": "2025-07-01", "tipo": "uscita", "importo": 852.0, "canale": "altro", "note": "583", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2516001, "data": "2025-07-01", "tipo": "entrata", "importo": 2305.0, "canale": "distributori", "note": "1159", "vendute": 49, "stampate": 0, "dirette": 0, "ebook_n": 49, "autori": ""}, {"id": 2516002, "data": "2025-07-01", "tipo": "uscita", "importo": 1146.0, "canale": "altro", "note": "1159", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2516101, "data": "2024-12-01", "tipo": "entrata", "importo": 2405.0, "canale": "distributori", "note": "1243", "vendute": 48, "stampate": 0, "dirette": 0, "ebook_n": 48, "autori": ""}, {"id": 2516102, "data": "2024-12-01", "tipo": "uscita", "importo": 1162.0, "canale": "altro", "note": "1243", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2516201, "data": "2025-01-01", "tipo": "entrata", "importo": 2805.0, "canale": "distributori", "note": "1092", "vendute": 613, "stampate": 0, "dirette": 552, "ebook_n": 61, "autori": ""}, {"id": 2516202, "data": "2025-01-01", "tipo": "uscita", "importo": 1713.0, "canale": "altro", "note": "1092", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2516301, "data": "2025-02-01", "tipo": "entrata", "importo": 2955.0, "canale": "distributori", "note": "1230", "vendute": 70, "stampate": 0, "dirette": 12, "ebook_n": 58, "autori": ""}, {"id": 2516302, "data": "2025-02-01", "tipo": "uscita", "importo": 1725.0, "canale": "altro", "note": "1230", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2516401, "data": "2025-03-01", "tipo": "entrata", "importo": 3105.0, "canale": "distributori", "note": "1298", "vendute": 140, "stampate": 0, "dirette": 82, "ebook_n": 58, "autori": ""}, {"id": 2516402, "data": "2025-03-01", "tipo": "uscita", "importo": 1807.0, "canale": "altro", "note": "1298", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2516501, "data": "2025-04-01", "tipo": "entrata", "importo": 3355.0, "canale": "distributori", "note": "1435", "vendute": 170, "stampate": 0, "dirette": 113, "ebook_n": 57, "autori": ""}, {"id": 2516502, "data": "2025-04-01", "tipo": "uscita", "importo": 1920.0, "canale": "altro", "note": "1435", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2516601, "data": "2025-05-01", "tipo": "entrata", "importo": 3605.0, "canale": "distributori", "note": "1544", "vendute": 198, "stampate": 0, "dirette": 141, "ebook_n": 57, "autori": ""}, {"id": 2516602, "data": "2025-05-01", "tipo": "uscita", "importo": 2061.0, "canale": "altro", "note": "1544", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2516701, "data": "2025-06-01", "tipo": "entrata", "importo": 3605.0, "canale": "distributori", "note": "1438", "vendute": 166, "stampate": 0, "dirette": 106, "ebook_n": 60, "autori": ""}, {"id": 2516702, "data": "2025-06-01", "tipo": "uscita", "importo": 2167.0, "canale": "altro", "note": "1438", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2516801, "data": "2025-07-01", "tipo": "entrata", "importo": 4275.0, "canale": "distributori", "note": "1986", "vendute": 175, "stampate": 0, "dirette": 122, "ebook_n": 53, "autori": ""}, {"id": 2516802, "data": "2025-07-01", "tipo": "uscita", "importo": 2289.0, "canale": "altro", "note": "1986", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2516901, "data": "2025-08-01", "tipo": "entrata", "importo": 4275.0, "canale": "distributori", "note": "1992", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2516902, "data": "2025-08-01", "tipo": "uscita", "importo": 2283.0, "canale": "altro", "note": "1992", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2517001, "data": "2025-09-01", "tipo": "entrata", "importo": 4415.0, "canale": "distributori", "note": "1947", "vendute": 240, "stampate": 0, "dirette": 185, "ebook_n": 55, "autori": ""}, {"id": 2517002, "data": "2025-09-01", "tipo": "uscita", "importo": 2468.0, "canale": "altro", "note": "1947", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2517101, "data": "2025-10-01", "tipo": "entrata", "importo": 4735.0, "canale": "distributori", "note": "2186", "vendute": 134, "stampate": 0, "dirette": 81, "ebook_n": 53, "autori": ""}, {"id": 2517102, "data": "2025-10-01", "tipo": "uscita", "importo": 2549.0, "canale": "altro", "note": "2186", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2517201, "data": "2025-11-01", "tipo": "entrata", "importo": 4875.0, "canale": "distributori", "note": "2229", "vendute": 151, "stampate": 0, "dirette": 97, "ebook_n": 54, "autori": ""}, {"id": 2517202, "data": "2025-11-01", "tipo": "uscita", "importo": 2646.0, "canale": "altro", "note": "2229", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2517301, "data": "2025-12-01", "tipo": "entrata", "importo": 4955.0, "canale": "distributori", "note": "2193", "vendute": 1723, "stampate": 0, "dirette": 116, "ebook_n": 0, "autori": "libri venduti 2025"}, {"id": 2517302, "data": "2025-12-01", "tipo": "uscita", "importo": 2762.0, "canale": "altro", "note": "2193", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2517401, "data": "2025-01-01", "tipo": "entrata", "importo": 4955.0, "canale": "distributori", "note": "1593", "vendute": 667, "stampate": 0, "dirette": 600, "ebook_n": 67, "autori": ""}, {"id": 2517402, "data": "2025-01-01", "tipo": "uscita", "importo": 3362.0, "canale": "altro", "note": "1593", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2517801, "data": "2025-07-05", "tipo": "entrata", "importo": 140.0, "canale": "distributori", "note": "edicola ", "vendute": 14, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2517901, "data": "2025-07-05", "tipo": "entrata", "importo": 100.0, "canale": "distributori", "note": "libreria dei ragazzi", "vendute": 8, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2518001, "data": "2025-07-02", "tipo": "entrata", "importo": 269.0, "canale": "distributori", "note": "roma", "vendute": 34, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2518101, "data": "2025-07-02", "tipo": "entrata", "importo": 251.6, "canale": "distributori", "note": "padova rend a giugno", "vendute": 33, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2518201, "data": "2025-07-02", "tipo": "entrata", "importo": 104.6, "canale": "distributori", "note": "firenze ", "vendute": 12, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2518301, "data": "2025-07-02", "tipo": "entrata", "importo": 103.2, "canale": "distributori", "note": "torino fat 34", "vendute": 15, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2518402, "data": "2025-07-05", "tipo": "uscita", "importo": 300.0, "canale": "altro", "note": "traghetto", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2518501, "data": "2025-07-11", "tipo": "entrata", "importo": 19.33, "canale": "admin", "note": "ecommerce righe", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2518601, "data": "2025-07-12", "tipo": "entrata", "importo": 19.0, "canale": "admin", "note": "e commerce  ryokan", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2518802, "data": "2025-07-17", "tipo": "uscita", "importo": 603.37, "canale": "stampa", "note": "pixel in japan I ristampa ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2518901, "data": "2025-07-22", "tipo": "entrata", "importo": 20.0, "canale": "admin", "note": "e commerce  locanda nakamura", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2519002, "data": "2025-07-24", "tipo": "uscita", "importo": 471.22, "canale": "stampa", "note": "assolutamente giappone I ristampa", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2519101, "data": "2025-07-30", "tipo": "entrata", "importo": 5.73, "canale": "ebook", "note": "ebook amazon  forbidden", "vendute": 1, "stampate": 0, "dirette": 0, "ebook_n": 1, "autori": ""}, {"id": 2519202, "data": "2025-08-05", "tipo": "uscita", "importo": 269.88, "canale": "stampa", "note": "lotter  stampa", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2519302, "data": "2025-08-07", "tipo": "uscita", "importo": 302.68, "canale": "stampa", "note": "la galleria delle donne basoI stampa ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2519402, "data": "2025-08-24", "tipo": "uscita", "importo": 246.0, "canale": "altro", "note": "ryokan I edizione ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2519501, "data": "2025-08-28", "tipo": "entrata", "importo": 5.73, "canale": "ebook", "note": "ebook amazon ryokan", "vendute": 1, "stampate": 0, "dirette": 0, "ebook_n": 1, "autori": ""}, {"id": 2519601, "data": "2025-07-01", "tipo": "entrata", "importo": 5.31, "canale": "distributori", "note": "interessi bbva", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}], "notes": ""}, "agosto": {"rows": [{"id": 2519701, "data": "2025-08-01", "tipo": "entrata", "importo": 3.3, "canale": "distributori", "note": "interessi bbva", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2519802, "data": "2025-08-08", "tipo": "uscita", "importo": 344.91, "canale": "stampa", "note": "stampa assolutamente", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2519901, "data": "2025-08-01", "tipo": "entrata", "importo": 5.02, "canale": "ebook", "note": "amazon e book", "vendute": 1, "stampate": 0, "dirette": 0, "ebook_n": 1, "autori": ""}, {"id": 2520201, "data": "2025-08-01", "tipo": "entrata", "importo": 911.82, "canale": "distributori", "note": "inizio anno  ", "vendute": 25006, "stampate": 0, "dirette": 10034, "ebook_n": 14972, "autori": ""}, {"id": 2520202, "data": "2025-08-01", "tipo": "uscita", "importo": 2538.06, "canale": "altro", "note": "inizio anno  ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}], "notes": ""}, "settembre": {"rows": [{"id": 2520801, "data": "2025-09-05", "tipo": "entrata", "importo": 635.97, "canale": "distributori", "note": "rendiconto milano ", "vendute": 77, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2520901, "data": "2025-09-05", "tipo": "entrata", "importo": 150.0, "canale": "distributori", "note": "baso ", "vendute": 15, "stampate": 0, "dirette": 15, "ebook_n": 0, "autori": ""}, {"id": 2521001, "data": "2025-09-05", "tipo": "entrata", "importo": 382.5, "canale": "distributori", "note": "bocca", "vendute": 38, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2521102, "data": "2025-09-05", "tipo": "uscita", "importo": 361.74, "canale": "spedizioni", "note": "brt maggio giugno agosto", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2521202, "data": "2025-09-05", "tipo": "uscita", "importo": 239.56, "canale": "stampa", "note": "assolutamente giappone stampa", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2521301, "data": "2025-09-11", "tipo": "entrata", "importo": 116.0, "canale": "eventi", "note": "aika - evento moby book ", "vendute": 15, "stampate": 0, "dirette": 15, "ebook_n": 0, "autori": ""}, {"id": 2521402, "data": "2025-09-22", "tipo": "uscita", "importo": 315.85, "canale": "stampa", "note": "II ristampa galleria delle donne", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2521501, "data": "2025-09-24", "tipo": "entrata", "importo": 132.0, "canale": "distributori", "note": "baso ", "vendute": 15, "stampate": 0, "dirette": 15, "ebook_n": 0, "autori": ""}, {"id": 2521601, "data": "2025-09-28", "tipo": "entrata", "importo": 459.0, "canale": "eventi", "note": "fiera di venezia ", "vendute": 25, "stampate": 0, "dirette": 25, "ebook_n": 0, "autori": ""}, {"id": 2521702, "data": "2025-09-30", "tipo": "uscita", "importo": 293.7, "canale": "stampa", "note": "assoluamente giappone stampa", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2522201, "data": "2025-09-01", "tipo": "entrata", "importo": 1878.33, "canale": "distributori", "note": "inizio anno  ", "vendute": 29187, "stampate": 0, "dirette": 12336, "ebook_n": 16851, "autori": ""}, {"id": 2522202, "data": "2025-09-01", "tipo": "uscita", "importo": 2301.65, "canale": "altro", "note": "inizio anno  ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}], "notes": ""}, "ottobre": {"rows": [{"id": 2522701, "data": "2025-10-06", "tipo": "entrata", "importo": 215.6, "canale": "distributori", "note": "padova ren giu - sett  fatt 26 ", "vendute": 27, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2522801, "data": "2025-10-01", "tipo": "entrata", "importo": 216.4, "canale": "distributori", "note": "roma ren giu - sett fatt 25", "vendute": 29, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2522901, "data": "2025-10-01", "tipo": "entrata", "importo": 160.65, "canale": "distributori", "note": "firenze ren giugno sett fatt 24", "vendute": 20, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2523102, "data": "2025-10-06", "tipo": "uscita", "importo": 34.0, "canale": "altro", "note": "anna corradi  righe  tutto al 30 set", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2523201, "data": "2025-10-08", "tipo": "entrata", "importo": 50.0, "canale": "eventi", "note": "fiera artigianato venezia ", "vendute": 2, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2523302, "data": "2025-10-10", "tipo": "uscita", "importo": 300.0, "canale": "eventi", "note": "partecipazione fiera ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2523401, "data": "2025-10-10", "tipo": "entrata", "importo": 25.0, "canale": "admin", "note": "e commerce lotter", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2523502, "data": "2025-10-15", "tipo": "uscita", "importo": 147.6, "canale": "stampa", "note": "hota  ristampa  ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2523602, "data": "2025-10-15", "tipo": "uscita", "importo": 143.0, "canale": "stampa", "note": "carto natalizie stampa", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2523702, "data": "2025-10-15", "tipo": "uscita", "importo": 147.0, "canale": "stampa", "note": "shogoro stampa", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2523801, "data": "2025-10-18", "tipo": "entrata", "importo": 17.0, "canale": "admin", "note": "e commerce RYOKAN ii ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2523901, "data": "2025-10-21", "tipo": "entrata", "importo": 23.0, "canale": "admin", "note": "e commerce locanda", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2524002, "data": "2025-10-25", "tipo": "uscita", "importo": 351.0, "canale": "stampa", "note": "torino fantastica i stampa", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2524102, "data": "2025-10-28", "tipo": "uscita", "importo": 69.67, "canale": "spedizioni", "note": "brt", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2524201, "data": "2025-10-30", "tipo": "entrata", "importo": 83.0, "canale": "admin", "note": "torino fantastica e commerce ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2524301, "data": "2025-10-01", "tipo": "entrata", "importo": 726.65, "canale": "distributori", "note": "inizio anno  ", "vendute": 31105, "stampate": 0, "dirette": 13528, "ebook_n": 17577, "autori": ""}, {"id": 2524302, "data": "2025-10-01", "tipo": "uscita", "importo": 1192.27, "canale": "altro", "note": "inizio anno  ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}], "notes": ""}, "novembre": {"rows": [{"id": 2524801, "data": "2025-11-04", "tipo": "entrata", "importo": 400.0, "canale": "distributori", "note": "shogoro", "vendute": 50, "stampate": 0, "dirette": 50, "ebook_n": 0, "autori": ""}, {"id": 2524901, "data": "2025-11-05", "tipo": "entrata", "importo": 325.0, "canale": "distributori", "note": "bocca", "vendute": 32, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2525001, "data": "2025-11-01", "tipo": "entrata", "importo": 171.0, "canale": "eventi", "note": "EVENTO SHOGORO fatt 27", "vendute": 15, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2525101, "data": "2025-11-10", "tipo": "entrata", "importo": 90.0, "canale": "distributori", "note": "BASO", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2525301, "data": "2025-11-01", "tipo": "entrata", "importo": 83.0, "canale": "distributori", "note": "oda books 4 libri", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2525402, "data": "2025-11-06", "tipo": "uscita", "importo": 4.9, "canale": "spedizioni", "note": "spese spedizione torino fantastica", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2525502, "data": "2025-11-10", "tipo": "uscita", "importo": 206.29, "canale": "altro", "note": "tante storie per pensare", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2525602, "data": "2025-11-10", "tipo": "uscita", "importo": 193.42, "canale": "stampa", "note": "carto natalizie stampa", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2525702, "data": "2025-11-17", "tipo": "uscita", "importo": 138.0, "canale": "distributori", "note": "giulia lazzaron padova fant milano", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2525801, "data": "2025-11-17", "tipo": "entrata", "importo": 44.4, "canale": "distributori", "note": "bonifico da verificare ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2525902, "data": "2025-11-22", "tipo": "uscita", "importo": 350.0, "canale": "altro", "note": "sito web peacock dominio", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2526002, "data": "2025-11-28", "tipo": "uscita", "importo": 4.99, "canale": "spedizioni", "note": "spedizione oda books ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2526102, "data": "2025-11-28", "tipo": "uscita", "importo": 200.0, "canale": "altro", "note": "verni", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2526202, "data": "2025-11-28", "tipo": "uscita", "importo": 200.0, "canale": "altro", "note": "compensi helene blignaut", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2526302, "data": "2025-11-01", "tipo": "uscita", "importo": 89.0, "canale": "altro", "note": "flazio  sito oda books", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2526401, "data": "2025-11-01", "tipo": "entrata", "importo": 1113.4, "canale": "distributori", "note": "inizio anno  ", "vendute": 33606, "stampate": 0, "dirette": 14915, "ebook_n": 18691, "autori": ""}, {"id": 2526402, "data": "2025-11-01", "tipo": "uscita", "importo": 1386.6, "canale": "altro", "note": "inizio anno  ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2527001, "data": "2025-12-01", "tipo": "entrata", "importo": 200.0, "canale": "distributori", "note": "ordine 81 fatt civita Torino fat 28 ", "vendute": 20, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2527101, "data": "2025-12-11", "tipo": "entrata", "importo": 800.0, "canale": "distributori", "note": "civita fat 30 31 32 33", "vendute": 80, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2527201, "data": "2025-12-10", "tipo": "entrata", "importo": 17.0, "canale": "admin", "note": "e commerce carto storie", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2527302, "data": "2025-11-01", "tipo": "uscita", "importo": 257.09, "canale": "spedizioni", "note": "brt", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2527402, "data": "2025-11-01", "tipo": "uscita", "importo": 485.0, "canale": "distributori", "note": "MILANO FANTASTICA ii", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2527501, "data": "2025-11-01", "tipo": "entrata", "importo": 117.0, "canale": "eventi", "note": "noto fattura 29  ", "vendute": 13, "stampate": 0, "dirette": 13, "ebook_n": 0, "autori": ""}, {"id": 2527701, "data": "2025-11-01", "tipo": "entrata", "importo": 20.0, "canale": "distributori", "note": "la galleria delle ragazze ", "vendute": 2, "stampate": 0, "dirette": 2, "ebook_n": 0, "autori": ""}, {"id": 2527802, "data": "2025-11-01", "tipo": "uscita", "importo": 4.99, "canale": "ebook", "note": "in post odabooks", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2527902, "data": "2025-11-01", "tipo": "uscita", "importo": 105.0, "canale": "campagne", "note": "oda books  campagna meta", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2528001, "data": "2025-11-01", "tipo": "entrata", "importo": 15.0, "canale": "distributori", "note": "oda books rivista ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2528102, "data": "2025-11-01", "tipo": "uscita", "importo": 100.0, "canale": "admin", "note": "amministratore", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 2528501, "data": "2025-11-01", "tipo": "entrata", "importo": 1169.0, "canale": "distributori", "note": "inizio anno  ", "vendute": 35727, "stampate": 0, "dirette": 15867, "ebook_n": 19860, "autori": ""}, {"id": 2528502, "data": "2025-11-01", "tipo": "uscita", "importo": 952.08, "canale": "altro", "note": "inizio anno  ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}], "notes": ""}}, "2026": {"gennaio": {"rows": [{"id": 26401, "data": "2026-01-01", "tipo": "entrata", "importo": 269.0, "canale": "eventi", "note": "plpl roma 01", "vendute": 15, "stampate": 0, "dirette": 15, "ebook_n": 0, "autori": ""}, {"id": 26501, "data": "2026-01-01", "tipo": "entrata", "importo": 30.0, "canale": "distributori", "note": "libreria paese dei mostri", "vendute": 3, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 26601, "data": "2026-01-01", "tipo": "entrata", "importo": 57.0, "canale": "distributori", "note": "libreria dei ragazzi", "vendute": 8, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 26701, "data": "2026-01-01", "tipo": "entrata", "importo": 482.8, "canale": "distributori", "note": "COREA", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 26801, "data": "2026-01-01", "tipo": "entrata", "importo": 180.0, "canale": "distributori", "note": "bocca", "vendute": 18, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 26901, "data": "2026-01-01", "tipo": "entrata", "importo": 422.56, "canale": "distributori", "note": "Roma 4 trimestre 2025", "vendute": 68, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 261001, "data": "2026-01-01", "tipo": "entrata", "importo": 1.6, "canale": "altro", "note": "interessi bbva", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 261101, "data": "2026-01-01", "tipo": "entrata", "importo": 3.1, "canale": "ebook", "note": "amzaon ebooks", "vendute": 1, "stampate": 0, "dirette": 0, "ebook_n": 1, "autori": ""}, {"id": 261201, "data": "2026-01-01", "tipo": "entrata", "importo": 777.44, "canale": "distributori", "note": "milano", "vendute": 106, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 261301, "data": "2026-01-08", "tipo": "entrata", "importo": 345.15, "canale": "distributori", "note": "torino", "vendute": 38, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 261401, "data": "2026-01-08", "tipo": "entrata", "importo": 40.48, "canale": "distributori", "note": "padova", "vendute": 14, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 261501, "data": "2026-01-11", "tipo": "entrata", "importo": 70.75, "canale": "distributori", "note": "Firenze ", "vendute": 8, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 261602, "data": "2026-01-01", "tipo": "uscita", "importo": 175.0, "canale": "spedizioni", "note": "gls novembre 2025 ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 261701, "data": "2026-01-01", "tipo": "entrata", "importo": 20.0, "canale": "distributori", "note": "baso  galleria delle ragazze ", "vendute": 2, "stampate": 0, "dirette": 2, "ebook_n": 0, "autori": ""}, {"id": 261801, "data": "2026-01-29", "tipo": "entrata", "importo": 8.7, "canale": "ebook", "note": "amazon ebook", "vendute": 2, "stampate": 0, "dirette": 0, "ebook_n": 2, "autori": ""}], "notes": ""}, "febbraio": {"rows": [{"id": 262502, "data": "2026-02-01", "tipo": "uscita", "importo": 52.37, "canale": "spedizioni", "note": "oda books fast ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 262601, "data": "2026-02-01", "tipo": "entrata", "importo": 1.65, "canale": "altro", "note": "interessi bbva 1,75%", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 262702, "data": "2026-02-03", "tipo": "uscita", "importo": 256.0, "canale": "stampa", "note": "stampa the  demon samurai ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 262802, "data": "2026-02-03", "tipo": "uscita", "importo": 470.77, "canale": "stampa", "note": "stampa demone samurai ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 262902, "data": "2026-02-05", "tipo": "uscita", "importo": 478.0, "canale": "stampa", "note": "stampa ai algoritmi ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 263002, "data": "2026-02-01", "tipo": "uscita", "importo": 132.59, "canale": "spedizioni", "note": "gls mese dicembre gennaio ", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 263101, "data": "2026-02-20", "tipo": "entrata", "importo": 42.0, "canale": "ecommerce", "note": "e commerce demon samurai", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}], "notes": ""}, "marzo": {"rows": [{"id": 264001, "data": "2026-03-01", "tipo": "entrata", "importo": 1.65, "canale": "ebook", "note": "interessi bbva", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 264102, "data": "2026-03-04", "tipo": "uscita", "importo": 184.31, "canale": "stampa", "note": "stampe matcha  1 edizione", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}, {"id": 264201, "data": "2026-03-01", "tipo": "entrata", "importo": 300.0, "canale": "eventi", "note": "autore  matcha", "vendute": 30, "stampate": 0, "dirette": 30, "ebook_n": 0, "autori": ""}, {"id": 264301, "data": "2026-03-01", "tipo": "entrata", "importo": 200.0, "canale": "distributori", "note": "bocca ", "vendute": 20, "stampate": 0, "dirette": 20, "ebook_n": 0, "autori": ""}, {"id": 264401, "data": "2026-03-01", "tipo": "entrata", "importo": 320.0, "canale": "distributori", "note": "tanta storie per pensare ", "vendute": 40, "stampate": 0, "dirette": 40, "ebook_n": 0, "autori": ""}, {"id": 264502, "data": "2026-03-01", "tipo": "uscita", "importo": 273.0, "canale": "stampa", "note": "milano fantastica  stampa", "vendute": 0, "stampate": 0, "dirette": 0, "ebook_n": 0, "autori": ""}], "notes": ""}}};
+const MONTHS=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+const MLABELS=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+const CANALE_LABELS={distributori:'Distributori',ecommerce:'Ecommerce',eventi:'Eventi/Diretti',ebook:'Ebook',stampa:'Stampa',spedizioni:'Spedizioni',campagne:'Campagne Pub.',quote:'Quote Assoc.',admin:'Compenso Amm.',altro:'Altro'};
+const ENTRATA_CANALI=['distributori','ecommerce','eventi','ebook'];
+const UTILI_RIPORTATI={2024:-1388,2025:4638.83,2026:3105.51};
+// ═══════════════════════════════════════════════════════════════════════════
+// STORAGE — JSONBin.io (salvataggio cloud automatico)
+// ═══════════════════════════════════════════════════════════════════════════
+const JSONBIN_KEY='69bbb436b7ec241ddc8102e5';
+const JSONBIN_BIN='69bbb718c3097a1dd53bca37';
+const JSONBIN_URL='https://api.jsonbin.io/v3/b/'+JSONBIN_BIN;
+
+let CY=2026,CM='marzo',CT='entrata',CHART=null,DATA={};
+let DIRTY=false;
+
+async function loadData(){
+  setStatus('loading');
+  try{
+    const r=await fetch(JSONBIN_URL+'/latest',{headers:{'X-Access-Key':JSONBIN_KEY}});
+    const j=await r.json();
+    const d=j.record;
+    if(d&&Object.keys(d).length>1){
+      DATA=d;
+    } else {
+      DATA=JSON.parse(JSON.stringify(SEED));
+      await pushData();
+    }
+  }catch(e){
+    DATA=JSON.parse(JSON.stringify(SEED));
+    toast('⚠ Offline — dati locali caricati');
+  }
+  setStatus('saved');
+}
+async function pushData(){
+  try{
+    await fetch(JSONBIN_URL,{
+      method:'PUT',
+      headers:{'Content-Type':'application/json','X-Access-Key':JSONBIN_KEY},
+      body:JSON.stringify(DATA)
+    });
+    DIRTY=false;setStatus('saved');
+  }catch(e){
+    setStatus('error');
+    toast('⚠ Errore salvataggio — controlla la connessione');
+  }
+}
+function saveData(){
+  DIRTY=true;setStatus('dirty');
+  clearTimeout(window._saveTimer);
+  window._saveTimer=setTimeout(()=>pushData(),1500);
+}
+function setStatus(s){
+  const ind=document.getElementById('save-indicator');
+  const banner=document.getElementById('save-banner');
+  if(!ind)return;
+  if(s==='loading'){ind.textContent='● Caricamento...';ind.style.color='rgba(200,200,100,0.9)';}
+  else if(s==='dirty'){ind.textContent='● Salvataggio...';ind.style.color='rgba(232,120,80,0.9)';}
+  else if(s==='saved'){ind.textContent='● Salvato ☁';ind.style.color='rgba(125,220,150,0.9)';}
+  else if(s==='error'){ind.textContent='● Errore!';ind.style.color='rgba(232,80,80,0.9)';}
+  if(banner)banner.style.display=(s==='error')?'block':'none';
+}
+function updateSaveIndicator(){setStatus(DIRTY?'dirty':'saved');}
+
+// BACKUP locale
+function salvaSuDisco(){
+  const blob=new Blob([JSON.stringify(DATA,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='peacock_backup_'+new Date().toISOString().split('T')[0]+'.json';
+  a.click();
+  toast('✓ Backup scaricato');
+}
+function caricaDaDisco(){document.getElementById('loadFile').click();}
+function handleLoadFile(e){
+  const file=e.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      DATA=JSON.parse(ev.target.result.trim());
+      pushData();renderMonthSel();renderActive();toast('✓ Dati caricati e salvati sul cloud');
+    }catch(err){alert('File non valido.');}
+  };
+  reader.readAsText(file);e.target.value='';
+}
+window.addEventListener('beforeunload',e=>{if(DIRTY){e.preventDefault();e.returnValue='';}});
+
+// DATA ACCESS
+function getRows(y,m){if(!DATA[y])DATA[y]={};if(!DATA[y][m])DATA[y][m]={rows:[],notes:'',saldi:{b:0,p:0,c:0},fatture:[]};return DATA[y][m].rows;}
+function getMonth(y,m){if(!DATA[y])DATA[y]={};if(!DATA[y][m])DATA[y][m]={rows:[],notes:'',saldi:{b:0,p:0,c:0},fatture:[]};return DATA[y][m];}
+function getNotes(y,m){return getMonth(y,m).notes||'';}
+function getSaldi(y,m){
+  const def={2024:{aprile:{b:4200,p:280,c:200},giugno:{b:4100,p:260,c:180},luglio:{b:3900,p:300,c:220},settembre:{b:3600,p:320,c:200},ottobre:{b:3500,p:310,c:200},dicembre:{b:5296.87,p:304,c:237}},2025:{gennaio:{b:1197.70,p:66.81,c:50},febbraio:{b:1300,p:80,c:50},marzo:{b:1400,p:85,c:50},aprile:{b:1500,p:83,c:50},maggio:{b:1600,p:83,c:50},giugno:{b:3599.09,p:83,c:50},luglio:{b:3571.84,p:83,c:50},agosto:{b:3175,p:83,c:50},settembre:{b:2641.17,p:83,c:50},ottobre:{b:2130.24,p:83,c:50},novembre:{b:2261.39,p:83,c:50},dicembre:{b:1098.11,p:83,c:50}},2026:{gennaio:{b:1936.02,p:98.9,c:50},febbraio:{b:1506.92,p:15.9,c:50},marzo:{b:1700,p:60,c:50}}};
+  const md=getMonth(y,m);
+  if(md.saldi&&(md.saldi.b||md.saldi.p||md.saldi.c)) return md.saldi;
+  return (def[y]&&def[y][m])||{b:0,p:0,c:0};
+}
+function getFatture(y,m){return getMonth(y,m).fatture||[];}
+
+// HELPERS
+function fmt(n){if(n===null||n===undefined||isNaN(n))return '€ 0,00';return '€ '+Number(n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtS(n){return '€ '+Math.round(n||0).toLocaleString('it-IT');}
+function isEntrata(c){return ENTRATA_CANALI.includes(c);}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
+// PAGE NAV
+function showPage(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  btn.classList.add('active');
+  if(id==='dashboard')renderDashboard();else renderMastro();
+}
+
+// YEAR/MONTH
+function setYear(y,btn){
+  CY=y;
+  document.querySelectorAll('.sel-btn').forEach(b=>{if(['2024','2025','2026'].includes(b.textContent))b.classList.remove('active');});
+  btn.classList.add('active');
+  const avail=Object.keys(DATA[y]||{});
+  CM=avail.length?avail.sort((a,b)=>MONTHS.indexOf(a)-MONTHS.indexOf(b)).pop():(y===2026?'marzo':'dicembre');
+  renderMonthSel();renderActive();
+}
+function setMonth(m){CM=m;renderMonthSel();renderActive();}
+function renderMonthSel(){
+  const c=document.getElementById('monthSel');c.innerHTML='<span class="sel-label">Mese</span>';
+  MONTHS.forEach((m,i)=>{const b=document.createElement('button');b.className='sel-btn'+(m===CM?' active':'');b.textContent=MLABELS[i];b.onclick=()=>setMonth(m);c.appendChild(b);});
+}
+function renderActive(){const a=document.querySelector('.page.active');if(a&&a.id==='page-mastro')renderMastro();else renderDashboard();}
+
+// CALC
+function calcMonth(y,m){
+  const rows=getRows(y,m);
+  let e=0,u=0,vend=0,stamp=0,dist=0,eco=0,ev=0,eb=0,sp_stampa=0,sp_sped=0,sp_camp=0,sp_quote=0,sp_admin=0,sp_altro=0;
+  rows.forEach(r=>{
+    if(r.tipo==='entrata'){e+=r.importo;if(r.canale==='distributori')dist+=r.importo;if(r.canale==='ecommerce')eco+=r.importo;if(r.canale==='eventi')ev+=r.importo;if(r.canale==='ebook')eb+=r.importo;}
+    else{u+=r.importo;if(r.canale==='stampa')sp_stampa+=r.importo;if(r.canale==='spedizioni')sp_sped+=r.importo;if(r.canale==='campagne')sp_camp+=r.importo;if(r.canale==='quote')sp_quote+=r.importo;if(r.canale==='admin')sp_admin+=r.importo;if(r.canale==='altro')sp_altro+=r.importo;}
+    vend+=r.vendute||0;stamp+=r.stampate||0;
+  });
+  return {e,u,vend,stamp,dist,eco,ev,eb,utile:e-u,sp_stampa,sp_sped,sp_camp,sp_quote,sp_admin,sp_altro};
+}
+function calcYear(y){
+  let e=0,u=0,vend=0,stamp=0;
+  MONTHS.forEach(m=>{const t=calcMonth(y,m);e+=t.e;u+=t.u;vend+=t.vend;stamp+=t.stamp;});
+  return {e,u,utile:e-u,vend,stamp};
+}
+
+// SALDI ATTUALI (indipendenti dal mese, sempre aggiornabili)
+function getSaldiAttuali(){
+  try{const s=localStorage.getItem('peacock-saldi-attuali');return s?JSON.parse(s):{b:0,p:0,c:0,data:''};}
+  catch(e){return {b:0,p:0,c:0,data:''};}
+}
+function saveSaldiAttuali(sal){
+  try{localStorage.setItem('peacock-saldi-attuali',JSON.stringify(sal));}catch(e){}
+}
+function editSaldoAttuale(k){
+  const sal=getSaldiAttuali();
+  document.getElementById('iva_'+k).value=sal[k[0]]||0;
+  document.getElementById('iea_'+k).style.display='block';
+  document.getElementById('sa_'+k).style.display='none';
+}
+function saveSaldoAttuale(k){
+  const val=parseFloat(document.getElementById('iva_'+k).value)||0;
+  const sal=getSaldiAttuali();
+  sal[k[0]]=val;
+  sal.data=new Date().toLocaleDateString('it-IT');
+  saveSaldiAttuali(sal);
+  document.getElementById('iea_'+k).style.display='none';
+  document.getElementById('sa_'+k).style.display='block';
+  renderSaldiAttuali();
+  toast('Saldo aggiornato');
+}
+function cancelSaldoAttuale(k){
+  document.getElementById('iea_'+k).style.display='none';
+  document.getElementById('sa_'+k).style.display='block';
+}
+function renderSaldiAttuali(){
+  const sal=getSaldiAttuali();
+  document.getElementById('sa_banca').textContent=fmt(sal.b);
+  document.getElementById('sa_paypal').textContent=fmt(sal.p);
+  document.getElementById('sa_cassa').textContent=fmt(sal.c);
+  const tot=sal.b+sal.p+sal.c;
+  document.getElementById('sa_totale').textContent=fmt(tot);
+  document.getElementById('saldo_aggiornato').textContent=sal.data||'—';
+  // fatture attese
+  const fatture=getFatture(CY,CM);
+  const attesa=fatture.filter(f=>!f.incassata).reduce((s,f)=>s+f.importo,0);
+  document.getElementById('sa_attesa').textContent=attesa>0?`+ ${fmtS(attesa)} attese = ${fmtS(tot+attesa)}`:'';
+}
+
+// RIEPILOGO ANNO
+function calcYearFull(y){
+  let e=0,u=0,vend=0,stamp=0,dist=0,eco=0,ev=0,eb=0;
+  let sp_stampa=0,sp_sped=0,sp_camp=0,sp_quote=0,sp_admin=0,sp_altro=0;
+  MONTHS.forEach(m=>{
+    const t=calcMonth(y,m);
+    e+=t.e;u+=t.u;vend+=t.vend;stamp+=t.stamp;
+    dist+=t.dist;eco+=t.eco;ev+=t.ev;eb+=t.eb;
+    sp_stampa+=t.sp_stampa;sp_sped+=t.sp_sped;sp_camp+=t.sp_camp;
+    sp_quote+=t.sp_quote;sp_admin+=t.sp_admin;sp_altro+=t.sp_altro;
+  });
+  return {e,u,vend,stamp,dist,eco,ev,eb,utile:e-u,sp_stampa,sp_sped,sp_camp,sp_quote,sp_admin,sp_altro};
+}
+function renderAnnual(){
+  const a=calcYearFull(CY);
+  document.getElementById('riepilogo_anno_label').textContent=CY;
+  document.getElementById('ann_entrate').textContent=fmt(a.e);
+  document.getElementById('ann_uscite').textContent=fmt(a.u);
+  const auel=document.getElementById('ann_utile');
+  auel.textContent=fmt(a.utile);auel.className='card-val '+(a.utile>=0?'pos':'neg');
+  document.getElementById('ann_vend').textContent=a.vend;
+  document.getElementById('ann_stamp').textContent=a.stamp;
+  const spTot=a.sp_stampa+a.sp_sped+a.sp_camp+a.sp_quote+a.sp_admin+a.sp_altro;
+  document.getElementById('ann_sp_tot').textContent=fmt(spTot);
+  document.getElementById('ann_sp_stampa').textContent=fmt(a.sp_stampa);
+  document.getElementById('ann_sp_sped').textContent=fmt(a.sp_sped);
+  document.getElementById('ann_sp_camp').textContent=fmt(a.sp_camp);
+  document.getElementById('ann_sp_quote').textContent=fmt(a.sp_quote);
+  document.getElementById('ann_sp_admin').textContent=fmt(a.sp_admin);
+  document.getElementById('ann_sp_altro').textContent=fmt(a.sp_altro);
+  document.getElementById('ann_ri_tot').textContent=fmt(a.e);
+  document.getElementById('ann_ri_total2').textContent=fmt(a.e);
+  document.getElementById('ann_ri_dist').textContent=fmt(a.dist);
+  document.getElementById('ann_ri_eco').textContent=fmt(a.eco);
+  document.getElementById('ann_ri_ev').textContent=fmt(a.ev);
+  document.getElementById('ann_ri_eb').textContent=fmt(a.eb);
+}
+
+
+// SALDI MESE EDIT
+function editSaldo(k){
+  const sal=getSaldi(CY,CM);
+  document.getElementById('iv_'+k).value=sal[k[0]]||0;
+  document.getElementById('ie_'+k).style.display='block';
+  document.getElementById('d_'+k).style.display='none';
+}
+function saveSaldo(k){
+  const val=parseFloat(document.getElementById('iv_'+k).value)||0;
+  const md=getMonth(CY,CM);
+  if(!md.saldi)md.saldi={b:0,p:0,c:0};
+  md.saldi[k[0]]=val;
+  saveData();
+  document.getElementById('ie_'+k).style.display='none';
+  document.getElementById('d_'+k).style.display='block';
+  renderDashboard();toast('Saldo aggiornato');
+}
+function cancelSaldo(k){
+  document.getElementById('ie_'+k).style.display='none';
+  document.getElementById('d_'+k).style.display='block';
+}
+
+// FATTURE
+function addFattura(){
+  const desc=document.getElementById('fat_desc').value;
+  const imp=parseFloat(document.getElementById('fat_imp').value);
+  if(!desc||!imp||imp<=0){alert('Inserisci descrizione e importo');return;}
+  const md=getMonth(CY,CM);
+  if(!md.fatture)md.fatture=[];
+  md.fatture.push({id:Date.now(),desc,importo:imp,scadenza:document.getElementById('fat_scad').value||'',incassata:false});
+  saveData();
+  document.getElementById('fat_desc').value='';
+  document.getElementById('fat_imp').value='';
+  document.getElementById('fat_scad').value='';
+  renderFatture();toast('Fattura aggiunta');
+}
+function incassaFattura(id){
+  const fat=getFatture(CY,CM).find(f=>f.id===id);
+  if(fat){fat.incassata=true;saveData();renderFatture();toast('Fattura incassata ✓');}
+}
+function deleteFattura(id){
+  const md=getMonth(CY,CM);
+  md.fatture=(md.fatture||[]).filter(f=>f.id!==id);
+  saveData();renderFatture();
+}
+function renderFatture(){
+  const fatture=getFatture(CY,CM);
+  const list=document.getElementById('fattura-list');
+  const attesa=fatture.filter(f=>!f.incassata).reduce((s,f)=>s+f.importo,0);
+  const inc=fatture.filter(f=>f.incassata).reduce((s,f)=>s+f.importo,0);
+  document.getElementById('ft_tot').textContent=fmtS(attesa);
+  document.getElementById('ft_inc').textContent=fmtS(inc);
+  if(!fatture.length){list.innerHTML='<div style="font-size:0.68rem;color:var(--muted);padding:8px 0;">Nessuna fattura in attesa.</div>';return;}
+  list.innerHTML=fatture.map(f=>`
+    <div class="fattura-item${f.incassata?' incassata':''}">
+      <div>
+        <div class="fattura-desc">${f.desc}</div>
+        ${f.scadenza?`<div class="fattura-scad">Scadenza: ${f.scadenza}</div>`:''}
+      </div>
+      <div class="fattura-actions">
+        <span class="fattura-imp">${fmt(f.importo)}</span>
+        ${!f.incassata?`<button class="btn-incassa" onclick="incassaFattura(${f.id})">✓ Incassata</button>`:`<span style="font-size:0.6rem;color:var(--green);letter-spacing:0.1em;">INCASSATA</span>`}
+        <button class="btn-del-f" onclick="deleteFattura(${f.id})">✕</button>
+      </div>
+    </div>
+  `).join('');
+  // update totale liquidità attesa
+  const sal=getSaldi(CY,CM);
+  const liq=sal.b+sal.p+sal.c;
+  document.getElementById('d_totale_attesa').textContent=attesa>0?`+ ${fmtS(attesa)} attese = ${fmtS(liq+attesa)}`:'';
+}
+
+// DASHBOARD
+function renderDashboard(){
+  const t=calcMonth(CY,CM);
+  const yp=calcYear(CY);
+  const sal=getSaldi(CY,CM);
+  document.getElementById('d_banca').textContent=fmt(sal.b);
+  document.getElementById('d_paypal').textContent=fmt(sal.p);
+  document.getElementById('d_cassa').textContent=fmt(sal.c);
+  document.getElementById('d_totale').textContent=fmt(sal.b+sal.p+sal.c);
+  const uel=document.getElementById('d_utile');
+  uel.textContent=fmt(t.utile);uel.className='ub-val '+(t.utile>=0?'pos':'neg');
+  document.getElementById('d_prog').textContent=fmt(yp.utile);
+  document.getElementById('d_sp_stampa').textContent=fmt(t.sp_stampa);
+  document.getElementById('d_sp_sped').textContent=fmt(t.sp_sped);
+  document.getElementById('d_sp_camp').textContent=fmt(t.sp_camp);
+  document.getElementById('d_sp_quote').textContent=fmt(t.sp_quote);
+  document.getElementById('d_sp_admin').textContent=fmt(t.sp_admin);
+  document.getElementById('d_sp_altro').textContent=fmt(t.sp_altro);
+  const spTot=t.sp_stampa+t.sp_sped+t.sp_camp+t.sp_quote+t.sp_admin+t.sp_altro;
+  document.getElementById('d_sp_tot').textContent=fmt(spTot);
+  document.getElementById('d_ri_dist').textContent=fmt(t.dist);
+  document.getElementById('d_ri_eco').textContent=fmt(t.eco);
+  document.getElementById('d_ri_ev').textContent=fmt(t.ev);
+  document.getElementById('d_ri_eb').textContent=fmt(t.eb);
+  document.getElementById('d_ri_tot').textContent=fmt(t.e);
+  document.getElementById('d_ri_total2').textContent=fmt(t.e);
+  renderFatture();
+  renderSaldiAttuali();
+  renderAnnual();
+  renderChart();
+}
+
+let CHART_MODE='cum'; // 'cum' = progressivo, 'mes' = per mese
+function setChartMode(mode,btn){
+  CHART_MODE=mode;
+  document.querySelectorAll('#chart_mode_cum,#chart_mode_mes').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderChart();
+}
+
+function renderChart(){
+  // Dati storici fissi da Excel (dic 2024 → dic 2025)
+  // formato: [label, venduti_tot, stampati_tot, venduti_mese]
+  const STORICO=[
+    {label:'Dic 24', vTot:1162, sTot:2405, vMes:48},
+    {label:'Gen 25', vTot:1713, sTot:2805, vMes:552},
+    {label:'Feb 25', vTot:1725, sTot:2955, vMes:12},
+    {label:'Mar 25', vTot:1807, sTot:3105, vMes:82},
+    {label:'Apr 25', vTot:1920, sTot:3355, vMes:113},
+    {label:'Mag 25', vTot:2061, sTot:3605, vMes:141},
+    {label:'Giu 25', vTot:2167, sTot:3605, vMes:106},
+    {label:'Lug 25', vTot:2289, sTot:4275, vMes:122},
+    {label:'Ago 25', vTot:2283, sTot:4275, vMes:0},
+    {label:'Set 25', vTot:2468, sTot:4415, vMes:185},
+    {label:'Ott 25', vTot:2549, sTot:4735, vMes:81},
+    {label:'Nov 25', vTot:2646, sTot:4875, vMes:97},
+    {label:'Dic 25', vTot:2762, sTot:4955, vMes:116},
+  ];
+
+  // Aggiungi tutti i mesi 2026 (gen→dic) — con dati se inseriti, altrimenti progressivo invariato
+  const mesi2026=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+  const lab2026=['Gen 26','Feb 26','Mar 26','Apr 26','Mag 26','Giu 26','Lug 26','Ago 26','Set 26','Ott 26','Nov 26','Dic 26'];
+  let lastV=2762, lastS=4955;
+  const oggi=new Date();
+  const meseCorrente=oggi.getFullYear()===2026?oggi.getMonth():11; // 0-indexed, 0=gen
+  mesi2026.forEach((m,i)=>{
+    const t=calcMonth(2026,m);
+    lastV+=t.vend; lastS+=t.stamp;
+    const futuro=(i>meseCorrente)&&t.vend===0&&t.stamp===0;
+    // Mostra sempre tutti e 12 i mesi
+    STORICO.push({label:lab2026[i],vTot:lastV,sTot:lastS,vMes:t.vend,futuro});
+  });
+
+  const labels=STORICO.map(r=>r.label);
+  const venduti_tot=STORICO.map(r=>r.vTot);
+  const stampati_tot=STORICO.map(r=>r.sTot);
+  const differenza=STORICO.map(r=>r.sTot-r.vTot);
+  const venduti_mes=STORICO.map(r=>r.vMes);
+
+  // Tabella resa
+  const tb=document.getElementById('resa-tbody');
+  tb.innerHTML=STORICO.map(r=>{
+    const pct=r.sTot>0?Math.round(r.vTot/r.sTot*100):0;
+    const cls=r.futuro?'mid':pct>=70?'good':pct>=40?'mid':'bad';
+    const bar=Math.round(pct/2);
+    const style=r.futuro?'opacity:0.45;font-style:italic;':'';
+    return `<tr style="${style}">
+      <td style="font-weight:500;">${r.label}${r.futuro?' <span style="font-size:0.55rem;color:var(--muted);">da inserire</span>':''}</td>
+      <td style="color:var(--gold);">${r.vMes||(r.futuro?'—':'0')}</td>
+      <td>${r.vTot}</td>
+      <td>${r.sTot}</td>
+      <td style="color:var(--red);">${r.sTot-r.vTot}</td>
+      <td><span class="resa-pct ${cls}">${pct}%</span>${!r.futuro?`<span class="resa-bar" style="width:${bar}px;background:${pct>=70?'var(--green)':pct>=40?'var(--gold)':'var(--red)'}"></span>`:''}</td>
+    </tr>`;
+  }).join('');
+  const lastR=STORICO[STORICO.length-1];
+  if(lastR){
+    const pct=lastR.sTot>0?Math.round(lastR.vTot/lastR.sTot*100):0;
+    const cls=pct>=70?'good':pct>=40?'mid':'bad';
+    document.getElementById('resa-tfoot').innerHTML=`<tr style="background:var(--ink)!important;">
+      <td style="color:var(--gold-light)!important;font-family:'Cormorant Garamond',serif;">Ultimo dato</td>
+      <td style="color:var(--gold-light)!important;">${lastR.vMes}</td>
+      <td style="color:var(--paper)!important;">${lastR.vTot}</td>
+      <td style="color:var(--paper)!important;">${lastR.sTot}</td>
+      <td style="color:#e07070!important;">${lastR.sTot-lastR.vTot}</td>
+      <td><span class="resa-pct ${cls}">${pct}%</span></td>
+    </tr>`;
+  }
+
+  if(CHART)CHART.destroy();
+  const ctx=document.getElementById('mainChart').getContext('2d');
+
+  const isMes=CHART_MODE==='mes';
+
+  // Separa dati reali da futuri per linea tratteggiata
+  const idxFuturo=STORICO.findIndex(r=>r.futuro);
+  const splitIdx=idxFuturo>=0?idxFuturo:STORICO.length;
+
+  // Per i mesi futuri nel progressivo manteniamo il valore dell'ultimo reale (linea piatta tratteggiata)
+  const vTotReal=STORICO.map((r,i)=>i<splitIdx?r.vTot:null);
+  const sTotReal=STORICO.map((r,i)=>i<splitIdx?r.sTot:null);
+  const vTotFut=STORICO.map((r,i)=>i>=splitIdx-1?r.vTot:null); // overlap di 1 punto per continuità
+  const sTotFut=STORICO.map((r,i)=>i>=splitIdx-1?r.sTot:null);
+  const diffReal=STORICO.map((r,i)=>i<splitIdx?r.sTot-r.vTot:null);
+  const vMes=STORICO.map(r=>r.vMes||0);
+
+  const datasets=[];
+  if(isMes){
+    datasets.push({
+      label:'Venduti per mese',
+      data:vMes,
+      borderColor:'rgba(196,146,42,1)',
+      backgroundColor:'rgba(196,146,42,0.1)',
+      borderWidth:2.5,pointRadius:5,
+      pointBackgroundColor:STORICO.map(r=>r.futuro?'rgba(180,180,180,0.5)':'rgba(196,146,42,1)'),
+      pointBorderColor:'white',pointBorderWidth:2,fill:false,tension:0.3
+    });
+  } else {
+    // Stampati reali
+    datasets.push({
+      label:'Stampati (progressivo)',
+      data:sTotReal,
+      borderColor:'rgba(26,58,107,0.9)',backgroundColor:'rgba(26,58,107,0.06)',
+      borderWidth:2.5,pointRadius:5,
+      pointBackgroundColor:'rgba(26,58,107,0.9)',pointBorderColor:'white',pointBorderWidth:2,
+      fill:true,tension:0.3,spanGaps:false
+    });
+    // Stampati futuri tratteggiati
+    if(idxFuturo>=0) datasets.push({
+      label:'Stampati (previsione)',
+      data:sTotFut,
+      borderColor:'rgba(26,58,107,0.35)',backgroundColor:'transparent',
+      borderWidth:2,borderDash:[5,4],
+      pointRadius:3,pointBackgroundColor:'rgba(26,58,107,0.35)',
+      pointBorderColor:'white',pointBorderWidth:1,
+      fill:false,tension:0.3,spanGaps:false
+    });
+    // Venduti reali
+    datasets.push({
+      label:'Venduti (progressivo)',
+      data:vTotReal,
+      borderColor:'rgba(196,146,42,1)',backgroundColor:'rgba(196,146,42,0.08)',
+      borderWidth:2.5,pointRadius:5,
+      pointBackgroundColor:'rgba(196,146,42,1)',pointBorderColor:'white',pointBorderWidth:2,
+      fill:true,tension:0.3,spanGaps:false
+    });
+    // Venduti futuri tratteggiati
+    if(idxFuturo>=0) datasets.push({
+      label:'Venduti (da inserire)',
+      data:vTotFut,
+      borderColor:'rgba(196,146,42,0.35)',backgroundColor:'transparent',
+      borderWidth:2,borderDash:[5,4],
+      pointRadius:3,pointBackgroundColor:'rgba(196,146,42,0.35)',
+      pointBorderColor:'white',pointBorderWidth:1,
+      fill:false,tension:0.3,spanGaps:false
+    });
+    // Differenza reale
+    datasets.push({
+      label:'Differenza (magazzino)',
+      data:diffReal,
+      borderColor:'rgba(139,38,53,0.85)',backgroundColor:'rgba(139,38,53,0.04)',
+      borderWidth:2,borderDash:[6,3],
+      pointRadius:4,pointBackgroundColor:'rgba(139,38,53,0.85)',
+      pointBorderColor:'white',pointBorderWidth:2,
+      fill:false,tension:0.3,yAxisID:'y1',spanGaps:false
+    });
+  }
+
+  CHART=new Chart(ctx,{
+    type:'line',
+    data:{labels,datasets},
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{labels:{font:{family:'DM Mono',size:10},color:'#5a6e8a',usePointStyle:true,pointStyleWidth:10}},
+        tooltip:{
+          backgroundColor:'rgba(10,22,40,0.92)',
+          titleFont:{family:'Cormorant Garamond',size:13},
+          bodyFont:{family:'DM Mono',size:10},
+          padding:10,
+          callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y} copie`}
+        }
+      },
+      scales:{
+        x:{grid:{color:'rgba(194,208,224,0.4)'},ticks:{font:{family:'DM Mono',size:10},color:'#5a6e8a',maxRotation:45}},
+        y:{grid:{color:'rgba(194,208,224,0.4)'},ticks:{font:{family:'DM Mono',size:10},color:'#5a6e8a'},title:{display:true,text:'Copie',font:{family:'DM Mono',size:9},color:'#5a6e8a'}},
+        ...(isMes?{}:{y1:{position:'right',grid:{drawOnChartArea:false},ticks:{font:{family:'DM Mono',size:10},color:'rgba(139,38,53,0.7)'},title:{display:true,text:'Differenza',font:{family:'DM Mono',size:9},color:'rgba(139,38,53,0.7)'}}})
+      }
+    }
+  });
+}
+
+// MASTRO
+function setTipo(t){
+  CT=t;
+  document.getElementById('tb_e').className='tipo-btn'+(t==='entrata'?' ae':'');
+  document.getElementById('tb_u').className='tipo-btn'+(t==='uscita'?' au':'');
+  const sel=document.getElementById('f_canale');
+  if(t==='entrata'&&!isEntrata(sel.value))sel.value='distributori';
+  if(t==='uscita'&&isEntrata(sel.value))sel.value='stampa';
+}
+
+function fillForm(r){
+  document.getElementById('f_data').value=r.data;
+  document.getElementById('f_imp').value=r.importo;
+  document.getElementById('f_canale').value=r.canale;
+  document.getElementById('f_note').value=r.note||'';
+  document.getElementById('f_vend').value=r.vendute||'';
+  document.getElementById('f_stamp').value=r.stampate||'';
+  document.getElementById('f_dir').value=r.dirette||'';
+  document.getElementById('f_eb').value=r.ebook_n||'';
+  document.getElementById('f_aut').value=r.autori||'';
+  document.getElementById('f_editing_id').value=r.id;
+  setTipo(r.tipo==='entrata'?'entrata':'uscita');
+  document.getElementById('editBanner').classList.add('show');
+  document.getElementById('formLabel').textContent='Modifica movimento';
+  document.getElementById('btnAdd').textContent='✓';
+  document.getElementById('formSection').classList.add('editing');
+  document.getElementById('formSection').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function cancelEdit(){
+  clearForm();
+  document.getElementById('f_editing_id').value='';
+  document.getElementById('editBanner').classList.remove('show');
+  document.getElementById('formLabel').textContent='Inserisci movimento';
+  document.getElementById('btnAdd').textContent='+';
+  document.getElementById('formSection').classList.remove('editing');
+}
+
+function addRow(){
+  const imp=parseFloat(document.getElementById('f_imp').value);
+  if(!imp||imp<=0){alert('Inserisci un importo valido');return;}
+  const canale=document.getElementById('f_canale').value;
+  const tipo=isEntrata(canale)?'entrata':'uscita';
+  const editingId=document.getElementById('f_editing_id').value;
+  const row={
+    id:editingId?parseInt(editingId):Date.now(),
+    data:document.getElementById('f_data').value||new Date().toISOString().split('T')[0],
+    tipo,importo:imp,canale,
+    note:document.getElementById('f_note').value||'',
+    vendute:parseInt(document.getElementById('f_vend').value)||0,
+    stampate:parseInt(document.getElementById('f_stamp').value)||0,
+    dirette:parseInt(document.getElementById('f_dir').value)||0,
+    ebook_n:parseInt(document.getElementById('f_eb').value)||0,
+    autori:document.getElementById('f_aut').value||''
+  };
+  const rows=getRows(CY,CM);
+  if(editingId){
+    const idx=rows.findIndex(r=>r.id===parseInt(editingId));
+    if(idx>=0)rows.splice(idx,1,row);
+    cancelEdit();toast('Movimento aggiornato');
+  } else {
+    rows.push(row);
+    rows.sort((a,b)=>a.data.localeCompare(b.data));
+    clearForm();toast('Movimento salvato');
+  }
+  saveData();renderMastro();
+}
+
+function clearForm(){
+  ['f_imp','f_note','f_vend','f_stamp','f_dir','f_eb','f_aut'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f_data').value=new Date().toISOString().split('T')[0];
+}
+
+function deleteRow(id){
+  if(!confirm('Eliminare questo movimento?'))return;
+  const rows=getRows(CY,CM);
+  const i=rows.findIndex(r=>r.id===id);
+  if(i>=0)rows.splice(i,1);
+  saveData();renderMastro();toast('Eliminato');
+}
+
+function saveNotes(){
+  getMonth(CY,CM).notes=document.getElementById('m_note').value;
+  saveData();
+}
+
+function renderMastro(){
+  const t=calcMonth(CY,CM);
+  const yp=calcYear(CY);
+  const riportato=UTILI_RIPORTATI[CY]||0;
+  document.getElementById('m_entrate').textContent=fmt(t.e);
+  document.getElementById('m_uscite').textContent=fmt(t.u);
+  document.getElementById('m_vendute').textContent=t.vend;
+  document.getElementById('m_stampate').textContent=t.stamp;
+  const mu=document.getElementById('m_utile');mu.textContent=fmt(t.utile);mu.className='card-val '+(t.utile>=0?'pos':'neg');
+  document.getElementById('m_prog').textContent=fmt(yp.utile);
+  document.getElementById('m_c_dist').textContent=fmtS(t.dist);
+  document.getElementById('m_c_eco').textContent=fmtS(t.eco);
+  document.getElementById('m_c_ev').textContent=fmtS(t.ev);
+  document.getElementById('m_c_eb').textContent=fmtS(t.eb);
+  document.getElementById('pg_riportato').textContent=fmt(riportato);
+  document.getElementById('pg_anno').textContent=fmt(yp.utile);
+  const tot=yp.utile+riportato;
+  const pgT=document.getElementById('pg_tot');pgT.textContent=fmt(tot);pgT.className='pi-val '+(tot>=0?'gold':'neg');
+  document.getElementById('pg_vend').textContent=yp.vend;
+  document.getElementById('pg_stamp').textContent=yp.stamp;
+  document.getElementById('m_note').value=getNotes(CY,CM);
+  const rows=getRows(CY,CM);
+  document.getElementById('m_count').textContent=rows.length+(rows.length===1?' movimento':' movimenti');
+  const tbody=document.getElementById('m_tbody');
+  const tfoot=document.getElementById('m_tfoot');
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="11" class="empty-msg">Nessun movimento. Inserisci il primo con il modulo sopra.</td></tr>';tfoot.innerHTML='';return;}
+  tbody.innerHTML=rows.map(r=>`
+    <tr class="tr-${r.tipo==='entrata'?'e':'u'}">
+      <td>${r.data}</td>
+      <td><span style="font-size:0.58rem;text-transform:uppercase;color:${r.tipo==='entrata'?'var(--green)':'var(--red)'}">
+        ${r.tipo==='entrata'?'↑':'↓'} ${r.tipo}</span></td>
+      <td class="${r.tipo==='entrata'?'vpos':'vneg'}">${fmt(r.importo)}</td>
+      <td><span class="tag t-${r.canale}">${CANALE_LABELS[r.canale]||r.canale}</span></td>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${r.note}">${r.note||'—'}</td>
+      <td>${r.vendute||'—'}</td><td>${r.stampate||'—'}</td>
+      <td>${r.dirette||'—'}</td><td>${r.ebook_n||'—'}</td>
+      <td style="font-size:0.62rem;color:var(--muted);">${r.autori||'—'}</td>
+      <td style="white-space:nowrap;">
+        <button class="btn-edit-row" onclick="fillForm(${JSON.stringify(r).replace(/"/g,'&quot;')})" title="Modifica">✎</button>
+        <button class="btn-del" onclick="deleteRow(${r.id})" title="Elimina">✕</button>
+      </td>
+    </tr>
+  `).join('');
+  tfoot.innerHTML=`<tr>
+    <td>Totali mese</td><td></td>
+    <td style="color:var(--gold-light)!important;">${fmt(t.utile)}</td><td></td>
+    <td style="font-size:0.6rem;color:#aaa!important;">E: ${fmt(t.e)} &nbsp;U: ${fmt(t.u)}</td>
+    <td style="color:var(--gold-light)!important;">${t.vend||0}</td>
+    <td style="color:var(--gold-light)!important;">${t.stamp||0}</td>
+    <td></td><td></td><td></td><td></td>
+  </tr>`;
+}
+
+// EXPORT/IMPORT
+function exportData(){
+  const blob=new Blob([JSON.stringify(DATA,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  const d=new Date();a.download=`peacock_backup_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.json`;
+  a.click();toast('Backup esportato');
+}
+function triggerImport(){document.getElementById('importFile').click();}
+function importData(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{DATA=JSON.parse(ev.target.result);saveData();renderMonthSel();renderActive();toast('Backup importato ✓');}
+    catch(err){alert('File non valido.');}
+  };
+  reader.readAsText(file);e.target.value='';
+}
+
+// INIT
+async function init(){
+  document.getElementById('hdr-date').textContent=new Date().toLocaleDateString('it-IT',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('f_data').value=new Date().toISOString().split('T')[0];
+  document.getElementById('fat_scad').value=new Date().toISOString().split('T')[0];
+  await loadData();
+  renderMonthSel();
+  renderDashboard();
+}
+init();
+</script>
+</body>
+</html>
