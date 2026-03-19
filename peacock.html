@@ -576,7 +576,7 @@ let DIRTY=false;
 async function loadData(){
   setStatus('loading');
   try{
-    const r=await fetch(JSONBIN_URL+'/latest',{headers:{'X-Access-Key':JSONBIN_KEY}});
+    const r=await fetch(JSONBIN_URL+'/latest',{headers:{'X-Master-Key':JSONBIN_KEY}});
     const j=await r.json();
     const d=j.record;
     if(d&&Object.keys(d).length>1){
@@ -595,7 +595,7 @@ async function pushData(){
   try{
     await fetch(JSONBIN_URL,{
       method:'PUT',
-      headers:{'Content-Type':'application/json','X-Access-Key':JSONBIN_KEY},
+      headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_KEY},
       body:JSON.stringify(DATA)
     });
     DIRTY=false;setStatus('saved');
