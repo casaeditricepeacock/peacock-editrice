@@ -226,6 +226,28 @@ tfoot td:first-child{font-family:'Cormorant Garamond',serif;font-size:0.78rem;le
 </head>
 <body>
 
+<div id="login-screen" style="display:flex;position:fixed;inset:0;background:#0a1628;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
+  <div style="font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:300;color:#e2eaf3;letter-spacing:0.2em;text-transform:uppercase;">Casa Editrice Peacock</div>
+  <div style="font-size:0.6rem;letter-spacing:0.3em;color:#c4922a;text-transform:uppercase;margin-bottom:8px;">Gestione Editoriale</div>
+  <input type="password" id="pwd-input" placeholder="Password" onkeydown="if(event.key==='Enter')checkPwd()"
+    style="padding:10px 18px;background:rgba(255,255,255,0.07);border:1px solid rgba(196,146,42,0.4);color:#e2eaf3;font-family:'DM Mono',monospace;font-size:0.9rem;width:220px;text-align:center;outline:none;">
+  <button onclick="checkPwd()"
+    style="padding:8px 28px;background:#c4922a;color:#0a1628;border:none;cursor:pointer;font-family:'DM Mono',monospace;font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;">Accedi</button>
+  <div id="pwd-error" style="color:#e07070;font-size:0.62rem;letter-spacing:0.1em;display:none;">Password errata</div>
+</div>
+<script>
+function checkPwd(){
+  if(document.getElementById('pwd-input').value==='Timea17'){
+    document.getElementById('login-screen').style.display='none';
+  } else {
+    document.getElementById('pwd-error').style.display='block';
+    document.getElementById('pwd-input').value='';
+    document.getElementById('pwd-input').focus();
+  }
+}
+window.addEventListener('load',()=>document.getElementById('pwd-input').focus());
+</script>
+
 <div class="header">
   <div>
     <h1>Casa Editrice Peacock</h1>
@@ -245,14 +267,11 @@ tfoot td:first-child{font-family:'Cormorant Garamond',serif;font-size:0.78rem;le
   <div class="nav-right">
     <span id="save-indicator" style="font-size:0.58rem;letter-spacing:0.1em;color:rgba(125,220,150,0.9);margin-right:8px;">● Salvato</span>
     <button class="btn-io" onclick="caricaDaDisco()" title="Carica dati da file JSON">⬆ Carica dati</button>
-    <button class="btn-io export" onclick="salvaSuDisco()" title="Scarica backup JSON">⬇ Backup JSON</button>
-    <button class="btn-io" onclick="exportData()">⬇ Export</button>
+    <button class="btn-io export" onclick="salvaSuDisco()" title="Salva tutti i dati su file JSON">💾 Salva su disco</button>
+    <button class="btn-io" onclick="exportData()">⬇ Backup</button>
     <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
-    <input type="file" id="loadFile" accept=".html,.json" style="display:none" onchange="handleLoadFile(event)">
+    <input type="file" id="loadFile" accept=".json" style="display:none" onchange="handleLoadFile(event)">
   </div>
-</div>
-<div id="save-banner" style="display:none;background:#8b2635;color:white;text-align:center;padding:7px 32px;font-size:0.62rem;letter-spacing:0.1em;">
-  ⚠ Errore di connessione — i dati potrebbero non essere salvati sul cloud!
 </div>
 
 <div class="selectors">
@@ -563,87 +582,77 @@ const MLABELS=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov'
 const CANALE_LABELS={distributori:'Distributori',ecommerce:'Ecommerce',eventi:'Eventi/Diretti',ebook:'Ebook',stampa:'Stampa',spedizioni:'Spedizioni',campagne:'Campagne Pub.',quote:'Quote Assoc.',admin:'Compenso Amm.',altro:'Altro'};
 const ENTRATA_CANALI=['distributori','ecommerce','eventi','ebook'];
 const UTILI_RIPORTATI={2024:-1388,2025:4638.83,2026:3105.51};
-// ═══════════════════════════════════════════════════════════════════════════
-// STORAGE — JSONBin.io (salvataggio cloud automatico)
-// ═══════════════════════════════════════════════════════════════════════════
-const JSONBIN_KEY='$2a$10$fjUl8IVz2yeZDM9YIaHrk.5c2W8C7Lb1weJR8ye/zj.LHB3z4kHkm';
-const JSONBIN_BIN='69bbb718c3097a1dd53bca37';
-const JSONBIN_URL='https://api.jsonbin.io/v3/b/'+JSONBIN_BIN;
-
+const SK='peacock-v4';
 let CY=2026,CM='marzo',CT='entrata',CHART=null,DATA={};
-let DIRTY=false;
+let DIRTY=false; // dati modificati ma non ancora salvati su disco
 
-async function loadData(){
-  setStatus('loading');
+// LOAD da localStorage
+function loadData(){
   try{
-    const r=await fetch(JSONBIN_URL+'/latest',{headers:{'X-Master-Key':JSONBIN_KEY}});
-    const j=await r.json();
-    const d=j.record;
-    if(d&&Object.keys(d).length>1){
-      DATA=d;
-    } else {
-      DATA=JSON.parse(JSON.stringify(SEED));
-      await pushData();
-    }
-  }catch(e){
-    DATA=JSON.parse(JSON.stringify(SEED));
-    toast('⚠ Offline — dati locali caricati');
-  }
-  setStatus('saved');
+    const s=localStorage.getItem(SK);
+    if(s){DATA=JSON.parse(s);}
+    else{DATA=JSON.parse(JSON.stringify(SEED));saveData();}
+  }catch(e){DATA=JSON.parse(JSON.stringify(SEED));}
 }
-async function pushData(){
-  try{
-    await fetch(JSONBIN_URL,{
-      method:'PUT',
-      headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_KEY},
-      body:JSON.stringify(DATA)
-    });
-    DIRTY=false;setStatus('saved');
-  }catch(e){
-    setStatus('error');
-    toast('⚠ Errore salvataggio — controlla la connessione');
-  }
-}
+
+// SAVE su localStorage (automatico ad ogni modifica)
 function saveData(){
-  DIRTY=true;setStatus('dirty');
-  clearTimeout(window._saveTimer);
-  window._saveTimer=setTimeout(()=>pushData(),1500);
+  try{localStorage.setItem(SK,JSON.stringify(DATA));}catch(e){}
+  DIRTY=true;
+  updateSaveIndicator();
 }
-function setStatus(s){
-  const ind=document.getElementById('save-indicator');
-  const banner=document.getElementById('save-banner');
-  if(!ind)return;
-  if(s==='loading'){ind.textContent='● Caricamento...';ind.style.color='rgba(200,200,100,0.9)';}
-  else if(s==='dirty'){ind.textContent='● Salvataggio...';ind.style.color='rgba(232,120,80,0.9)';}
-  else if(s==='saved'){ind.textContent='● Salvato ☁';ind.style.color='rgba(125,220,150,0.9)';}
-  else if(s==='error'){ind.textContent='● Errore!';ind.style.color='rgba(232,80,80,0.9)';}
-  if(banner)banner.style.display=(s==='error')?'block':'none';
-}
-function updateSaveIndicator(){setStatus(DIRTY?'dirty':'saved');}
 
-// BACKUP locale
+// SALVA SU DISCO (scarica JSON)
 function salvaSuDisco(){
   const blob=new Blob([JSON.stringify(DATA,null,2)],{type:'application/json'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
-  a.download='peacock_backup_'+new Date().toISOString().split('T')[0]+'.json';
+  a.download='peacock_dati.json';
   a.click();
-  toast('✓ Backup scaricato');
+  DIRTY=false;
+  updateSaveIndicator();
+  toast('✓ Salvato su disco — peacock_dati.json');
 }
-function caricaDaDisco(){document.getElementById('loadFile').click();}
+
+// CARICA DA DISCO (importa JSON dati)
+function caricaDaDisco(){
+  document.getElementById('loadFile').click();
+}
 function handleLoadFile(e){
   const file=e.target.files[0];
   if(!file)return;
   const reader=new FileReader();
   reader.onload=ev=>{
     try{
-      DATA=JSON.parse(ev.target.result.trim());
-      pushData();renderMonthSel();renderActive();toast('✓ Dati caricati e salvati sul cloud');
+      DATA=JSON.parse(ev.target.result);
+      saveData();
+      DIRTY=false;
+      updateSaveIndicator();
+      renderMonthSel();
+      renderActive();
+      toast('✓ Dati caricati da disco');
     }catch(err){alert('File non valido.');}
   };
-  reader.readAsText(file);e.target.value='';
+  reader.readAsText(file);
+  e.target.value='';
 }
-window.addEventListener('beforeunload',e=>{if(DIRTY){e.preventDefault();e.returnValue='';}});
+
+function updateSaveIndicator(){
+  const ind=document.getElementById('save-indicator');
+  if(!ind)return;
+  if(DIRTY){
+    ind.textContent='● Dati non salvati su disco';
+    ind.style.color='rgba(232,120,80,0.9)';
+  } else {
+    ind.textContent='● Salvato';
+    ind.style.color='rgba(125,220,150,0.9)';
+  }
+}
+
+// Avvisa se si chiude con dati non salvati
+window.addEventListener('beforeunload',e=>{
+  if(DIRTY){e.preventDefault();e.returnValue='';}
+});
 
 // DATA ACCESS
 function getRows(y,m){if(!DATA[y])DATA[y]={};if(!DATA[y][m])DATA[y][m]={rows:[],notes:'',saldi:{b:0,p:0,c:0},fatture:[]};return DATA[y][m].rows;}
@@ -903,19 +912,19 @@ function renderChart(){
   // Dati storici fissi da Excel (dic 2024 → dic 2025)
   // formato: [label, venduti_tot, stampati_tot, venduti_mese]
   const STORICO=[
-    {label:'Dic 24', vTot:1162, sTot:2405, vMes:48},
-    {label:'Gen 25', vTot:1713, sTot:2805, vMes:552},
-    {label:'Feb 25', vTot:1725, sTot:2955, vMes:12},
-    {label:'Mar 25', vTot:1807, sTot:3105, vMes:82},
-    {label:'Apr 25', vTot:1920, sTot:3355, vMes:113},
-    {label:'Mag 25', vTot:2061, sTot:3605, vMes:141},
-    {label:'Giu 25', vTot:2167, sTot:3605, vMes:106},
-    {label:'Lug 25', vTot:2289, sTot:4275, vMes:122},
-    {label:'Ago 25', vTot:2283, sTot:4275, vMes:0},
-    {label:'Set 25', vTot:2468, sTot:4415, vMes:185},
-    {label:'Ott 25', vTot:2549, sTot:4735, vMes:81},
-    {label:'Nov 25', vTot:2646, sTot:4875, vMes:97},
-    {label:'Dic 25', vTot:2762, sTot:4955, vMes:116},
+    {label:'Dic 24', vTot:1162, sTot:2405, vMes:48,  sMes:0},
+    {label:'Gen 25', vTot:1713, sTot:2805, vMes:552, sMes:0},
+    {label:'Feb 25', vTot:1725, sTot:2955, vMes:12,  sMes:0},
+    {label:'Mar 25', vTot:1807, sTot:3105, vMes:82,  sMes:0},
+    {label:'Apr 25', vTot:1920, sTot:3355, vMes:113, sMes:0},
+    {label:'Mag 25', vTot:2061, sTot:3605, vMes:141, sMes:0},
+    {label:'Giu 25', vTot:2167, sTot:3605, vMes:106, sMes:0},
+    {label:'Lug 25', vTot:2289, sTot:4275, vMes:122, sMes:0},
+    {label:'Ago 25', vTot:2283, sTot:4275, vMes:0,   sMes:0},
+    {label:'Set 25', vTot:2468, sTot:4415, vMes:185, sMes:0},
+    {label:'Ott 25', vTot:2549, sTot:4735, vMes:81,  sMes:0},
+    {label:'Nov 25', vTot:2646, sTot:4875, vMes:97,  sMes:0},
+    {label:'Dic 25', vTot:2762, sTot:4955, vMes:116, sMes:0},
   ];
 
   // Aggiungi tutti i mesi 2026 (gen→dic) — con dati se inseriti, altrimenti progressivo invariato
@@ -929,7 +938,7 @@ function renderChart(){
     lastV+=t.vend; lastS+=t.stamp;
     const futuro=(i>meseCorrente)&&t.vend===0&&t.stamp===0;
     // Mostra sempre tutti e 12 i mesi
-    STORICO.push({label:lab2026[i],vTot:lastV,sTot:lastS,vMes:t.vend,futuro});
+    STORICO.push({label:lab2026[i],vTot:lastV,sTot:lastS,vMes:t.vend,sMes:t.stamp,futuro});
   });
 
   const labels=STORICO.map(r=>r.label);
@@ -984,6 +993,7 @@ function renderChart(){
   const sTotFut=STORICO.map((r,i)=>i>=splitIdx-1?r.sTot:null);
   const diffReal=STORICO.map((r,i)=>i<splitIdx?r.sTot-r.vTot:null);
   const vMes=STORICO.map(r=>r.vMes||0);
+  const sMes=STORICO.map(r=>r.sMes||0);
 
   const datasets=[];
   if(isMes){
@@ -994,6 +1004,15 @@ function renderChart(){
       backgroundColor:'rgba(196,146,42,0.1)',
       borderWidth:2.5,pointRadius:5,
       pointBackgroundColor:STORICO.map(r=>r.futuro?'rgba(180,180,180,0.5)':'rgba(196,146,42,1)'),
+      pointBorderColor:'white',pointBorderWidth:2,fill:false,tension:0.3
+    });
+    datasets.push({
+      label:'Stampati per mese',
+      data:sMes,
+      borderColor:'rgba(26,58,107,0.9)',
+      backgroundColor:'rgba(26,58,107,0.08)',
+      borderWidth:2.5,pointRadius:5,
+      pointBackgroundColor:STORICO.map(r=>r.futuro?'rgba(180,180,180,0.5)':'rgba(26,58,107,0.9)'),
       pointBorderColor:'white',pointBorderWidth:2,fill:false,tension:0.3
     });
   } else {
@@ -1231,13 +1250,14 @@ function importData(e){
 }
 
 // INIT
-async function init(){
+function init(){
   document.getElementById('hdr-date').textContent=new Date().toLocaleDateString('it-IT',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   document.getElementById('f_data').value=new Date().toISOString().split('T')[0];
   document.getElementById('fat_scad').value=new Date().toISOString().split('T')[0];
-  await loadData();
+  loadData();
   renderMonthSel();
   renderDashboard();
+  updateSaveIndicator();
 }
 init();
 </script>
