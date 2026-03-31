@@ -267,7 +267,7 @@ window.addEventListener('load',()=>document.getElementById('pwd-input').focus())
   <div class="nav-right">
     <span id="save-indicator" style="font-size:0.58rem;letter-spacing:0.1em;color:rgba(125,220,150,0.9);margin-right:8px;">● Salvato</span>
     <button class="btn-io" onclick="caricaDaDisco()" title="Carica dati da file JSON">⬆ Carica dati</button>
-    <button class="btn-io export" onclick="salvaSuDisco()" title="Salva tutti i dati su file JSON">💾 Salva su disco</button>
+    <button class="btn-io export" onclick="salvaSuDisco()" title="Scarica backup JSON">⬇ Backup JSON</button>
     <button class="btn-io" onclick="exportData()">⬇ Backup</button>
     <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
     <input type="file" id="loadFile" accept=".json" style="display:none" onchange="handleLoadFile(event)">
@@ -582,42 +582,77 @@ const MLABELS=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov'
 const CANALE_LABELS={distributori:'Distributori',ecommerce:'Ecommerce',eventi:'Eventi/Diretti',ebook:'Ebook',stampa:'Stampa',spedizioni:'Spedizioni',campagne:'Campagne Pub.',quote:'Quote Assoc.',admin:'Compenso Amm.',altro:'Altro'};
 const ENTRATA_CANALI=['distributori','ecommerce','eventi','ebook'];
 const UTILI_RIPORTATI={2024:-1388,2025:4638.83,2026:3105.51};
-const SK='peacock-v4';
+// ═══════════════════════════════════════════════════════════════════════════
+// STORAGE — JSONBin.io cloud
+// ═══════════════════════════════════════════════════════════════════════════
+const JSONBIN_KEY='$2a$10$fjUl8IVz2yeZDM9YIaHrk.5c2W8C7Lb1weJR8ye/zj.LHB3z4kHkm';
+const JSONBIN_BIN='69bbb718c3097a1dd53bca37';
+const JSONBIN_URL='https://api.jsonbin.io/v3/b/'+JSONBIN_BIN;
+
 let CY=2026,CM='marzo',CT='entrata',CHART=null,DATA={};
-let DIRTY=false; // dati modificati ma non ancora salvati su disco
+let DIRTY=false;
 
-// LOAD da localStorage
-function loadData(){
+async function loadData(){
+  setStatus('loading');
   try{
-    const s=localStorage.getItem(SK);
-    if(s){DATA=JSON.parse(s);}
-    else{DATA=JSON.parse(JSON.stringify(SEED));saveData();}
-  }catch(e){DATA=JSON.parse(JSON.stringify(SEED));}
+    const r=await fetch(JSONBIN_URL+'/latest',{headers:{'X-Master-Key':JSONBIN_KEY}});
+    const j=await r.json();
+    const d=j.record;
+    if(d&&Object.keys(d).length>1){
+      DATA=d;
+    } else {
+      DATA=JSON.parse(JSON.stringify(SEED));
+      await pushData();
+    }
+  }catch(e){
+    DATA=JSON.parse(JSON.stringify(SEED));
+    toast('⚠ Offline — dati non caricati dal cloud');
+  }
+  setStatus('saved');
 }
 
-// SAVE su localStorage (automatico ad ogni modifica)
+async function pushData(){
+  try{
+    const r=await fetch(JSONBIN_URL,{
+      method:'PUT',
+      headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_KEY},
+      body:JSON.stringify(DATA)
+    });
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    DIRTY=false;setStatus('saved');
+  }catch(e){
+    setStatus('error');
+    toast('⚠ Errore salvataggio cloud: '+e.message);
+  }
+}
+
 function saveData(){
-  try{localStorage.setItem(SK,JSON.stringify(DATA));}catch(e){}
-  DIRTY=true;
-  updateSaveIndicator();
+  DIRTY=true;setStatus('dirty');
+  clearTimeout(window._saveTimer);
+  window._saveTimer=setTimeout(()=>pushData(),1500);
 }
 
-// SALVA SU DISCO (scarica JSON)
+function setStatus(s){
+  const ind=document.getElementById('save-indicator');
+  if(!ind)return;
+  if(s==='loading'){ind.textContent='● Caricamento...';ind.style.color='rgba(200,200,100,0.9)';}
+  else if(s==='dirty'){ind.textContent='● Salvataggio...';ind.style.color='rgba(232,120,80,0.9)';}
+  else if(s==='saved'){ind.textContent='● Salvato ☁';ind.style.color='rgba(125,220,150,0.9)';}
+  else if(s==='error'){ind.textContent='● Errore salvataggio!';ind.style.color='rgba(232,80,80,0.9)';}
+}
+function updateSaveIndicator(){setStatus(DIRTY?'dirty':'saved');}
+
+// BACKUP locale
 function salvaSuDisco(){
   const blob=new Blob([JSON.stringify(DATA,null,2)],{type:'application/json'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
-  a.download='peacock_dati.json';
+  a.download='peacock_backup_'+new Date().toISOString().split('T')[0]+'.json';
   a.click();
-  DIRTY=false;
-  updateSaveIndicator();
-  toast('✓ Salvato su disco — peacock_dati.json');
+  toast('✓ Backup scaricato');
 }
 
-// CARICA DA DISCO (importa JSON dati)
-function caricaDaDisco(){
-  document.getElementById('loadFile').click();
-}
+function caricaDaDisco(){document.getElementById('loadFile').click();}
 function handleLoadFile(e){
   const file=e.target.files[0];
   if(!file)return;
@@ -625,29 +660,17 @@ function handleLoadFile(e){
   reader.onload=ev=>{
     try{
       DATA=JSON.parse(ev.target.result);
-      saveData();
-      DIRTY=false;
-      updateSaveIndicator();
+      pushData();
       renderMonthSel();
       renderActive();
-      toast('✓ Dati caricati da disco');
+      toast('✓ Dati caricati e salvati sul cloud');
     }catch(err){alert('File non valido.');}
   };
   reader.readAsText(file);
   e.target.value='';
 }
 
-function updateSaveIndicator(){
-  const ind=document.getElementById('save-indicator');
-  if(!ind)return;
-  if(DIRTY){
-    ind.textContent='● Dati non salvati su disco';
-    ind.style.color='rgba(232,120,80,0.9)';
-  } else {
-    ind.textContent='● Salvato';
-    ind.style.color='rgba(125,220,150,0.9)';
-  }
-}
+window.addEventListener('beforeunload',e=>{if(DIRTY){e.preventDefault();e.returnValue='';}});
 
 // Avvisa se si chiude con dati non salvati
 window.addEventListener('beforeunload',e=>{
@@ -1250,14 +1273,13 @@ function importData(e){
 }
 
 // INIT
-function init(){
+async function init(){
   document.getElementById('hdr-date').textContent=new Date().toLocaleDateString('it-IT',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   document.getElementById('f_data').value=new Date().toISOString().split('T')[0];
   document.getElementById('fat_scad').value=new Date().toISOString().split('T')[0];
-  loadData();
+  await loadData();
   renderMonthSel();
   renderDashboard();
-  updateSaveIndicator();
 }
 init();
 </script>
