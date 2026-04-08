@@ -164,6 +164,7 @@ tfoot td:first-child{font-family:'Cormorant Garamond',serif;color:var(--gold-lig
 .sep{height:1px;background:var(--border);margin:14px 0;}
 .isbn-tag{display:inline-block;background:var(--ink);color:var(--gold-light);padding:2px 7px;font-size:0.5rem;letter-spacing:0.08em;margin-left:6px;}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 <div id="login-screen" style="display:flex;position:fixed;inset:0;background:#0a1628;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
@@ -212,7 +213,9 @@ window.addEventListener('load',()=>document.getElementById('pwd-input').focus())
     <span id="save-ind">● Salvato</span>
     <button class="btn-io" onclick="caricaDaDisco()">⬆ Carica</button>
     <button class="btn-io save" onclick="salvaSuDisco()">⬇ Backup JSON</button>
+    <button class="btn-io" onclick="apriImportaRendiconto()" style="border-color:rgba(196,146,42,0.6);color:rgba(232,201,122,0.9);">📊 Importa Rendiconto</button>
     <input type="file" id="loadFile" accept=".html,.json" style="display:none" onchange="handleLoad(event)">
+    <input type="file" id="loadRendiconto" accept=".csv,.xls,.xlsx" style="display:none" onchange="handleRendiconto(event)">
   </div>
 </div>
 <div id="save-banner" style="display:none;background:#8b2635;color:white;text-align:center;padding:7px 32px;font-size:0.62rem;letter-spacing:0.1em;">
@@ -474,6 +477,60 @@ window.addEventListener('load',()=>document.getElementById('pwd-input').focus())
       <div id="dist-manager-list"></div>
     </div>
     <div class="modal-footer"><button class="btn-s" onclick="closeModal('moDist')">Chiudi</button></div>
+  </div>
+</div>
+
+<!-- ══ MODAL IMPORTA RENDICONTO ══════════════════════════════════════════ -->
+<div class="ov" id="moRendiconto" onclick="closeOv('moRendiconto',event)">
+  <div class="modal wide" style="width:900px;">
+    <div class="modal-head">
+      <span class="modal-title">Importa Rendiconto Distributore</span>
+      <button class="modal-close" onclick="closeModal('moRendiconto')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="rend-step1">
+        <div style="font-size:0.64rem;color:var(--muted);margin-bottom:14px;line-height:1.6;">
+          Carica il rendiconto del distributore (CSV o XLS). Il programma abbina automaticamente i titoli e aggiorna venduto, deposito e ricavi.
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;">
+          <button class="btn-p" onclick="document.getElementById('loadRendiconto').click()">📂 Seleziona file CSV / XLS</button>
+          <span id="rend-filename" style="font-size:0.64rem;color:var(--muted);">Nessun file selezionato</span>
+        </div>
+        <div id="rend-period" style="display:none;background:var(--cream);border:1px solid var(--border);padding:10px 14px;margin-bottom:14px;font-size:0.64rem;">
+          <span id="rend-period-text"></span>
+        </div>
+      </div>
+      <div id="rend-preview" style="display:none;">
+        <div style="font-size:0.56rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Anteprima operazioni</div>
+        <div class="table-wrap" style="margin-bottom:12px;max-height:380px;overflow-y:auto;">
+          <table>
+            <thead><tr>
+              <th>Titolo CSV</th>
+              <th>Abbinato a</th>
+              <th>Venduto</th>
+              <th>Effetto deposito</th>
+              <th>Valore netto</th>
+              <th>Stato</th>
+            </tr></thead>
+            <tbody id="rend-tbody"></tbody>
+            <tfoot id="rend-tfoot"></tfoot>
+          </table>
+        </div>
+        <div id="rend-summary" style="background:var(--ink2);color:var(--paper);padding:10px 14px;font-size:0.64rem;margin-bottom:12px;display:flex;gap:24px;flex-wrap:wrap;">
+          <span>✓ Abbinati: <strong id="rend-ok">0</strong></span>
+          <span>⚠ Non trovati: <strong id="rend-nf">0</strong></span>
+          <span>📦 Δ Deposito: <strong id="rend-dep">0</strong></span>
+          <span>💰 Valore netto totale: <strong id="rend-netto">€ 0</strong></span>
+        </div>
+        <div style="background:rgba(139,38,53,0.08);border:1px solid rgba(139,38,53,0.2);padding:8px 12px;font-size:0.6rem;color:var(--red);margin-bottom:4px;">
+          ⚠ L'operazione è irreversibile. Verifica l'anteprima prima di confermare.
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-s" onclick="closeModal('moRendiconto')">Annulla</button>
+      <button class="btn-p" id="rend-btn-conferma" style="display:none;" onclick="confermaRendiconto()">✓ Conferma e aggiorna magazzino</button>
+    </div>
   </div>
 </div>
 
@@ -1102,6 +1159,368 @@ function deleteMov(id){
   if(!confirm('Eliminare questo movimento?'))return;
   DATA.movimenti=DATA.movimenti.filter(m=>m.id!==id);
   saveData();renderMovimenti();toast('Eliminato');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// IMPORTA RENDICONTO CSV/XLS — multi-formato con abbinamento per titolo
+// ═══════════════════════════════════════════════════════════════════════════
+let REND_DATA=[];
+
+function apriImportaRendiconto(){
+  REND_DATA=[];
+  document.getElementById('rend-preview').style.display='none';
+  document.getElementById('rend-btn-conferma').style.display='none';
+  document.getElementById('rend-filename').textContent='Nessun file selezionato';
+  document.getElementById('rend-period').style.display='none';
+  document.getElementById('loadRendiconto').value='';
+  document.getElementById('moRendiconto').classList.add('open');
+}
+
+// Normalizza stringa per confronto titoli
+function normTitolo(s){
+  return (s||'').toLowerCase()
+    .replace(/[àáâã]/g,'a').replace(/[èéêë]/g,'e').replace(/[ìíîï]/g,'i')
+    .replace(/[òóôõ]/g,'o').replace(/[ùúûü]/g,'u')
+    .replace(/[^a-z0-9\s]/g,' ')
+    .replace(/\s+/g,' ').trim();
+}
+
+// Distanza di Levenshtein semplificata per parole chiave
+function scoreSimilarity(a,b){
+  const wa=normTitolo(a).split(' ').filter(w=>w.length>2);
+  const wb=normTitolo(b).split(' ').filter(w=>w.length>2);
+  if(!wa.length||!wb.length)return 0;
+  let match=0;
+  wa.forEach(w=>{ if(wb.some(x=>x.includes(w)||w.includes(x)))match++; });
+  return match/Math.max(wa.length,wb.length);
+}
+
+// Cerca il miglior abbinamento nel catalogo
+function trovaTitolo(titoloCSV){
+  let best=null,bestScore=0;
+  DATA.libri.forEach(b=>{
+    const score=scoreSimilarity(titoloCSV,b.titolo);
+    if(score>bestScore){bestScore=score;best=b;}
+  });
+  return bestScore>=0.4?{libro:best,score:bestScore}:{libro:null,score:0};
+}
+
+function handleRendiconto(e){
+  const file=e.target.files[0];if(!file)return;
+  document.getElementById('rend-filename').textContent=file.name;
+  const ext=file.name.split('.').pop().toLowerCase();
+  if(ext==='xls'||ext==='xlsx'){
+    // Leggi XLS/XLSX con SheetJS (caricato inline)
+    const r=new FileReader();
+    r.onload=ev=>{
+      try{
+        const data=new Uint8Array(ev.target.result);
+        const wb=XLSX.read(data,{type:'array'});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+        parseRendicontoXLS(rows,file.name);
+      }catch(err){toast('⚠ Errore XLS: '+err.message);}
+    };
+    r.readAsArrayBuffer(file);
+  } else {
+    const r=new FileReader();
+    r.onload=ev=>{ try{parseRendicontoCSV(ev.target.result,file.name);}catch(err){toast('⚠ Errore CSV: '+err.message);} };
+    r.readAsText(file,'utf-8');
+  }
+}
+
+// ── Parsing CSV (formato Padova/Milano con header standard) ─────────────────
+function parseRendicontoCSV(csvText,fname){
+  const lines=csvText.split(/\r?\n/).filter(l=>l.trim());
+  const sep=lines[0].includes(';')?';':',';
+
+  // Trova la riga header (quella che contiene 'titolo' o 'Titolo' o 'TTOLO')
+  let headerIdx=0;
+  for(let i=0;i<Math.min(5,lines.length);i++){
+    const l=lines[i].toLowerCase();
+    if(l.includes('titolo')||l.includes('ttolo')||l.includes('venduto')){headerIdx=i;break;}
+  }
+
+  const headers=lines[headerIdx].split(sep).map(h=>h.trim().replace(/^[\s"'\ufeff]+|[\s"']+$/g,'').toLowerCase());
+
+  // Mappa colonne flessibile
+  const iT=findCol(headers,['titolo','ttolo','title']);
+  const iV=findCol(headers,['venduto','copie','tot copie','qta']);
+  const iN=findCol(headers,['valorenetto','valore netto','totale netto','netto','net']);
+  const iA=findCol(headers,['anno','year']);
+  const iM=findCol(headers,['mese','month']);
+
+  if(iT<0||iV<0||iN<0){
+    toast('⚠ Colonne non riconosciute nel CSV. Contattare assistenza.');
+    console.log('Headers trovati:', headers);
+    return;
+  }
+
+  let anno='',mese='';
+  const rows=[];
+  for(let i=headerIdx+1;i<lines.length;i++){
+    const cols=lines[i].split(sep).map(c=>c.trim().replace(/^"|"$/g,''));
+    if(cols.length<3)continue;
+    const titoloCSV=(cols[iT]||'').trim();
+    if(!titoloCSV||titoloCSV===''||titoloCSV.toLowerCase()==='nan')continue;
+    const venduto=parseNum(cols[iV]||'0');
+    const netto=parseNum(cols[iN]||'0');
+    if(iA>=0&&cols[iA])anno=cols[iA];
+    if(iM>=0&&cols[iM])mese=cols[iM];
+    const {libro,score}=trovaTitolo(titoloCSV);
+    rows.push({titoloCSV,venduto,netto,libro,score});
+  }
+  mostraPeriodo(anno,mese,fname);
+  REND_DATA=rows;
+  renderRendicontoPreview(rows);
+}
+
+// ── Parsing XLS/XLSX generico — gestisce Torino (lineare) e Firenze (multi-sezione) ──
+function parseRendicontoXLS(rawRows,fname){
+  // Rileva se è formato multi-sezione (Firenze): ha più righe header con stesse colonne
+  const headerRows=[];
+  rawRows.forEach((r,i)=>{
+    const cells=r.map(c=>(c||'').toString().toLowerCase().trim());
+    if(cells.some(c=>c.includes('titolo')||c.includes('ttolo'))&&
+       cells.some(c=>c.includes('netto')||c.includes('vendite')||c.includes('venduto'))){
+      headerRows.push(i);
+    }
+  });
+
+  if(headerRows.length>1){
+    // Formato Firenze: più sezioni, aggregiamo per titolo
+    parseXLSMultiSezione(rawRows,headerRows,fname);
+  } else {
+    // Formato Torino: lineare
+    parseXLSLineare(rawRows,fname);
+  }
+}
+
+// Formato Torino (Book Service) — una sola sezione lineare
+function parseXLSLineare(rawRows,fname){
+  let headerIdx=0;
+  for(let i=0;i<Math.min(8,rawRows.length);i++){
+    const r=rawRows[i].map(c=>(c||'').toString().toLowerCase());
+    if(r.some(c=>c.includes('titolo')||c.includes('ttolo')||c.includes('codice'))){headerIdx=i;break;}
+  }
+  const headers=rawRows[headerIdx].map(c=>(c||'').toString().toLowerCase().trim());
+  const iT=findCol(headers,['titolo','ttolo','title']);
+  const iV=findCol(headers,['tot copie','venduto','copie','qta','vendite']);
+  const iN=findCol(headers,['totale netto','valore netto ','valore netto','valorenetto','netto']);
+
+  if(iT<0||iV<0||iN<0){
+    toast('⚠ Colonne XLS non riconosciute');
+    console.log('Headers XLS:', headers);
+    return;
+  }
+
+  const rows=[];
+  for(let i=headerIdx+1;i<rawRows.length;i++){
+    const r=rawRows[i];
+    const titoloCSV=(r[iT]||'').toString().trim();
+    if(!titoloCSV)continue;
+    // Salta righe di totale
+    if(titoloCSV.toLowerCase().includes('totale')||titoloCSV.toLowerCase().includes('netto rendiconto'))continue;
+    // Numeri XLS: già float, non usare parseNum che rimuove il punto decimale
+    const vRaw=r[iV];
+    const nRaw=r[iN];
+    const venduto=typeof vRaw==='number'?vRaw:parseNumIT(vRaw);
+    const netto=typeof nRaw==='number'?nRaw:parseNumIT(nRaw);
+    if(venduto===0&&netto===0)continue;
+    const {libro,score}=trovaTitolo(titoloCSV);
+    rows.push({titoloCSV,venduto,netto,libro,score});
+  }
+  mostraPeriodo('','',fname);
+  REND_DATA=rows;
+  renderRendicontoPreview(rows);
+}
+
+// Formato Firenze (multi-sezione) — più blocchi header+dati, aggregati per titolo
+function parseXLSMultiSezione(rawRows,headerRows,fname){
+  // Mappa titolo → {venduto, netto}
+  const mappa={};
+
+  headerRows.forEach((hIdx,si)=>{
+    const headers=rawRows[hIdx].map(c=>(c||'').toString().toLowerCase().trim());
+    const iT=findCol(headers,['titolo','ttolo','title']);
+    const iV=findCol(headers,['vendite/rese','venduto','copie','qta','tot copie']);
+    const iN=findCol(headers,['valorenetto','valore netto','totale netto','netto']);
+    if(iT<0||iV<0||iN<0)return;
+
+    // Fine sezione = prossimo header o fine file
+    const nextH=headerRows[si+1]||rawRows.length;
+    for(let i=hIdx+1;i<nextH;i++){
+      const r=rawRows[i];
+      const titoloCSV=(r[iT]||'').toString().trim();
+      if(!titoloCSV)continue;
+      if(titoloCSV.toLowerCase().includes('totale')||titoloCSV.toLowerCase().includes('netto rendiconto')||titoloCSV.toLowerCase().includes('ag.'))continue;
+      const vRaw=r[iV];
+      const nRaw=r[iN];
+      const venduto=typeof vRaw==='number'?vRaw:parseNumIT(vRaw);
+      const netto=typeof nRaw==='number'?nRaw:parseNumIT(nRaw);
+      if(venduto===0&&netto===0)continue;
+      const key=normTitolo(titoloCSV);
+      if(mappa[key]){
+        mappa[key].venduto+=venduto;
+        mappa[key].netto+=netto;
+      } else {
+        mappa[key]={titoloCSV,venduto,netto};
+      }
+    }
+  });
+
+  const rows=Object.values(mappa).map(({titoloCSV,venduto,netto})=>{
+    const {libro,score}=trovaTitolo(titoloCSV);
+    return {titoloCSV,venduto,netto,libro,score};
+  });
+
+  mostraPeriodo('','',fname);
+  REND_DATA=rows;
+  renderRendicontoPreview(rows);
+}
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+function findCol(headers,aliases){
+  for(const a of aliases){
+    const i=headers.findIndex(h=>h.includes(a));
+    if(i>=0)return i;
+  }
+  return -1;
+}
+// Per stringhe con separatore italiano (virgola decimale, punto migliaia)
+function parseNumIT(s){
+  if(s===null||s===undefined||s==='')return 0;
+  const str=s.toString().trim();
+  // Se contiene virgola: formato italiano → sostituisci punto migliaia, virgola→punto
+  if(str.includes(',')){
+    return parseFloat(str.replace(/\./g,'').replace(',','.'))||0;
+  }
+  return parseFloat(str)||0;
+}
+// Alias per compatibilità
+function parseNum(s){ return parseNumIT(s); }
+function mostraPeriodo(anno,mese,fname){
+  const mesi=['','Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+  let testo=`File: ${fname}`;
+  if(anno&&mese)testo+=` — Periodo: ${mesi[parseInt(mese)]||mese} ${anno}`;
+  document.getElementById('rend-period-text').textContent=testo;
+  document.getElementById('rend-period').style.display='block';
+}
+
+// ── Preview ─────────────────────────────────────────────────────────────────
+function renderRendicontoPreview(rows){
+  let ok=0,nf=0,totDep=0,totNetto=0;
+  const tbody=document.getElementById('rend-tbody');
+  tbody.innerHTML=rows.map((row,idx)=>{
+    const {titoloCSV,venduto,netto,libro,score}=row;
+    if(libro){
+      ok++;
+      totDep+=(-venduto);
+      totNetto+=netto;
+      const vendStr=venduto>0?`<span style="color:var(--green);">+${venduto}</span>`:`<span style="color:var(--red);">${venduto}</span>`;
+      const depStr=venduto<0?`<span style="color:var(--green);">+${Math.abs(venduto)} rientro</span>`:`<span style="color:var(--muted);">-${venduto} uscita</span>`;
+      const nettoStr=netto>=0?`<span style="color:var(--green);">€ ${netto.toFixed(2)}</span>`:`<span style="color:var(--red);">€ ${netto.toFixed(2)}</span>`;
+      const conf=score>=0.8?'bg':score>=0.5?'bm':'bb';
+      const confLbl=score>=0.8?'✓ Certo':score>=0.5?'≈ Probabile':'? Incerto';
+      return `<tr>
+        <td style="font-size:0.6rem;color:var(--muted);">${titoloCSV}</td>
+        <td style="font-weight:500;font-size:0.62rem;">${libro.titolo} <button onclick="cambiaAbbinamento(${idx})" style="font-size:0.5rem;border:1px solid var(--border);background:var(--cream);cursor:pointer;padding:1px 5px;margin-left:4px;">cambia</button></td>
+        <td>${vendStr}</td>
+        <td>${depStr}</td>
+        <td>${nettoStr}</td>
+        <td><span class="badge ${conf}">${confLbl}</span></td>
+      </tr>`;
+    } else {
+      nf++;
+      return `<tr>
+        <td style="font-size:0.6rem;">${titoloCSV}</td>
+        <td><select onchange="manualAbbina(${idx},this.value)" style="font-size:0.58rem;padding:2px 4px;border:1px solid var(--border);max-width:200px;">
+          <option value="">— seleziona manualmente —</option>
+          ${DATA.libri.map(b=>`<option value="${b.id}">${b.titolo}</option>`).join('')}
+        </select></td>
+        <td style="font-size:0.6rem;">${venduto>0?`<span style="color:var(--green);">+${venduto}</span>`:`<span style="color:var(--red);">${venduto}</span>`}</td>
+        <td>—</td>
+        <td style="font-size:0.6rem;${netto>=0?'color:var(--green)':'color:var(--red)'}">€ ${netto.toFixed(2)}</td>
+        <td><span class="badge bb">⚠ Non trovato</span></td>
+      </tr>`;
+    }
+  }).join('');
+
+  document.getElementById('rend-tfoot').innerHTML=`<tr>
+    <td colspan="4">Totale</td>
+    <td style="color:${totNetto>=0?'#7ecfa0':'#e07070'};font-weight:600;">€ ${totNetto.toFixed(2)}</td>
+    <td></td>
+  </tr>`;
+
+  document.getElementById('rend-ok').textContent=ok;
+  document.getElementById('rend-nf').textContent=nf;
+  document.getElementById('rend-dep').textContent=(totDep>0?'+':'')+totDep;
+  document.getElementById('rend-netto').textContent='€ '+totNetto.toFixed(2);
+  document.getElementById('rend-preview').style.display='block';
+  document.getElementById('rend-btn-conferma').style.display=ok>0?'inline-block':'none';
+}
+
+function manualAbbina(idx,libroId){
+  if(!libroId)return;
+  REND_DATA[idx].libro=DATA.libri.find(b=>b.id==libroId)||null;
+  REND_DATA[idx].score=1;
+  renderRendicontoPreview(REND_DATA);
+}
+function cambiaAbbinamento(idx){
+  REND_DATA[idx].libro=null;
+  REND_DATA[idx].score=0;
+  renderRendicontoPreview(REND_DATA);
+}
+
+// ── Conferma ────────────────────────────────────────────────────────────────
+function confermaRendiconto(){
+  if(!REND_DATA.length)return;
+  const oggi=new Date().toISOString().split('T')[0];
+  let aggiornati=0;
+
+  REND_DATA.forEach(row=>{
+    const {venduto,netto,libro}=row;
+    if(!libro)return;
+    const idx=DATA.libri.findIndex(b=>b.id===libro.id);
+    if(idx<0)return;
+    const b=DATA.libri[idx];
+
+    if(venduto>0){
+      // VENDITA: scala dal deposito distributori in ordine
+      let resto=venduto;
+      (DATA.distributori||[]).forEach(d=>{
+        if(resto<=0)return;
+        const dep=b.dist&&b.dist[d.key]?b.dist[d.key].dep||0:0;
+        const scala=Math.min(dep,resto);
+        if(scala>0&&b.dist&&b.dist[d.key]){
+          b.dist[d.key].dep=Math.max(0,dep-scala);
+          b.dist[d.key].vend=(b.dist[d.key].vend||0)+scala;
+          resto-=scala;
+        }
+      });
+      DATA.movimenti.push({id:Date.now()+Math.random(),libro_id:b.id,tipo:'vendita_dist',copie:venduto,desc:'Rendiconto distributore',data:oggi});
+    } else if(venduto<0){
+      // RESA: rientra nel deposito del primo dist con vendite
+      const resa=Math.abs(venduto);
+      let distKey=(DATA.distributori&&DATA.distributori[0])?DATA.distributori[0].key:null;
+      (DATA.distributori||[]).forEach(d=>{
+        if(b.dist&&b.dist[d.key]&&(b.dist[d.key].vend||0)>0)distKey=d.key;
+      });
+      if(distKey&&b.dist&&b.dist[distKey]){
+        b.dist[distKey].dep=(b.dist[distKey].dep||0)+resa;
+        b.dist[distKey].vend=Math.max(0,(b.dist[distKey].vend||0)-resa);
+      }
+      DATA.movimenti.push({id:Date.now()+Math.random(),libro_id:b.id,tipo:'reso',copie:resa,desc:'Resa libreria — Rendiconto',data:oggi});
+    }
+
+    b.ricavi=(b.ricavi||0)+netto;
+    if(b.costo_stampa>0)b.resa_invest=((b.ricavi-b.costo_stampa)/b.costo_stampa)*100;
+    DATA.libri[idx]=b;
+    aggiornati++;
+  });
+
+  saveData();closeModal('moRendiconto');renderAll();
+  toast(`✓ Rendiconto importato — ${aggiornati} titoli aggiornati`);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
