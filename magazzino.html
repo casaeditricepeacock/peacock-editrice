@@ -165,7 +165,23 @@ tfoot td:first-child{font-family:'Cormorant Garamond',serif;color:var(--gold-lig
 .isbn-tag{display:inline-block;background:var(--ink);color:var(--gold-light);padding:2px 7px;font-size:0.5rem;letter-spacing:0.08em;margin-left:6px;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-</head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* DASHBOARD */
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+.dash-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;}
+.dash-full{grid-column:1/-1;}
+.chart-box{background:white;border:1px solid var(--border);padding:16px 18px;}
+.chart-box-title{font-family:'Cormorant Garamond',serif;font-size:0.82rem;color:var(--ink);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.chart-box-sub{font-size:0.52rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);}
+.chart-canvas-wrap{position:relative;}
+.matrix-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px;}
+.matrix-cell{border:1px solid var(--border);padding:10px;min-height:100px;}
+.matrix-cell-title{font-size:0.48rem;letter-spacing:0.14em;text-transform:uppercase;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border);}
+.matrix-item{font-size:0.58rem;padding:3px 0;border-bottom:1px dotted rgba(194,208,224,0.3);display:flex;justify-content:space-between;align-items:center;}
+.matrix-item:last-child{border-bottom:none;}
+.dash-kpi-row{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;margin-bottom:16px;}
+</style>
 <body>
 <div id="login-screen" style="display:flex;position:fixed;inset:0;background:#0a1628;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
   <div style="font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:300;color:#e2eaf3;letter-spacing:0.2em;text-transform:uppercase;">Casa Editrice Peacock</div>
@@ -203,10 +219,12 @@ window.addEventListener('load',()=>document.getElementById('pwd-input').focus())
 
 <div class="topbar">
   <div class="nav-left">
-    <button class="nav-tab active" onclick="showPage('catalogo',this)">Catalogo</button>
+    <button class="nav-tab active" onclick="showPage('dashboard',this)">📈 Dashboard</button>
+    <button class="nav-tab" onclick="showPage('catalogo',this)">Catalogo</button>
     <button class="nav-tab" onclick="showPage('bolla',this)">📦 Bolla di Consegna</button>
     <button class="nav-tab" onclick="showPage('distributori',this)">Distributori</button>
     <button class="nav-tab" onclick="showPage('movimenti',this)">Movimenti</button>
+    <button class="nav-tab" onclick="showPage('rendiconti',this)">📊 Rendiconti</button>
     <button class="nav-tab" onclick="showPage('alert',this)">⚠ Scorte</button>
   </div>
   <div class="nav-right">
@@ -222,8 +240,72 @@ window.addEventListener('load',()=>document.getElementById('pwd-input').focus())
   ⚠ Dati modificati ma NON salvati — clicca <strong>💾 Salva su disco</strong> e sostituisci <strong>magazzino.html</strong> sul disco mobile
 </div>
 
+<!-- ══ DASHBOARD ══════════════════════════════════════════════════════════ -->
+<div class="page active main" id="page-dashboard">
+
+  <!-- KPI row -->
+  <div class="dash-kpi-row" id="dash-kpi"></div>
+
+  <!-- Riga 1: Resa per titolo (full width, scrollabile) -->
+  <div class="chart-box" style="margin-bottom:16px;">
+    <div class="chart-box-title">
+      Resa sull'investimento per titolo
+      <span class="chart-box-sub">% ricavo netto / costo stampa · verde ≥70% · giallo 40–70% · rosso &lt;40%</span>
+    </div>
+    <div id="chart-resa-wrap" style="overflow-y:auto;max-height:420px;">
+      <div id="chart-resa-inner" style="position:relative;">
+        <canvas id="chart-resa"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Riga 2: Deposito/Venduto dist + Composizione canali -->
+  <div class="dash-grid" style="margin-bottom:16px;">
+    <div class="chart-box">
+      <div class="chart-box-title">
+        Deposito vs Venduto per distributore
+        <span class="chart-box-sub">copie</span>
+      </div>
+      <div class="chart-canvas-wrap" style="height:220px;">
+        <canvas id="chart-dist"></canvas>
+      </div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-box-title">
+        Composizione vendite per canale
+        <span class="chart-box-sub">% sul totale copie vendute</span>
+      </div>
+      <div class="chart-canvas-wrap" style="height:220px;">
+        <canvas id="chart-canali"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Riga 3: Andamento ricavi + Matrice titoli -->
+  <div class="dash-grid">
+    <div class="chart-box">
+      <div class="chart-box-title">
+        Andamento ricavi netti — rendiconti
+        <span class="chart-box-sub">€ cumulato per importazione</span>
+      </div>
+      <div class="chart-canvas-wrap" style="height:220px;">
+        <canvas id="chart-ricavi"></canvas>
+      </div>
+      <div id="chart-ricavi-empty" style="display:none;font-size:0.62rem;color:var(--muted);text-align:center;padding:40px 0;">Nessun rendiconto importato ancora.<br>Il grafico si popolerà automaticamente.</div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-box-title">
+        Matrice situazione titoli
+        <span class="chart-box-sub">resa × magazzino</span>
+      </div>
+      <div class="matrix-grid" id="dash-matrix"></div>
+    </div>
+  </div>
+
+</div>
+
 <!-- ══ CATALOGO ══════════════════════════════════════════════════════════ -->
-<div class="page active main" id="page-catalogo">
+<div class="page main" id="page-catalogo">
   <div class="cards-row c5">
     <div class="card"><div class="card-label">Titoli catalogo</div><div class="card-val cgo" id="s_titoli">0</div></div>
     <div class="card"><div class="card-label">Copie magazzino</div><div class="card-val cgo" id="s_mag">0</div></div>
@@ -240,6 +322,10 @@ window.addEventListener('load',()=>document.getElementById('pwd-input').focus())
     <button class="fil-btn" onclick="setFil('mid',this)">40–70%</button>
     <button class="fil-btn" onclick="setFil('bad',this)">&lt;40%</button>
     <button class="fil-btn" onclick="setFil('alert',this)">Scorte basse</button>
+    <span class="fil-label" style="margin-left:8px;">Distributore</span>
+    <select class="fil-input" id="fil-dist" onchange="renderCatalog()" style="padding:4px 8px;font-size:0.6rem;">
+      <option value="">Tutti</option>
+    </select>
     <button class="btn-add" onclick="openBookModal()">+ Nuovo titolo</button>
   </div>
   <div class="table-wrap">
@@ -368,23 +454,61 @@ window.addEventListener('load',()=>document.getElementById('pwd-input').focus())
   </div>
 </div>
 
+<!-- ══ RENDICONTI ════════════════════════════════════════════════════════ -->
+<div class="page main" id="page-rendiconti">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+    <div class="sec-title" style="margin-bottom:0;">Storico Rendiconti Importati</div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn-s" id="rs-annulla-btn" style="display:none;border-color:var(--red);color:var(--red);" onclick="annullaUltimoRendiconto()">↩ Annulla ultima importazione</button>
+      <button class="btn-add" onclick="apriImportaRendiconto()">📊 Importa nuovo rendiconto</button>
+    </div>
+  </div>
+  <div class="cards-row" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px;">
+    <div class="card"><div class="card-label">Rendiconti totali</div><div class="card-val cgo" id="rs_tot">0</div></div>
+    <div class="card"><div class="card-label">Totale netto incassato</div><div class="card-val cg" id="rs_netto">€ 0</div></div>
+    <div class="card"><div class="card-label">Ultimo rendiconto</div><div class="card-val cgo" id="rs_ultimo">—</div></div>
+    <div class="card"><div class="card-label">Da incassare (aperti)</div><div class="card-val cgo" id="rs_aperti">—</div></div>
+  </div>
+  <div class="table-wrap">
+    <div class="table-hdr">
+      <span class="table-hdr-title">Storico importazioni</span>
+      <span class="table-hdr-count" id="rs-count"></span>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Data import</th>
+        <th>Distributore</th>
+        <th>Periodo</th>
+        <th>File</th>
+        <th>Titoli aggiornati</th>
+        <th>Valore netto</th>
+        <th>Stato</th>
+        <th></th>
+      </tr></thead>
+      <tbody id="rs-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
 <!-- ══ MOVIMENTI ════════════════════════════════════════════════════════ -->
 <div class="page main" id="page-movimenti">
   <div class="mov-form">
     <div style="font-family:'Cormorant Garamond',serif;font-size:0.92rem;margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid var(--border);">Registra movimento</div>
-    <div class="mov-grid">
+    <div class="mov-grid" style="grid-template-columns:120px 200px 140px 120px 1fr 90px 36px;">
       <div class="ff"><label>Data</label><input type="date" id="mv_data"></div>
       <div class="ff"><label>Titolo</label><select id="mv_titolo"><option value="">— seleziona —</option></select></div>
       <div class="ff"><label>Tipo</label>
-        <select id="mv_tipo">
+        <select id="mv_tipo" onchange="toggleMvDist()">
           <option value="entrata">Entrata (nuova stampa)</option>
           <option value="reso">Reso da distributore</option>
+          <option value="vendita_dist">Vendita distributore</option>
           <option value="vendita_eco">Vendita ecommerce</option>
           <option value="vendita_dir">Vendita diretta</option>
           <option value="omaggio">Omaggio/Promo</option>
           <option value="rettifica">Rettifica inventario</option>
         </select>
       </div>
+      <div class="ff" id="mv_dist_wrap" style="display:none;"><label>Distributore</label><select id="mv_dist_sel"></select></div>
       <div class="ff"><label>Canale / Note</label><input type="text" id="mv_desc" placeholder="dettaglio..."></div>
       <div class="ff"><label>Copie</label><input type="number" id="mv_copie" placeholder="0" min="0"></div>
       <div class="ff"><label>&nbsp;</label><button class="btn-p" onclick="addMov()" style="height:29px;">+</button></div>
@@ -482,30 +606,57 @@ window.addEventListener('load',()=>document.getElementById('pwd-input').focus())
 
 <!-- ══ MODAL IMPORTA RENDICONTO ══════════════════════════════════════════ -->
 <div class="ov" id="moRendiconto" onclick="closeOv('moRendiconto',event)">
-  <div class="modal wide" style="width:900px;">
+  <div class="modal wide" style="width:940px;">
     <div class="modal-head">
       <span class="modal-title">Importa Rendiconto Distributore</span>
       <button class="modal-close" onclick="closeModal('moRendiconto')">✕</button>
     </div>
     <div class="modal-body">
       <div id="rend-step1">
-        <div style="font-size:0.64rem;color:var(--muted);margin-bottom:14px;line-height:1.6;">
-          Carica il rendiconto del distributore (CSV o XLS). Il programma abbina automaticamente i titoli e aggiorna venduto, deposito e ricavi.
+        <div class="g3" style="margin-bottom:14px;">
+          <div class="ff">
+            <label>Distributore *</label>
+            <select id="rend-dist-sel" style="padding:6px 9px;border:1px solid var(--border);background:var(--paper);font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--ink);">
+              <option value="">— seleziona distributore —</option>
+            </select>
+          </div>
+          <div class="ff">
+            <label>Periodo (trimestre/anno)</label>
+            <input type="text" id="rend-periodo-man" placeholder="es. Q1 2026" style="padding:6px 9px;border:1px solid var(--border);background:var(--paper);font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--ink);">
+          </div>
+          <div class="ff">
+            <label>File rendiconto</label>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <button class="btn-p" onclick="document.getElementById('loadRendiconto').click()" style="white-space:nowrap;">📂 Seleziona CSV / XLS</button>
+              <span id="rend-filename" style="font-size:0.62rem;color:var(--muted);">Nessun file selezionato</span>
+            </div>
+          </div>
         </div>
-        <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;">
-          <button class="btn-p" onclick="document.getElementById('loadRendiconto').click()">📂 Seleziona file CSV / XLS</button>
-          <span id="rend-filename" style="font-size:0.64rem;color:var(--muted);">Nessun file selezionato</span>
-        </div>
-        <div id="rend-period" style="display:none;background:var(--cream);border:1px solid var(--border);padding:10px 14px;margin-bottom:14px;font-size:0.64rem;">
+        <div id="rend-period" style="display:none;background:var(--cream);border:1px solid var(--border);padding:8px 14px;margin-bottom:10px;font-size:0.62rem;">
           <span id="rend-period-text"></span>
+        </div>
+        <div style="font-size:0.64rem;color:var(--muted);margin-bottom:8px;line-height:1.5;">Formato non supportato? Usa il <span style="color:var(--gold);cursor:pointer;text-decoration:underline;" onclick="toggleRendManuale()">rendiconto manuale</span> per inserire i dati riga per riga.</div>
+        <div id="rend-manuale-form" style="display:none;background:var(--cream);border:1px solid var(--border);padding:12px;margin-bottom:12px;">
+          <div style="font-size:0.54rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Inserimento manuale</div>
+          <div style="display:grid;grid-template-columns:2fr 80px 100px 36px;gap:8px;align-items:end;margin-bottom:8px;">
+            <div class="ff"><label>Titolo</label>
+              <select id="rm_titolo" style="padding:6px 9px;border:1px solid var(--border);background:white;font-family:'DM Mono',monospace;font-size:0.66rem;">
+                <option value="">— seleziona —</option>
+              </select>
+            </div>
+            <div class="ff"><label>Venduto</label><input type="number" id="rm_venduto" placeholder="0" style="padding:6px 9px;border:1px solid var(--border);background:white;font-family:'DM Mono',monospace;font-size:0.66rem;"></div>
+            <div class="ff"><label>Valore netto €</label><input type="number" id="rm_netto" step="0.01" placeholder="0.00" style="padding:6px 9px;border:1px solid var(--border);background:white;font-family:'DM Mono',monospace;font-size:0.66rem;"></div>
+            <div class="ff"><label>&nbsp;</label><button class="btn-add" onclick="aggiungiRigaManuale()" style="height:29px;">+</button></div>
+          </div>
+          <div id="rm-righe" style="font-size:0.6rem;"></div>
         </div>
       </div>
       <div id="rend-preview" style="display:none;">
         <div style="font-size:0.56rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Anteprima operazioni</div>
-        <div class="table-wrap" style="margin-bottom:12px;max-height:380px;overflow-y:auto;">
+        <div class="table-wrap" style="margin-bottom:10px;max-height:340px;overflow-y:auto;">
           <table>
             <thead><tr>
-              <th>Titolo CSV</th>
+              <th>Titolo nel file</th>
               <th>Abbinato a</th>
               <th>Venduto</th>
               <th>Effetto deposito</th>
@@ -516,14 +667,14 @@ window.addEventListener('load',()=>document.getElementById('pwd-input').focus())
             <tfoot id="rend-tfoot"></tfoot>
           </table>
         </div>
-        <div id="rend-summary" style="background:var(--ink2);color:var(--paper);padding:10px 14px;font-size:0.64rem;margin-bottom:12px;display:flex;gap:24px;flex-wrap:wrap;">
+        <div id="rend-summary" style="background:var(--ink2);color:var(--paper);padding:9px 14px;font-size:0.62rem;margin-bottom:10px;display:flex;gap:20px;flex-wrap:wrap;">
           <span>✓ Abbinati: <strong id="rend-ok">0</strong></span>
           <span>⚠ Non trovati: <strong id="rend-nf">0</strong></span>
           <span>📦 Δ Deposito: <strong id="rend-dep">0</strong></span>
-          <span>💰 Valore netto totale: <strong id="rend-netto">€ 0</strong></span>
+          <span>💰 Valore netto: <strong id="rend-netto">€ 0</strong></span>
         </div>
-        <div style="background:rgba(139,38,53,0.08);border:1px solid rgba(139,38,53,0.2);padding:8px 12px;font-size:0.6rem;color:var(--red);margin-bottom:4px;">
-          ⚠ L'operazione è irreversibile. Verifica l'anteprima prima di confermare.
+        <div style="background:rgba(139,38,53,0.08);border:1px solid rgba(139,38,53,0.2);padding:7px 12px;font-size:0.58rem;color:var(--red);">
+          ⚠ Verifica l'anteprima prima di confermare. Puoi annullare l'ultima importazione dalla pagina Rendiconti.
         </div>
       </div>
     </div>
@@ -599,7 +750,7 @@ const JSONBIN_KEY='$2a$10$fjUl8IVz2yeZDM9YIaHrk.5c2W8C7Lb1weJR8ye/zj.LHB3z4kHkm'
 const JSONBIN_BIN='69bbb6caaa77b81da9fae591';
 const JSONBIN_URL='https://api.jsonbin.io/v3/b/'+JSONBIN_BIN;
 
-let DATA={libri:[],distributori:[],movimenti:[],bolle:[]};
+let DATA={libri:[],distributori:[],movimenti:[],bolle:[],rendiconti:[]};
 let DIRTY=false,SORT_KEY='titolo',SORT_DIR=1,FILTER='all';
 let EDITING_BOOK=null;
 let BOLLA_RIGHE=[];
@@ -623,7 +774,7 @@ async function loadData(){
   setStatus('saved');
 }
 function resetToSeed(){
-  DATA={libri:JSON.parse(JSON.stringify(SEED)),distributori:JSON.parse(JSON.stringify(DEFAULT_DIST)),movimenti:[],bolle:[]};
+  DATA={libri:JSON.parse(JSON.stringify(SEED)),distributori:JSON.parse(JSON.stringify(DEFAULT_DIST)),movimenti:[],bolle:[],rendiconti:[]};
 }
 async function pushData(){
   try{
@@ -696,14 +847,6 @@ function resCls(r){return r>=70?'bg':r>=40?'bm':'bb';}
 // ═══════════════════════════════════════════════════════════════════════════
 // NAV
 // ═══════════════════════════════════════════════════════════════════════════
-function showPage(id,btn){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
-  document.getElementById('page-'+id).classList.add('active');
-  btn.classList.add('active');
-  renderAll();
-}
-
 // ═══════════════════════════════════════════════════════════════════════════
 // CATALOGO
 // ═══════════════════════════════════════════════════════════════════════════
@@ -717,9 +860,11 @@ function sortBy(key){
 }
 function renderCatalog(){
   const q=(document.getElementById('search')?.value||'').toLowerCase();
+  const filDistVal=document.getElementById('fil-dist')?.value||'';
   let libri=[...DATA.libri];
   libri=libri.filter(b=>{
     if(q&&!b.titolo.toLowerCase().includes(q)&&!(b.autore||'').toLowerCase().includes(q)&&!(b.isbn||'').includes(q))return false;
+    if(filDistVal&&!(b.dist&&b.dist[filDistVal]&&((b.dist[filDistVal].dep||0)>0||(b.dist[filDistVal].vend||0)>0)))return false;
     const r=b.resa_invest||0;
     if(FILTER==='good')return r>=70;
     if(FILTER==='mid')return r>=40&&r<70;
@@ -1002,11 +1147,13 @@ function renderDistributori(){
     const dep=DATA.libri.reduce((s,b)=>s+(b.dist&&b.dist[d.key]?b.dist[d.key].dep||0:0),0);
     const vend=DATA.libri.reduce((s,b)=>s+(b.dist&&b.dist[d.key]?b.dist[d.key].vend||0:0),0);
     const items=DATA.libri.filter(b=>b.dist&&b.dist[d.key]&&((b.dist[d.key].dep||0)>0||(b.dist[d.key].vend||0)>0));
+    const nettoAperti=(DATA.rendiconti||[]).filter(r=>r.distKey===d.key&&!r.saldato).reduce((s,r)=>s+r.netto,0);
     return `<div class="dist-card">
       <div class="dist-card-title">
         <span>${d.label}</span>
         <span style="font-size:0.58rem;"><span style="color:var(--ink2);">${dep}d</span> <span style="color:var(--green);">${vend}v</span></span>
       </div>
+      ${nettoAperti?`<div style="font-size:0.56rem;color:var(--gold);padding:3px 0;border-bottom:1px dotted rgba(194,208,224,0.4);">⏳ Da incassare: ${fmt(nettoAperti)}</div>`:''}
       ${items.map(b=>`<div class="dist-item"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:85px;font-size:0.58rem;">${b.titolo}</span><span><span style="color:var(--ink2);">${b.dist[d.key].dep||0}</span>/<span style="color:var(--green);">${b.dist[d.key].vend||0}</span></span></div>`).join('')}
       ${!items.length?'<div style="font-size:0.58rem;color:var(--border);padding:4px 0;">Vuoto</div>':''}
     </div>`;
@@ -1134,17 +1281,32 @@ function renderMovimenti(){
     </tr>`;
   }).join(''):'<tr><td colspan="7" style="text-align:center;padding:18px;color:var(--muted);font-size:0.66rem;">Nessun movimento</td></tr>';
 }
+function toggleMvDist(){
+  const tipo=document.getElementById('mv_tipo')?.value;
+  const wrap=document.getElementById('mv_dist_wrap');
+  if(wrap)wrap.style.display=(tipo==='vendita_dist'||tipo==='reso')?'block':'none';
+}
 function addMov(){
   const libro_id=parseInt(document.getElementById('mv_titolo')?.value);
   const copie=parseInt(document.getElementById('mv_copie')?.value)||0;
   if(!libro_id||!copie){toast('⚠ Seleziona titolo e inserisci copie');return;}
   const tipo=document.getElementById('mv_tipo').value;
-  const mov={id:Date.now(),libro_id,tipo,copie,desc:document.getElementById('mv_desc')?.value||'',data:document.getElementById('mv_data')?.value||new Date().toISOString().split('T')[0]};
+  const distKey=document.getElementById('mv_dist_sel')?.value||'';
+  const distLabel=DATA.distributori.find(d=>d.key===distKey)?.label||'';
+  const descBase=document.getElementById('mv_desc')?.value||'';
+  const desc=distLabel&&(tipo==='vendita_dist'||tipo==='reso')?`${descBase}${descBase?' — ':''}${distLabel}`:descBase;
+  const mov={id:Date.now(),libro_id,tipo,copie,desc,data:document.getElementById('mv_data')?.value||new Date().toISOString().split('T')[0]};
   DATA.movimenti.push(mov);
   const b=DATA.libri.find(x=>x.id===libro_id);
   if(b){
     if(tipo==='entrata'){b.stampati=(b.stampati||0)+copie;b.magazzino=(b.magazzino||0)+copie;}
-    else if(tipo==='reso'){b.magazzino=(b.magazzino||0)+copie;}
+    else if(tipo==='reso'){
+      b.magazzino=(b.magazzino||0)+copie;
+      if(distKey&&b.dist&&b.dist[distKey]){b.dist[distKey].dep=(b.dist[distKey].dep||0)+copie;b.dist[distKey].vend=Math.max(0,(b.dist[distKey].vend||0)-copie);}
+    }
+    else if(tipo==='vendita_dist'){
+      if(distKey&&b.dist&&b.dist[distKey]){b.dist[distKey].dep=Math.max(0,(b.dist[distKey].dep||0)-copie);b.dist[distKey].vend=(b.dist[distKey].vend||0)+copie;}
+    }
     else if(tipo==='omaggio'){b.magazzino=Math.max(0,(b.magazzino||0)-copie);}
     else if(tipo==='vendita_eco'){b.eco_vend=(b.eco_vend||0)+copie;}
     else if(tipo==='vendita_dir'){b.dir_vend=(b.dir_vend||0)+copie;}
@@ -1153,7 +1315,8 @@ function addMov(){
   saveData();
   ['mv_titolo','mv_desc','mv_copie'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('mv_tipo').value='entrata';
-  renderMovimenti();renderCatalog();toast('Movimento registrato');
+  toggleMvDist();
+  renderMovimenti();renderCatalog();renderDistributori();toast('Movimento registrato');
 }
 function deleteMov(id){
   if(!confirm('Eliminare questo movimento?'))return;
@@ -1162,18 +1325,29 @@ function deleteMov(id){
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// IMPORTA RENDICONTO CSV/XLS — multi-formato con abbinamento per titolo
+// IMPORTA RENDICONTO — multi-formato, distributore, storico, annulla
 // ═══════════════════════════════════════════════════════════════════════════
 let REND_DATA=[];
+let REND_SNAPSHOT=null; // snapshot dati prima dell'importazione
 
 function apriImportaRendiconto(){
-  REND_DATA=[];
-  document.getElementById('rend-preview').style.display='none';
-  document.getElementById('rend-btn-conferma').style.display='none';
-  document.getElementById('rend-filename').textContent='Nessun file selezionato';
-  document.getElementById('rend-period').style.display='none';
-  document.getElementById('loadRendiconto').value='';
-  document.getElementById('moRendiconto').classList.add('open');
+  REND_DATA=[];REND_SNAPSHOT=null;REND_MAN_RIGHE=[];
+  const el=id=>document.getElementById(id);
+  const set=(id,prop,val)=>{const e=el(id);if(e)e[prop]=val;};
+  set('rend-preview','style.display','none');
+  set('rend-btn-conferma','style.display','none');
+  set('rend-filename','textContent','Nessun file selezionato');
+  set('rend-period','style.display','none');
+  set('rend-periodo-man','value','');
+  set('loadRendiconto','value','');
+  const mf=el('rend-manuale-form');if(mf)mf.style.display='none';
+  // Popola select distributori
+  const sel=el('rend-dist-sel');
+  if(sel){
+    sel.innerHTML='<option value="">— seleziona distributore —</option>'+
+      DATA.distributori.map(d=>`<option value="${d.key}">${d.label}</option>`).join('');
+  }
+  el('moRendiconto')?.classList.add('open');
 }
 
 // Normalizza stringa per confronto titoli
@@ -1184,8 +1358,6 @@ function normTitolo(s){
     .replace(/[^a-z0-9\s]/g,' ')
     .replace(/\s+/g,' ').trim();
 }
-
-// Distanza di Levenshtein semplificata per parole chiave
 function scoreSimilarity(a,b){
   const wa=normTitolo(a).split(' ').filter(w=>w.length>2);
   const wb=normTitolo(b).split(' ').filter(w=>w.length>2);
@@ -1194,8 +1366,6 @@ function scoreSimilarity(a,b){
   wa.forEach(w=>{ if(wb.some(x=>x.includes(w)||w.includes(x)))match++; });
   return match/Math.max(wa.length,wb.length);
 }
-
-// Cerca il miglior abbinamento nel catalogo
 function trovaTitolo(titoloCSV){
   let best=null,bestScore=0;
   DATA.libri.forEach(b=>{
@@ -1210,7 +1380,6 @@ function handleRendiconto(e){
   document.getElementById('rend-filename').textContent=file.name;
   const ext=file.name.split('.').pop().toLowerCase();
   if(ext==='xls'||ext==='xlsx'){
-    // Leggi XLS/XLSX con SheetJS (caricato inline)
     const r=new FileReader();
     r.onload=ev=>{
       try{
@@ -1229,55 +1398,49 @@ function handleRendiconto(e){
   }
 }
 
-// ── Parsing CSV (formato Padova/Milano con header standard) ─────────────────
+// ── Parsing CSV ──────────────────────────────────────────────────────────────
 function parseRendicontoCSV(csvText,fname){
   const lines=csvText.split(/\r?\n/).filter(l=>l.trim());
   const sep=lines[0].includes(';')?';':',';
-
-  // Trova la riga header (quella che contiene 'titolo' o 'Titolo' o 'TTOLO')
   let headerIdx=0;
   for(let i=0;i<Math.min(5,lines.length);i++){
     const l=lines[i].toLowerCase();
     if(l.includes('titolo')||l.includes('ttolo')||l.includes('venduto')){headerIdx=i;break;}
   }
-
   const headers=lines[headerIdx].split(sep).map(h=>h.trim().replace(/^[\s"'\ufeff]+|[\s"']+$/g,'').toLowerCase());
-
-  // Mappa colonne flessibile
   const iT=findCol(headers,['titolo','ttolo','title']);
-  const iV=findCol(headers,['venduto','copie','tot copie','qta']);
+  const iV=findCol(headers,['venduto','copie','tot copie','qta','vendite/rese','vendite']);
   const iN=findCol(headers,['valorenetto','valore netto','totale netto','netto','net']);
   const iA=findCol(headers,['anno','year']);
   const iM=findCol(headers,['mese','month']);
-
-  if(iT<0||iV<0||iN<0){
-    toast('⚠ Colonne non riconosciute nel CSV. Contattare assistenza.');
-    console.log('Headers trovati:', headers);
-    return;
-  }
-
+  if(iT<0||iV<0||iN<0){toast('⚠ Colonne non riconosciute nel CSV');console.log('Headers:',headers);return;}
   let anno='',mese='';
   const rows=[];
   for(let i=headerIdx+1;i<lines.length;i++){
     const cols=lines[i].split(sep).map(c=>c.trim().replace(/^"|"$/g,''));
     if(cols.length<3)continue;
     const titoloCSV=(cols[iT]||'').trim();
-    if(!titoloCSV||titoloCSV===''||titoloCSV.toLowerCase()==='nan')continue;
-    const venduto=parseNum(cols[iV]||'0');
-    const netto=parseNum(cols[iN]||'0');
+    if(!titoloCSV||titoloCSV.toLowerCase()==='nan')continue;
+    const venduto=parseNumIT(cols[iV]||'0');
+    const netto=parseNumIT(cols[iN]||'0');
     if(iA>=0&&cols[iA])anno=cols[iA];
     if(iM>=0&&cols[iM])mese=cols[iM];
     const {libro,score}=trovaTitolo(titoloCSV);
     rows.push({titoloCSV,venduto,netto,libro,score});
   }
-  mostraPeriodo(anno,mese,fname);
+  // Autocompila periodo se rilevato e campo vuoto
+  if(anno&&mese){
+    const mesi=['','Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+    const el=document.getElementById('rend-periodo-man');
+    if(el&&!el.value)el.value=`${mesi[parseInt(mese)]||mese} ${anno}`;
+  }
+  mostraPeriodo(fname);
   REND_DATA=rows;
   renderRendicontoPreview(rows);
 }
 
-// ── Parsing XLS/XLSX generico — gestisce Torino (lineare) e Firenze (multi-sezione) ──
+// ── Parsing XLS/XLSX ─────────────────────────────────────────────────────────
 function parseRendicontoXLS(rawRows,fname){
-  // Rileva se è formato multi-sezione (Firenze): ha più righe header con stesse colonne
   const headerRows=[];
   rawRows.forEach((r,i)=>{
     const cells=r.map(c=>(c||'').toString().toLowerCase().trim());
@@ -1286,17 +1449,9 @@ function parseRendicontoXLS(rawRows,fname){
       headerRows.push(i);
     }
   });
-
-  if(headerRows.length>1){
-    // Formato Firenze: più sezioni, aggregiamo per titolo
-    parseXLSMultiSezione(rawRows,headerRows,fname);
-  } else {
-    // Formato Torino: lineare
-    parseXLSLineare(rawRows,fname);
-  }
+  if(headerRows.length>1){parseXLSMultiSezione(rawRows,headerRows,fname);}
+  else{parseXLSLineare(rawRows,fname);}
 }
-
-// Formato Torino (Book Service) — una sola sezione lineare
 function parseXLSLineare(rawRows,fname){
   let headerIdx=0;
   for(let i=0;i<Math.min(8,rawRows.length);i++){
@@ -1305,118 +1460,78 @@ function parseXLSLineare(rawRows,fname){
   }
   const headers=rawRows[headerIdx].map(c=>(c||'').toString().toLowerCase().trim());
   const iT=findCol(headers,['titolo','ttolo','title']);
-  const iV=findCol(headers,['tot copie','venduto','copie','qta','vendite']);
+  const iV=findCol(headers,['tot copie','venduto','copie','qta','vendite/rese','vendite']);
   const iN=findCol(headers,['totale netto','valore netto ','valore netto','valorenetto','netto']);
-
-  if(iT<0||iV<0||iN<0){
-    toast('⚠ Colonne XLS non riconosciute');
-    console.log('Headers XLS:', headers);
-    return;
-  }
-
+  if(iT<0||iV<0||iN<0){toast('⚠ Colonne XLS non riconosciute');console.log('Headers XLS:',headers);return;}
   const rows=[];
   for(let i=headerIdx+1;i<rawRows.length;i++){
     const r=rawRows[i];
     const titoloCSV=(r[iT]||'').toString().trim();
     if(!titoloCSV)continue;
-    // Salta righe di totale
     if(titoloCSV.toLowerCase().includes('totale')||titoloCSV.toLowerCase().includes('netto rendiconto'))continue;
-    // Numeri XLS: già float, non usare parseNum che rimuove il punto decimale
-    const vRaw=r[iV];
-    const nRaw=r[iN];
+    const vRaw=r[iV];const nRaw=r[iN];
     const venduto=typeof vRaw==='number'?vRaw:parseNumIT(vRaw);
     const netto=typeof nRaw==='number'?nRaw:parseNumIT(nRaw);
     if(venduto===0&&netto===0)continue;
     const {libro,score}=trovaTitolo(titoloCSV);
     rows.push({titoloCSV,venduto,netto,libro,score});
   }
-  mostraPeriodo('','',fname);
-  REND_DATA=rows;
-  renderRendicontoPreview(rows);
+  mostraPeriodo(fname);REND_DATA=rows;renderRendicontoPreview(rows);
 }
-
-// Formato Firenze (multi-sezione) — più blocchi header+dati, aggregati per titolo
 function parseXLSMultiSezione(rawRows,headerRows,fname){
-  // Mappa titolo → {venduto, netto}
   const mappa={};
-
   headerRows.forEach((hIdx,si)=>{
     const headers=rawRows[hIdx].map(c=>(c||'').toString().toLowerCase().trim());
     const iT=findCol(headers,['titolo','ttolo','title']);
     const iV=findCol(headers,['vendite/rese','venduto','copie','qta','tot copie']);
     const iN=findCol(headers,['valorenetto','valore netto','totale netto','netto']);
     if(iT<0||iV<0||iN<0)return;
-
-    // Fine sezione = prossimo header o fine file
     const nextH=headerRows[si+1]||rawRows.length;
     for(let i=hIdx+1;i<nextH;i++){
       const r=rawRows[i];
       const titoloCSV=(r[iT]||'').toString().trim();
       if(!titoloCSV)continue;
       if(titoloCSV.toLowerCase().includes('totale')||titoloCSV.toLowerCase().includes('netto rendiconto')||titoloCSV.toLowerCase().includes('ag.'))continue;
-      const vRaw=r[iV];
-      const nRaw=r[iN];
+      const vRaw=r[iV];const nRaw=r[iN];
       const venduto=typeof vRaw==='number'?vRaw:parseNumIT(vRaw);
       const netto=typeof nRaw==='number'?nRaw:parseNumIT(nRaw);
       if(venduto===0&&netto===0)continue;
       const key=normTitolo(titoloCSV);
-      if(mappa[key]){
-        mappa[key].venduto+=venduto;
-        mappa[key].netto+=netto;
-      } else {
-        mappa[key]={titoloCSV,venduto,netto};
-      }
+      if(mappa[key]){mappa[key].venduto+=venduto;mappa[key].netto+=netto;}
+      else{mappa[key]={titoloCSV,venduto,netto};}
     }
   });
-
   const rows=Object.values(mappa).map(({titoloCSV,venduto,netto})=>{
     const {libro,score}=trovaTitolo(titoloCSV);
     return {titoloCSV,venduto,netto,libro,score};
   });
-
-  mostraPeriodo('','',fname);
-  REND_DATA=rows;
-  renderRendicontoPreview(rows);
+  mostraPeriodo(fname);REND_DATA=rows;renderRendicontoPreview(rows);
 }
 
-// ── Helpers ─────────────────────────────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────────────────────
 function findCol(headers,aliases){
-  for(const a of aliases){
-    const i=headers.findIndex(h=>h.includes(a));
-    if(i>=0)return i;
-  }
+  for(const a of aliases){const i=headers.findIndex(h=>h.includes(a));if(i>=0)return i;}
   return -1;
 }
-// Per stringhe con separatore italiano (virgola decimale, punto migliaia)
 function parseNumIT(s){
   if(s===null||s===undefined||s==='')return 0;
   const str=s.toString().trim();
-  // Se contiene virgola: formato italiano → sostituisci punto migliaia, virgola→punto
-  if(str.includes(',')){
-    return parseFloat(str.replace(/\./g,'').replace(',','.'))||0;
-  }
+  if(str.includes(','))return parseFloat(str.replace(/\./g,'').replace(',','.'))||0;
   return parseFloat(str)||0;
 }
-// Alias per compatibilità
-function parseNum(s){ return parseNumIT(s); }
-function mostraPeriodo(anno,mese,fname){
-  const mesi=['','Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
-  let testo=`File: ${fname}`;
-  if(anno&&mese)testo+=` — Periodo: ${mesi[parseInt(mese)]||mese} ${anno}`;
-  document.getElementById('rend-period-text').textContent=testo;
+function parseNum(s){return parseNumIT(s);}
+function mostraPeriodo(fname){
+  document.getElementById('rend-period-text').textContent=`File: ${fname}`;
   document.getElementById('rend-period').style.display='block';
 }
 
-// ── Preview ─────────────────────────────────────────────────────────────────
+// ── Preview ──────────────────────────────────────────────────────────────────
 function renderRendicontoPreview(rows){
   let ok=0,nf=0,totDep=0,totNetto=0;
-  const tbody=document.getElementById('rend-tbody');
-  tbody.innerHTML=rows.map((row,idx)=>{
+  document.getElementById('rend-tbody').innerHTML=rows.map((row,idx)=>{
     const {titoloCSV,venduto,netto,libro,score}=row;
     if(libro){
-      ok++;
-      totDep+=(-venduto);
-      totNetto+=netto;
+      ok++;totDep+=(-venduto);totNetto+=netto;
       const vendStr=venduto>0?`<span style="color:var(--green);">+${venduto}</span>`:`<span style="color:var(--red);">${venduto}</span>`;
       const depStr=venduto<0?`<span style="color:var(--green);">+${Math.abs(venduto)} rientro</span>`:`<span style="color:var(--muted);">-${venduto} uscita</span>`;
       const nettoStr=netto>=0?`<span style="color:var(--green);">€ ${netto.toFixed(2)}</span>`:`<span style="color:var(--red);">€ ${netto.toFixed(2)}</span>`;
@@ -1425,33 +1540,26 @@ function renderRendicontoPreview(rows){
       return `<tr>
         <td style="font-size:0.6rem;color:var(--muted);">${titoloCSV}</td>
         <td style="font-weight:500;font-size:0.62rem;">${libro.titolo} <button onclick="cambiaAbbinamento(${idx})" style="font-size:0.5rem;border:1px solid var(--border);background:var(--cream);cursor:pointer;padding:1px 5px;margin-left:4px;">cambia</button></td>
-        <td>${vendStr}</td>
-        <td>${depStr}</td>
-        <td>${nettoStr}</td>
+        <td>${vendStr}</td><td>${depStr}</td><td>${nettoStr}</td>
         <td><span class="badge ${conf}">${confLbl}</span></td>
       </tr>`;
     } else {
       nf++;
+      const venduto2=row.venduto;const netto2=row.netto;
       return `<tr>
         <td style="font-size:0.6rem;">${titoloCSV}</td>
         <td><select onchange="manualAbbina(${idx},this.value)" style="font-size:0.58rem;padding:2px 4px;border:1px solid var(--border);max-width:200px;">
           <option value="">— seleziona manualmente —</option>
           ${DATA.libri.map(b=>`<option value="${b.id}">${b.titolo}</option>`).join('')}
         </select></td>
-        <td style="font-size:0.6rem;">${venduto>0?`<span style="color:var(--green);">+${venduto}</span>`:`<span style="color:var(--red);">${venduto}</span>`}</td>
+        <td style="font-size:0.6rem;">${venduto2>0?`<span style="color:var(--green);">+${venduto2}</span>`:`<span style="color:var(--red);">${venduto2}</span>`}</td>
         <td>—</td>
-        <td style="font-size:0.6rem;${netto>=0?'color:var(--green)':'color:var(--red)'}">€ ${netto.toFixed(2)}</td>
+        <td style="font-size:0.6rem;${netto2>=0?'color:var(--green)':'color:var(--red)'}">€ ${netto2.toFixed(2)}</td>
         <td><span class="badge bb">⚠ Non trovato</span></td>
       </tr>`;
     }
   }).join('');
-
-  document.getElementById('rend-tfoot').innerHTML=`<tr>
-    <td colspan="4">Totale</td>
-    <td style="color:${totNetto>=0?'#7ecfa0':'#e07070'};font-weight:600;">€ ${totNetto.toFixed(2)}</td>
-    <td></td>
-  </tr>`;
-
+  document.getElementById('rend-tfoot').innerHTML=`<tr><td colspan="4">Totale</td><td style="color:${totNetto>=0?'#7ecfa0':'#e07070'};font-weight:600;">€ ${totNetto.toFixed(2)}</td><td></td></tr>`;
   document.getElementById('rend-ok').textContent=ok;
   document.getElementById('rend-nf').textContent=nf;
   document.getElementById('rend-dep').textContent=(totDep>0?'+':'')+totDep;
@@ -1459,7 +1567,6 @@ function renderRendicontoPreview(rows){
   document.getElementById('rend-preview').style.display='block';
   document.getElementById('rend-btn-conferma').style.display=ok>0?'inline-block':'none';
 }
-
 function manualAbbina(idx,libroId){
   if(!libroId)return;
   REND_DATA[idx].libro=DATA.libri.find(b=>b.id==libroId)||null;
@@ -1467,16 +1574,23 @@ function manualAbbina(idx,libroId){
   renderRendicontoPreview(REND_DATA);
 }
 function cambiaAbbinamento(idx){
-  REND_DATA[idx].libro=null;
-  REND_DATA[idx].score=0;
+  REND_DATA[idx].libro=null;REND_DATA[idx].score=0;
   renderRendicontoPreview(REND_DATA);
 }
 
-// ── Conferma ────────────────────────────────────────────────────────────────
+// ── Conferma ─────────────────────────────────────────────────────────────────
 function confermaRendiconto(){
   if(!REND_DATA.length)return;
+  const distKey=document.getElementById('rend-dist-sel')?.value||'';
+  const distLabel=DATA.distributori.find(d=>d.key===distKey)?.label||distKey||'Non specificato';
+  const periodo=document.getElementById('rend-periodo-man')?.value||'—';
+  if(!distKey){toast('⚠ Seleziona il distributore prima di confermare');return;}
+
+  // Snapshot per annulla
+  REND_SNAPSHOT=JSON.parse(JSON.stringify(DATA));
+
   const oggi=new Date().toISOString().split('T')[0];
-  let aggiornati=0;
+  let aggiornati=0;let totNetto=0;
 
   REND_DATA.forEach(row=>{
     const {venduto,netto,libro}=row;
@@ -1485,42 +1599,362 @@ function confermaRendiconto(){
     if(idx<0)return;
     const b=DATA.libri[idx];
 
-    if(venduto>0){
-      // VENDITA: scala dal deposito distributori in ordine
-      let resto=venduto;
-      (DATA.distributori||[]).forEach(d=>{
-        if(resto<=0)return;
-        const dep=b.dist&&b.dist[d.key]?b.dist[d.key].dep||0:0;
-        const scala=Math.min(dep,resto);
-        if(scala>0&&b.dist&&b.dist[d.key]){
-          b.dist[d.key].dep=Math.max(0,dep-scala);
-          b.dist[d.key].vend=(b.dist[d.key].vend||0)+scala;
-          resto-=scala;
-        }
-      });
-      DATA.movimenti.push({id:Date.now()+Math.random(),libro_id:b.id,tipo:'vendita_dist',copie:venduto,desc:'Rendiconto distributore',data:oggi});
-    } else if(venduto<0){
-      // RESA: rientra nel deposito del primo dist con vendite
-      const resa=Math.abs(venduto);
-      let distKey=(DATA.distributori&&DATA.distributori[0])?DATA.distributori[0].key:null;
-      (DATA.distributori||[]).forEach(d=>{
-        if(b.dist&&b.dist[d.key]&&(b.dist[d.key].vend||0)>0)distKey=d.key;
-      });
-      if(distKey&&b.dist&&b.dist[distKey]){
-        b.dist[distKey].dep=(b.dist[distKey].dep||0)+resa;
-        b.dist[distKey].vend=Math.max(0,(b.dist[distKey].vend||0)-resa);
-      }
-      DATA.movimenti.push({id:Date.now()+Math.random(),libro_id:b.id,tipo:'reso',copie:resa,desc:'Resa libreria — Rendiconto',data:oggi});
-    }
+    // Assicura che il dist esista nel libro
+    if(!b.dist)b.dist={};
+    if(!b.dist[distKey])b.dist[distKey]={dep:0,vend:0};
 
+    if(venduto>0){
+      // Vendita: scala dal deposito di QUEL distributore specifico
+      const depDisp=b.dist[distKey].dep||0;
+      const scala=Math.min(depDisp,venduto);
+      b.dist[distKey].dep=Math.max(0,depDisp-scala);
+      b.dist[distKey].vend=(b.dist[distKey].vend||0)+venduto;
+      DATA.movimenti.push({id:Date.now()+Math.random(),libro_id:b.id,tipo:'vendita_dist',copie:venduto,desc:`Rendiconto ${distLabel} — ${periodo}`,data:oggi});
+    } else if(venduto<0){
+      // Resa: rientra nel deposito di QUEL distributore
+      const resa=Math.abs(venduto);
+      b.dist[distKey].dep=(b.dist[distKey].dep||0)+resa;
+      b.dist[distKey].vend=Math.max(0,(b.dist[distKey].vend||0)-resa);
+      DATA.movimenti.push({id:Date.now()+Math.random(),libro_id:b.id,tipo:'reso',copie:resa,desc:`Resa — Rendiconto ${distLabel} — ${periodo}`,data:oggi});
+    }
     b.ricavi=(b.ricavi||0)+netto;
     if(b.costo_stampa>0)b.resa_invest=((b.ricavi-b.costo_stampa)/b.costo_stampa)*100;
     DATA.libri[idx]=b;
-    aggiornati++;
+    aggiornati++;totNetto+=netto;
+  });
+
+  // Salva in storico rendiconti
+  if(!DATA.rendiconti)DATA.rendiconti=[];
+  const fname=document.getElementById('rend-filename')?.textContent||'—';
+  DATA.rendiconti.unshift({
+    id:Date.now(),
+    data:oggi,
+    distributore:distLabel,
+    distKey,
+    periodo,
+    file:fname,
+    titoli:aggiornati,
+    netto:totNetto,
+    saldato:false,
+    snapshot_id:Date.now()
   });
 
   saveData();closeModal('moRendiconto');renderAll();
   toast(`✓ Rendiconto importato — ${aggiornati} titoli aggiornati`);
+}
+
+// ── Annulla ultima importazione ───────────────────────────────────────────────
+function annullaUltimoRendiconto(){
+  if(!REND_SNAPSHOT){toast('⚠ Nessuna importazione da annullare in questa sessione');return;}
+  if(!confirm('Annullare l\'ultima importazione? Tutti i dati torneranno allo stato precedente.'))return;
+  DATA=REND_SNAPSHOT;
+  REND_SNAPSHOT=null;
+  saveData();renderAll();toast('↩ Importazione annullata');
+}
+function toggleSaldato(id){
+  if(!DATA.rendiconti)return;
+  const r=DATA.rendiconti.find(x=>x.id===id);
+  if(r){r.saldato=!r.saldato;saveData();renderRendiconti();}
+}
+function eliminaRendiconto(id){
+  if(!confirm('Eliminare questo record dallo storico? Non modifica i dati del magazzino.'))return;
+  DATA.rendiconti=(DATA.rendiconti||[]).filter(x=>x.id!==id);
+  saveData();renderRendiconti();toast('Record eliminato');
+}
+
+// ── Rendiconto manuale ────────────────────────────────────────────────────────
+let REND_MAN_RIGHE=[];
+function toggleRendManuale(){
+  const f=document.getElementById('rend-manuale-form');
+  if(!f)return;
+  const show=f.style.display==='none';
+  f.style.display=show?'block':'none';
+  if(show){
+    const sel=document.getElementById('rm_titolo');
+    if(sel)sel.innerHTML='<option value="">— seleziona —</option>'+DATA.libri.map(b=>`<option value="${b.id}">${b.titolo}</option>`).join('');
+    REND_MAN_RIGHE=[];renderRigheManuale();
+  }
+}
+function aggiungiRigaManuale(){
+  const id=parseInt(document.getElementById('rm_titolo')?.value);
+  const venduto=parseFloat(document.getElementById('rm_venduto')?.value)||0;
+  const netto=parseFloat(document.getElementById('rm_netto')?.value)||0;
+  if(!id){toast('⚠ Seleziona un titolo');return;}
+  const libro=DATA.libri.find(b=>b.id===id);if(!libro)return;
+  const existing=REND_MAN_RIGHE.find(r=>r.libro&&r.libro.id===id);
+  if(existing){existing.venduto+=venduto;existing.netto+=netto;}
+  else{REND_MAN_RIGHE.push({titoloCSV:libro.titolo,venduto,netto,libro,score:1});}
+  document.getElementById('rm_venduto').value='';
+  document.getElementById('rm_netto').value='';
+  renderRigheManuale();
+  REND_DATA=REND_MAN_RIGHE;renderRendicontoPreview(REND_DATA);
+}
+function rimuoviRigaManuale(idx){
+  REND_MAN_RIGHE.splice(idx,1);renderRigheManuale();
+  REND_DATA=REND_MAN_RIGHE;renderRendicontoPreview(REND_DATA);
+}
+function renderRigheManuale(){
+  const el=document.getElementById('rm-righe');if(!el)return;
+  el.innerHTML=REND_MAN_RIGHE.length?REND_MAN_RIGHE.map((r,i)=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px dotted var(--border);">
+      <span style="flex:1;">${r.titoloCSV}</span>
+      <span style="width:60px;text-align:center;color:${r.venduto>=0?'var(--green)':'var(--red)'};">${r.venduto>=0?'+':''}${r.venduto}</span>
+      <span style="width:80px;text-align:right;color:${r.netto>=0?'var(--green)':'var(--red)'};">€ ${r.netto.toFixed(2)}</span>
+      <button onclick="rimuoviRigaManuale(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;margin-left:8px;">✕</button>
+    </div>`).join(''):'<div style="color:var(--muted);padding:4px 0;">Nessuna riga inserita</div>';
+}
+
+// ── Render pagina Rendiconti ─────────────────────────────────────────────────
+function renderRendiconti(){
+  const rends=DATA.rendiconti||[];
+  document.getElementById('rs_tot').textContent=rends.length;
+  const totNetto=rends.reduce((s,r)=>s+r.netto,0);
+  document.getElementById('rs_netto').textContent=fmt(totNetto);
+  document.getElementById('rs_ultimo').textContent=rends.length?rends[0].data:'—';
+  const aperti=rends.filter(r=>!r.saldato).reduce((s,r)=>s+r.netto,0);
+  document.getElementById('rs_aperti').textContent=aperti?fmt(aperti):'—';
+  document.getElementById('rs-count').textContent=rends.length+' record';
+  const annullaBtn=document.getElementById('rs-annulla-btn');
+  if(annullaBtn)annullaBtn.style.display=REND_SNAPSHOT?'inline-block':'none';
+  document.getElementById('rs-tbody').innerHTML=rends.length?rends.map(r=>`<tr>
+    <td style="font-size:0.6rem;">${r.data}</td>
+    <td style="font-weight:500;font-size:0.62rem;">${r.distributore}</td>
+    <td style="font-size:0.6rem;color:var(--muted);">${r.periodo||'—'}</td>
+    <td style="font-size:0.58rem;color:var(--muted);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${r.file}">${r.file}</td>
+    <td style="text-align:center;">${r.titoli}</td>
+    <td style="text-align:right;color:${r.netto>=0?'var(--green)':'var(--red)'};font-weight:500;">${fmt(r.netto)}</td>
+    <td><span onclick="toggleSaldato(${r.id})" style="cursor:pointer;" class="badge ${r.saldato?'bg':'bb'}">${r.saldato?'✓ Saldato':'⏳ In attesa'}</span></td>
+    <td><button class="btn-d" onclick="eliminaRendiconto(${r.id})" title="Elimina record">✕</button></td>
+  </tr>`).join(''):'<tr><td colspan="8" style="text-align:center;padding:18px;color:var(--muted);font-size:0.66rem;">Nessun rendiconto importato</td></tr>';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════════════════════════
+const CHART_INSTANCES={};
+function destroyChart(id){if(CHART_INSTANCES[id]){CHART_INSTANCES[id].destroy();delete CHART_INSTANCES[id];}}
+
+function renderDashboard(){
+  const dp=document.getElementById('page-dashboard');
+  if(!dp||!dp.classList.contains('active'))return;
+  renderDashKPI();
+  renderChartResa();
+  renderChartDist();
+  renderChartCanali();
+  renderChartRicavi();
+  renderMatrice();
+}
+
+// ── KPI cards ────────────────────────────────────────────────────────────────
+function renderDashKPI(){
+  const libri=DATA.libri;
+  const totVend=libri.reduce((s,b)=>s+totVendute(b),0);
+  const totDep=libri.reduce((s,b)=>s+totDeposito(b),0);
+  const totMag=libri.reduce((s,b)=>s+(b.magazzino||0),0);
+  const totRicavi=libri.reduce((s,b)=>s+(b.ricavi||0),0);
+  const totCosti=libri.reduce((s,b)=>s+(b.costo_stampa||0),0);
+  const utile=totRicavi-totCosti;
+  const resaMedia=totCosti>0?((utile/totCosti)*100):0;
+  const inPerdita=libri.filter(b=>(b.resa_invest||0)<0).length;
+  const ristampa=libri.filter(b=>(b.resa_invest||0)>=40&&(b.magazzino||0)<=10).length;
+  const kpis=[
+    {label:'Titoli catalogo',    val:libri.length,                        color:'cgo'},
+    {label:'Copie vendute',      val:totVend,                             color:'cg'},
+    {label:'In deposito',        val:totDep,                              color:'cgo'},
+    {label:'In magazzino',       val:totMag,                              color:'cgo'},
+    {label:'Ricavi totali',      val:fmt(totRicavi),                      color:'cg'},
+    {label:'Utile netto',        val:fmt(utile),                          color:utile>=0?'cg':'cr'},
+    {label:'Resa media',         val:resaMedia.toFixed(1)+'%',            color:resaMedia>=40?'cg':resaMedia>=0?'cgo':'cr'},
+    {label:'In perdita',         val:inPerdita,                           color:inPerdita?'cr':'cg'},
+    {label:'Ristampa urgente',   val:ristampa,                            color:ristampa?'cgo':'cg'},
+  ];
+  document.getElementById('dash-kpi').style.gridTemplateColumns='repeat(9,1fr)';
+  document.getElementById('dash-kpi').innerHTML=kpis.map(k=>`
+    <div class="card">
+      <div class="card-label">${k.label}</div>
+      <div class="card-val ${k.color}">${k.val}</div>
+    </div>`).join('');
+}
+
+// ── Grafico 1: Resa per titolo — altezza dinamica, scrollabile ───────────────
+function renderChartResa(){
+  destroyChart('resa');
+  const libri=[...DATA.libri]
+    .filter(b=>b.costo_stampa>0)
+    .sort((a,b)=>(b.resa_invest||0)-(a.resa_invest||0));
+  if(!libri.length)return;
+  const BAR_H=26; // px per barra
+  const altezza=Math.max(200, libri.length*BAR_H+40);
+  const inner=document.getElementById('chart-resa-inner');
+  if(inner)inner.style.height=altezza+'px';
+  const labels=libri.map(b=>b.titolo);
+  const values=libri.map(b=>parseFloat((b.resa_invest||0).toFixed(1)));
+  const colors=values.map(v=>v>=70?'rgba(45,90,61,0.8)':v>=40?'rgba(196,146,42,0.8)':'rgba(139,38,53,0.8)');
+  const ctx=document.getElementById('chart-resa');
+  if(!ctx)return;
+  CHART_INSTANCES['resa']=new Chart(ctx,{
+    type:'bar',
+    data:{labels,datasets:[{data:values,backgroundColor:colors,borderWidth:0,borderRadius:2}]},
+    options:{
+      indexAxis:'y',
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          callbacks:{
+            title:items=>libri[items[0].dataIndex].titolo,
+            label:c=>{
+              const b=libri[c.dataIndex];
+              return [
+                ` Resa: ${c.raw}%`,
+                ` Ricavi: ${fmt(b.ricavi||0)}`,
+                ` Costo stampa: ${fmt(b.costo_stampa||0)}`,
+                ` Utile: ${fmt((b.ricavi||0)-(b.costo_stampa||0))}`,
+                ` Vendute: ${totVendute(b)} cop.`
+              ];
+            }
+          }
+        }
+      },
+      scales:{
+        x:{
+          grid:{color:'rgba(194,208,224,0.35)'},
+          ticks:{font:{family:'DM Mono',size:9},callback:v=>v+'%'},
+          border:{dash:[3,3]},
+          // Linea dello zero evidenziata
+        },
+        y:{
+          grid:{display:false},
+          ticks:{font:{family:'DM Mono',size:9},padding:4}
+        }
+      },
+      // Linea verticale allo zero
+      plugins2:{annotation:{annotations:{zero:{type:'line',xMin:0,xMax:0,borderColor:'rgba(139,38,53,0.4)',borderWidth:1}}}}
+    }
+  });
+}
+
+// ── Grafico 2: Deposito vs Venduto per distributore ──────────────────────────
+function renderChartDist(){
+  destroyChart('dist');
+  const dists=DATA.distributori;
+  const labels=dists.map(d=>d.label.replace('Distributore ','').replace('Libreria ',''));
+  const dep=dists.map(d=>DATA.libri.reduce((s,b)=>s+(b.dist&&b.dist[d.key]?b.dist[d.key].dep||0:0),0));
+  const vend=dists.map(d=>DATA.libri.reduce((s,b)=>s+(b.dist&&b.dist[d.key]?b.dist[d.key].vend||0:0),0));
+  const ctx=document.getElementById('chart-dist');if(!ctx)return;
+  CHART_INSTANCES['dist']=new Chart(ctx,{
+    type:'bar',
+    data:{labels,datasets:[
+      {label:'Deposito',data:dep,backgroundColor:'rgba(26,58,107,0.65)',borderWidth:0,borderRadius:2},
+      {label:'Venduto',data:vend,backgroundColor:'rgba(45,90,61,0.7)',borderWidth:0,borderRadius:2}
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{labels:{font:{family:'DM Mono',size:9},boxWidth:10}},
+        tooltip:{callbacks:{
+          afterBody:items=>{
+            const idx=items[0].dataIndex;
+            const d=dists[idx];
+            const titoli=DATA.libri.filter(b=>b.dist&&b.dist[d.key]&&((b.dist[d.key].dep||0)+(b.dist[d.key].vend||0))>0);
+            return ['─────────────',...titoli.slice(0,5).map(b=>`${b.titolo.substring(0,18)}: ${b.dist[d.key].dep||0}d/${b.dist[d.key].vend||0}v`),titoli.length>5?`+${titoli.length-5} altri`:''];
+          }
+        }}
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{font:{family:'DM Mono',size:9}}},
+        y:{grid:{color:'rgba(194,208,224,0.3)'},ticks:{font:{family:'DM Mono',size:9}},border:{dash:[3,3]}}
+      }
+    }
+  });
+}
+
+// ── Grafico 3: Composizione vendite per canale (ciambella) ───────────────────
+function renderChartCanali(){
+  destroyChart('canali');
+  const libri=DATA.libri;
+  const eco=libri.reduce((s,b)=>s+(b.eco_vend||0),0);
+  const dir=libri.reduce((s,b)=>s+(b.dir_vend||0),0);
+  const distTot=libri.reduce((s,b)=>s+(DATA.distributori.reduce((ss,d)=>ss+(b.dist&&b.dist[d.key]?b.dist[d.key].vend||0:0),0)),0);
+  const tot=eco+dir+distTot;
+  if(tot===0){const c=document.getElementById('chart-canali');if(c)c.parentElement.innerHTML='<div style="font-size:0.62rem;color:var(--muted);text-align:center;padding:60px 0;">Nessuna vendita registrata</div>';return;}
+  const ctx=document.getElementById('chart-canali');if(!ctx)return;
+  CHART_INSTANCES['canali']=new Chart(ctx,{
+    type:'doughnut',
+    data:{
+      labels:['Distributori','E-commerce','Vendite dirette'],
+      datasets:[{data:[distTot,eco,dir],
+        backgroundColor:['rgba(26,58,107,0.8)','rgba(196,146,42,0.8)','rgba(45,90,61,0.8)'],
+        borderWidth:2,borderColor:'white'}]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,cutout:'62%',
+      plugins:{legend:{position:'bottom',labels:{font:{family:'DM Mono',size:9},boxWidth:10,padding:10}},
+        tooltip:{callbacks:{label:c=>` ${c.label}: ${c.raw} cop. (${(c.raw/tot*100).toFixed(0)}%)`}}}
+    }
+  });
+}
+
+// ── Grafico 4: Andamento ricavi rendiconti (linea cumulata) ──────────────────
+function renderChartRicavi(){
+  destroyChart('ricavi');
+  const rends=(DATA.rendiconti||[]).slice().reverse(); // dal più vecchio al più recente
+  const empty=document.getElementById('chart-ricavi-empty');
+  const wrap=document.getElementById('chart-ricavi');
+  if(!rends.length){
+    if(wrap)wrap.style.display='none';
+    if(empty)empty.style.display='block';
+    return;
+  }
+  if(wrap)wrap.style.display='block';
+  if(empty)empty.style.display='none';
+  const labels=rends.map(r=>`${r.distributore.replace('Distributore ','').replace('Libreria ','')} ${r.periodo||r.data}`);
+  let cum=0;
+  const cumValues=rends.map(r=>{cum+=r.netto;return parseFloat(cum.toFixed(2));});
+  const barValues=rends.map(r=>parseFloat(r.netto.toFixed(2)));
+  const ctx=document.getElementById('chart-ricavi');if(!ctx)return;
+  CHART_INSTANCES['ricavi']=new Chart(ctx,{
+    type:'bar',
+    data:{labels,datasets:[
+      {type:'line',label:'Cumulato',data:cumValues,borderColor:'rgba(196,146,42,0.9)',backgroundColor:'rgba(196,146,42,0.08)',borderWidth:2,pointRadius:3,tension:0.3,yAxisID:'y1'},
+      {type:'bar',label:'Singolo',data:barValues,backgroundColor:barValues.map(v=>v>=0?'rgba(45,90,61,0.6)':'rgba(139,38,53,0.6)'),borderWidth:0,yAxisID:'y'}
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{font:{family:'DM Mono',size:9},boxWidth:10}}},
+      scales:{
+        x:{grid:{display:false},ticks:{font:{family:'DM Mono',size:8},maxRotation:35}},
+        y:{grid:{color:'rgba(194,208,224,0.3)'},ticks:{font:{family:'DM Mono',size:9},callback:v=>'€'+v},border:{dash:[3,3]}},
+        y1:{position:'right',grid:{display:false},ticks:{font:{family:'DM Mono',size:9},callback:v=>'€'+v}}
+      }
+    }
+  });
+}
+
+// ── Matrice situazione titoli (4 quadranti) ──────────────────────────────────
+function renderMatrice(){
+  const libri=DATA.libri;
+  const quadranti=[
+    {label:'\u{1F7E2} Ottimi',        sub:'Resa \u226540% \u00B7 Mag.>10', color:'rgba(45,90,61,0.07)', border:'#2d5a3d', tc:'#2d5a3d',
+     items:libri.filter(b=>(b.resa_invest||0)>=40&&(b.magazzino||0)>10).sort((a,b)=>(b.resa_invest||0)-(a.resa_invest||0))},
+    {label:'\u26A0 Ristampa',      sub:'Resa \u226540% \u00B7 Mag.\u226410', color:'rgba(196,146,42,0.07)', border:'#c4922a', tc:'#7a4a00',
+     items:libri.filter(b=>(b.resa_invest||0)>=40&&(b.magazzino||0)<=10).sort((a,b)=>(b.resa_invest||0)-(a.resa_invest||0))},
+    {label:'\u{1F4E6} Scorte alte',   sub:'Resa <40% \u00B7 Mag.>10', color:'rgba(26,58,107,0.05)', border:'#1a3a6b', tc:'#1a3a6b',
+     items:libri.filter(b=>(b.resa_invest||0)<40&&(b.magazzino||0)>10).sort((a,b)=>(a.resa_invest||0)-(b.resa_invest||0))},
+    {label:'\u{1F534} Critici',       sub:'Resa <40% \u00B7 Mag.\u226410', color:'rgba(139,38,53,0.07)', border:'#8b2635', tc:'#8b2635',
+     items:libri.filter(b=>(b.resa_invest||0)<40&&(b.magazzino||0)<=10).sort((a,b)=>(a.resa_invest||0)-(b.resa_invest||0))},
+  ];
+  document.getElementById('dash-matrix').innerHTML=quadranti.map(q=>`
+    <div class="matrix-cell" style="background:${q.color};border-color:${q.border};">
+      <div class="matrix-cell-title" style="color:${q.tc};">
+        ${q.label} <span style="font-size:0.44rem;color:var(--muted);font-weight:400;">${q.sub}</span>
+        <span style="background:${q.border};color:white;padding:1px 6px;font-size:0.5rem;float:right;">${q.items.length}</span>
+      </div>
+      <div style="max-height:180px;overflow-y:auto;">
+        ${q.items.length?q.items.map(b=>`<div class="matrix-item" title="${b.titolo.replace(/"/g,"'")}"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px;font-size:0.58rem;">${b.titolo}</span><span style="color:var(--muted);font-size:0.52rem;white-space:nowrap;margin-left:4px;">${(b.resa_invest||0).toFixed(0)}% · ${b.magazzino||0}cop</span></div>`).join('')
+        :'<div style="font-size:0.56rem;color:var(--muted);padding:8px 0;">—</div>'}
+      </div>
+    </div>`).join('');
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1629,7 +2063,32 @@ function closeOv(id,e){if(e.target.id===id)closeModal(id);}
 // MAIN
 // ═══════════════════════════════════════════════════════════════════════════
 function renderAll(){
-  renderCatalog();renderDistributori();renderMovimenti();renderAlert();renderBollaPage();
+  renderCatalog();renderDistributori();renderMovimenti();renderAlert();renderBollaPage();renderRendiconti();
+  // Aggiorna filtro distributori nel catalogo
+  const filDist=document.getElementById('fil-dist');
+  if(filDist){
+    const cur=filDist.value;
+    filDist.innerHTML='<option value="">Tutti</option>'+DATA.distributori.map(d=>`<option value="${d.key}">${d.label}</option>`).join('');
+    if(cur)filDist.value=cur;
+  }
+  // Aggiorna select distributore movimenti
+  const mvDist=document.getElementById('mv_dist_sel');
+  if(mvDist)mvDist.innerHTML=DATA.distributori.map(d=>`<option value="${d.key}">${d.label}</option>`).join('');
+  // Ridisegna dashboard solo se visibile
+  const dp=document.getElementById('page-dashboard');
+  if(dp&&dp.classList.contains('active'))renderDashboard();
+}
+function showPage(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  btn.classList.add('active');
+  if(id==='dashboard'){
+    // Piccolo delay per garantire che il DOM sia visibile prima di disegnare
+    setTimeout(()=>renderDashboard(),30);
+  } else {
+    renderAll();
+  }
 }
 async function init(){
   document.getElementById('hdr-date').textContent=new Date().toLocaleDateString('it-IT',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
@@ -1637,7 +2096,10 @@ async function init(){
   document.getElementById('bolla_data').value=new Date().toISOString().split('T')[0];
   const y=new Date().getFullYear();
   document.getElementById('bolla_num').value=y+'/001';
-  await loadData();renderAll();
+  await loadData();
+  renderAll();
+  // Dashboard visibile all'avvio — aspetta che il DOM sia pronto
+  setTimeout(()=>renderDashboard(),100);
 }
 init();
 </script>
