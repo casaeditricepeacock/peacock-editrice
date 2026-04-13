@@ -811,7 +811,7 @@ function renderAnnual(){
   document.getElementById('ann_uscite').textContent=fmt(a.u);
   const auel=document.getElementById('ann_utile');
   auel.textContent=fmt(a.utile);auel.className='card-val '+(a.utile>=0?'pos':'neg');
-  document.getElementById('ann_vend').textContent=a.vend;
+  document.getElementById('ann_vend').textContent=a.vend+(a.dir||0)+(a.eb_n||0);
   document.getElementById('ann_stamp').textContent=a.stamp;
   const spTot=a.sp_stampa+a.sp_sped+a.sp_camp+a.sp_quote+a.sp_admin+a.sp_altro;
   document.getElementById('ann_sp_tot').textContent=fmt(spTot);
@@ -1238,7 +1238,7 @@ function renderMastro(){
   document.getElementById('pg_anno').textContent=fmt(yp.utile);
   const tot=yp.utile+riportato;
   const pgT=document.getElementById('pg_tot');pgT.textContent=fmt(tot);pgT.className='pi-val '+(tot>=0?'gold':'neg');
-  document.getElementById('pg_vend').textContent=yp.vend;
+  document.getElementById('pg_vend').textContent=yp.vend+yp.dir+yp.eb_n;
   document.getElementById('pg_stamp').textContent=yp.stamp;
   document.getElementById('m_note').value=getNotes(CY,CM);
   const rows=getRows(CY,CM);
