@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Peacock — Piano Editoriale</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&display=swap');
+:root{
+  --ink:#0a1628;--ink2:#1a3a6b;--paper:#f0f4f8;--cream:#e2eaf3;
+  --gold:#c4922a;--gold-light:#e8c97a;
+  --red:#8b2635;--red-bg:rgba(139,38,53,0.07);
+  --green:#2d5a3d;--green-bg:rgba(45,90,61,0.07);
+  --muted:#5a6e8a;--border:#c2d0e0;--blue-light:#eef3fa;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Mono',monospace;background:var(--paper);color:var(--ink);min-height:100vh;}
+.header{background:var(--ink);color:var(--paper);padding:16px 32px;display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid var(--gold);}
+.header h1{font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:300;letter-spacing:0.15em;text-transform:uppercase;}
+.header-sub{font-size:0.54rem;color:var(--gold-light);letter-spacing:0.3em;text-transform:uppercase;display:block;margin-top:3px;}
+.hdr-right{text-align:right;font-size:0.54rem;color:var(--gold-light);}
+#hdr-date{font-family:'Cormorant Garamond',serif;font-size:0.85rem;color:var(--paper);font-style:italic;}
+.topbar{background:var(--ink2);padding:8px 32px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+.nav-left{display:flex;gap:0;}
+.nav-tab{padding:9px 20px;font-size:0.62rem;letter-spacing:0.14em;text-transform:uppercase;cursor:pointer;border:none;background:transparent;color:rgba(255,255,255,0.55);border-bottom:3px solid transparent;transition:all 0.18s;font-family:'DM Mono',monospace;}
+.nav-tab.active{color:var(--gold-light);border-bottom-color:var(--gold);background:rgba(0,0,0,0.15);}
+.nav-tab:hover:not(.active){color:white;background:rgba(255,255,255,0.08);}
+.nav-right{display:flex;gap:6px;align-items:center;}
+#save-ind{font-size:0.54rem;letter-spacing:0.1em;color:rgba(125,220,150,0.9);margin-right:6px;}
+.btn-io{padding:5px 11px;font-size:0.56rem;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;border:1px solid rgba(255,255,255,0.3);background:transparent;color:rgba(255,255,255,0.7);font-family:'DM Mono',monospace;transition:all 0.12s;}
+.btn-io:hover{background:var(--gold);color:var(--ink);border-color:var(--gold);}
+.btn-io.save{border-color:rgba(125,220,150,0.5);color:rgba(125,220,150,0.9);}
+.btn-io.save:hover{background:var(--green);color:white;border-color:var(--green);}
+.main{padding:20px 32px;max-width:1600px;margin:0 auto;}
+.page{display:none;}.page.active{display:block;}
+.sec-title{font-family:'Cormorant Garamond',serif;font-size:0.66rem;letter-spacing:0.26em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid var(--border);}
+.cards-row{display:grid;gap:9px;margin-bottom:16px;}
+.c4{grid-template-columns:repeat(4,1fr);}
+.c5{grid-template-columns:repeat(5,1fr);}
+.c2{grid-template-columns:1fr 1fr;}
+.c3{grid-template-columns:1fr 1fr 1fr;}
+.card{background:var(--ink2);color:var(--paper);padding:12px 14px;position:relative;}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--gold);}
+.card-label{font-size:0.5rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold-light);margin-bottom:4px;}
+.card-val{font-family:'Cormorant Garamond',serif;font-size:1.25rem;font-weight:300;line-height:1;}
+.card-sub{font-size:0.5rem;color:rgba(255,255,255,0.5);margin-top:4px;}
+.cg{color:#7ecfa0;}.cr{color:#e07070;}.cgo{color:var(--gold-light);}
+.panel{background:white;border:1px solid var(--border);padding:16px;margin-bottom:14px;}
+.panel-title{font-family:'Cormorant Garamond',serif;font-size:0.7rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.chart-wrap{position:relative;}
+.filters{background:var(--cream);border:1px solid var(--border);padding:9px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px;}
+.fil-label{font-size:0.5rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);}
+.fil-input,.fil-select{padding:5px 9px;border:1px solid var(--border);background:white;font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--ink);}
+.fil-input:focus,.fil-select:focus{outline:none;border-color:var(--ink2);}
+.fil-btn{padding:5px 12px;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;border:1px solid var(--ink2);background:var(--ink2);color:white;font-family:'DM Mono',monospace;transition:all 0.12s;}
+.fil-btn:hover{background:var(--gold);border-color:var(--gold);color:var(--ink);}
+table{width:100%;border-collapse:collapse;font-size:0.64rem;}
+th{text-align:left;padding:7px 8px;font-size:0.5rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border);white-space:nowrap;}
+td{padding:7px 8px;border-bottom:1px solid var(--cream);vertical-align:middle;}
+tr:hover td{background:var(--blue-light);}
+.td-r{text-align:right;font-variant-numeric:tabular-nums;}
+.stato-badge{display:inline-block;padding:2px 7px;font-size:0.52rem;letter-spacing:0.08em;text-transform:uppercase;border:1px solid;}
+.s-imp{background:rgba(196,146,42,0.1);color:#7a5800;border-color:rgba(196,146,42,0.4);}
+.s-sch{background:rgba(139,38,53,0.08);color:var(--red);border-color:rgba(139,38,53,0.3);}
+.s-cam{background:rgba(26,58,107,0.08);color:var(--ink2);border-color:rgba(26,58,107,0.3);}
+.s-sta{background:rgba(124,63,160,0.08);color:#4a1a70;border-color:rgba(124,63,160,0.3);}
+.s-dis{background:var(--green-bg);color:var(--green);border-color:rgba(45,90,61,0.3);}
+.s-alt{background:rgba(90,110,138,0.08);color:var(--muted);border-color:rgba(90,110,138,0.3);}
+.gg-ok{color:var(--muted);}.gg-warn{color:#b8860b;font-weight:500;}.gg-crit{color:var(--red);font-weight:500;}
+.btn-edit{padding:3px 8px;font-size:0.52rem;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'DM Mono',monospace;transition:all 0.12s;}
+.btn-edit:hover{border-color:var(--ink2);color:var(--ink2);}
+/* OBIETTIVI */
+.prog-row{margin-bottom:12px;}
+.prog-label{font-size:0.58rem;display:flex;justify-content:space-between;margin-bottom:3px;letter-spacing:0.06em;}
+.prog-track{background:var(--cream);height:8px;position:relative;}
+.prog-fill{height:100%;transition:width .4s;}
+.prog-pct{font-size:0.5rem;color:var(--muted);margin-top:2px;}
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(10,22,40,0.6);display:none;align-items:center;justify-content:center;z-index:200;}
+.overlay.open{display:flex;}
+.modal{background:var(--paper);border-top:3px solid var(--gold);padding:24px;width:680px;max-width:95vw;max-height:92vh;overflow-y:auto;}
+.modal-h{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:300;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:18px;color:var(--ink2);}
+.form-grid{display:grid;gap:10px;}
+.fg2{grid-template-columns:1fr 1fr;}
+.fg3{grid-template-columns:1fr 1fr 1fr;}
+.fg1{grid-template-columns:1fr;}
+.span2{grid-column:1/-1;}
+.f-label{font-size:0.5rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:3px;display:block;}
+.f-input,.f-select,.f-textarea{width:100%;padding:7px 9px;border:1px solid var(--border);background:white;font-family:'DM Mono',monospace;font-size:0.64rem;color:var(--ink);}
+.f-input:focus,.f-select:focus,.f-textarea:focus{outline:none;border-color:var(--ink2);}
+.f-textarea{resize:vertical;min-height:60px;line-height:1.5;}
+.modal-actions{display:flex;gap:8px;margin-top:16px;align-items:center;}
+.btn-prim{padding:7px 16px;font-size:0.58rem;letter-spacing:0.14em;text-transform:uppercase;cursor:pointer;border:1px solid var(--ink2);background:var(--ink2);color:white;font-family:'DM Mono',monospace;transition:all 0.12s;}
+.btn-prim:hover{background:var(--gold);border-color:var(--gold);color:var(--ink);}
+.btn-sec{padding:7px 16px;font-size:0.58rem;letter-spacing:0.14em;text-transform:uppercase;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'DM Mono',monospace;transition:all 0.12s;}
+.btn-sec:hover{border-color:var(--ink);color:var(--ink);}
+.btn-del{padding:7px 16px;font-size:0.58rem;letter-spacing:0.14em;text-transform:uppercase;cursor:pointer;border:1px solid var(--red);background:transparent;color:var(--red);font-family:'DM Mono',monospace;transition:all 0.12s;margin-left:auto;}
+.btn-del:hover{background:var(--red);color:white;}
+/* TOAST */
+#toast{position:fixed;bottom:20px;right:20px;background:var(--ink2);color:white;padding:10px 18px;font-size:0.62rem;letter-spacing:0.1em;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:999;border-left:3px solid var(--gold);}
+/* ANNO TABS */
+.anno-tabs{display:flex;gap:0;margin-bottom:14px;}
+.anno-tab{padding:6px 16px;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;border:1px solid var(--border);background:white;color:var(--muted);font-family:'DM Mono',monospace;transition:all 0.12s;border-right:none;}
+.anno-tab:last-child{border-right:1px solid var(--border);}
+.anno-tab.active{background:var(--ink2);color:var(--gold-light);border-color:var(--ink2);}
+/* ALERT */
+.alert-item{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-left:3px solid var(--border);margin-bottom:6px;background:white;font-size:0.62rem;}
+.alert-item.warn{border-left-color:var(--gold);}
+.alert-item.crit{border-left-color:var(--red);}
+/* SETTINGS */
+.cfg-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.cfg-label{font-size:0.54rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);min-width:120px;}
+.cfg-input{flex:1;padding:6px 9px;border:1px solid var(--border);background:white;font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--ink);}
+.cfg-input:focus{outline:none;border-color:var(--ink2);}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>Casa Editrice Peacock<span class="header-sub">Piano Editoriale</span></h1>
+  </div>
+  <div class="hdr-right">
+    <span id="save-ind-h"></span>
+    <div id="hdr-date"></div>
+  </div>
+</div>
+
+<div class="topbar">
+  <div class="nav-left">
+    <button class="nav-tab active" data-page="dashboard">Dashboard</button>
+    <button class="nav-tab" data-page="piano">Piano</button>
+    <button class="nav-tab" data-page="obiettivi">Obiettivi</button>
+    <button class="nav-tab" data-page="progetti">Progetti</button>
+    <button class="nav-tab" data-page="settings">Impostazioni</button>
+  </div>
+  <div class="nav-right">
+    <span id="save-ind">● salvato</span>
+    <button class="btn-io save" id="btn-save">Salva</button>
+    <button class="btn-io" id="btn-new-libro">+ Nuovo libro</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- DASHBOARD -->
+  <div class="page active" id="page-dashboard">
+    <div class="anno-tabs" id="anno-dash">
+      <div class="anno-tab active" data-anno="2025">2025</div>
+      <div class="anno-tab" data-anno="2026">2026</div>
+      <div class="anno-tab" data-anno="tutti">Tutti</div>
+    </div>
+    <div class="cards-row c5" id="kpi-row"></div>
+    <div class="cards-row c2">
+      <div class="panel">
+        <div class="panel-title">Pipeline per stato</div>
+        <div class="chart-wrap" style="height:220px"><canvas id="ch-pipeline"></canvas></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Uscite per mese</div>
+        <div class="chart-wrap" style="height:220px"><canvas id="ch-mesi"></canvas></div>
+      </div>
+    </div>
+    <div class="cards-row c2">
+      <div class="panel">
+        <div class="panel-title">Investimento stampa per mese (€)</div>
+        <div class="chart-wrap" style="height:180px"><canvas id="ch-costi"></canvas></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Copie per stampatore</div>
+        <div class="chart-wrap" style="height:180px"><canvas id="ch-stampatori"></canvas></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Alert — libri in lavorazione</div>
+      <div id="alert-panel"></div>
+    </div>
+  </div>
+
+  <!-- PIANO -->
+  <div class="page" id="page-piano">
+    <div class="anno-tabs" id="anno-piano">
+      <div class="anno-tab active" data-anno="2025">2025</div>
+      <div class="anno-tab" data-anno="2026">2026</div>
+      <div class="anno-tab" data-anno="tutti">Tutti</div>
+    </div>
+    <div class="filters">
+      <span class="fil-label">Filtri</span>
+      <input class="fil-input" id="f-cerca" placeholder="Titolo o autore...">
+      <select class="fil-select" id="f-stato">
+        <option value="">Tutti gli stati</option>
+        <option>In attesa impaginato</option>
+        <option>In attesa scheda</option>
+        <option>In campagna</option>
+        <option>In stampa</option>
+        <option>Distribuito</option>
+        <option>Altro</option>
+      </select>
+      <select class="fil-select" id="f-mese">
+        <option value="">Tutti i mesi</option>
+        <option value="1">Gennaio</option><option value="2">Febbraio</option>
+        <option value="3">Marzo</option><option value="4">Aprile</option>
+        <option value="5">Maggio</option><option value="6">Giugno</option>
+        <option value="7">Luglio</option><option value="8">Agosto</option>
+        <option value="9">Settembre</option><option value="10">Ottobre</option>
+        <option value="11">Novembre</option><option value="12">Dicembre</option>
+      </select>
+    </div>
+    <div class="panel" style="padding:0;overflow-x:auto;">
+      <table id="tbl-libri">
+        <thead><tr>
+          <th>#</th><th>Titolo</th><th>Autore</th><th>Anno</th><th>Mese</th>
+          <th>Stato</th><th>Copie</th><th>€/copia</th><th>Totale</th>
+          <th>Stampatore</th><th>ISBN</th><th>Prezzo cov.</th><th>Giorni</th><th></th>
+        </tr></thead>
+        <tbody id="tbody-libri"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- OBIETTIVI -->
+  <div class="page" id="page-obiettivi">
+    <div class="cards-row c2">
+      <div class="panel">
+        <div class="panel-title">Obiettivi 2025</div>
+        <div id="obj-2025"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Obiettivi 2026</div>
+        <div id="obj-2026"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Modifica obiettivi</div>
+      <div class="form-grid fg2" style="gap:10px;max-width:600px">
+        <div><label class="f-label">Anno</label><select class="f-select" id="obj-anno"><option value="2025">2025</option><option value="2026">2026</option></select></div>
+        <div><label class="f-label">Vendite obiettivo</label><input class="f-input" type="number" id="obj-vendite"></div>
+        <div><label class="f-label">Nuovi titoli</label><input class="f-input" type="number" id="obj-titoli"></div>
+        <div><label class="f-label">Bookshop musei</label><input class="f-input" type="number" id="obj-bookshop"></div>
+        <div><label class="f-label">Fiere / mostre</label><input class="f-input" type="number" id="obj-fiere"></div>
+        <div><label class="f-label">Vendite realizzate</label><input class="f-input" type="number" id="obj-vendite-r"></div>
+        <div><label class="f-label">Bookshop raggiunti</label><input class="f-input" type="number" id="obj-bookshop-r"></div>
+        <div><label class="f-label">Fiere realizzate</label><input class="f-input" type="number" id="obj-fiere-r"></div>
+      </div>
+      <div style="margin-top:12px">
+        <button class="btn-prim" id="btn-salva-obj">Salva obiettivi</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- PROGETTI IN ATTESA -->
+  <div class="page" id="page-progetti">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:0.66rem;letter-spacing:0.26em;text-transform:uppercase;color:var(--muted)">Progetti in attesa di lavorazione</div>
+      <button class="btn-io" id="btn-new-progetto">+ Nuovo progetto</button>
+    </div>
+    <div class="filters">
+      <span class="fil-label">Filtri</span>
+      <input class="fil-input" id="fp-cerca" placeholder="Titolo o autore...">
+      <select class="fil-select" id="fp-genere">
+        <option value="">Tutti i generi</option>
+        <option>Romanzo</option><option>Illustrato</option><option>Poesia</option>
+        <option>Saggistica</option><option>Arte</option><option>Cucina</option>
+        <option>Giallo</option><option>Fantastiche</option><option>Altro</option>
+      </select>
+      <select class="fil-select" id="fp-priorita">
+        <option value="">Tutte le priorità</option>
+        <option value="alta">Alta</option>
+        <option value="media">Media</option>
+        <option value="bassa">Bassa</option>
+      </select>
+    </div>
+    <div class="panel" style="padding:0;overflow-x:auto;">
+      <table id="tbl-progetti">
+        <thead><tr>
+          <th></th><th>Titolo</th><th>Autore</th><th>Genere</th>
+          <th>Priorità</th><th>Anno prev.</th><th>Note</th><th>Inserito</th><th></th>
+        </tr></thead>
+        <tbody id="tbody-progetti"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="page" id="page-settings">
+    <div class="panel">
+      <div class="panel-title">Connessione cloud — JSONBin.io</div>
+      <p style="font-size:0.62rem;color:var(--muted);margin-bottom:14px;line-height:1.6">
+        I dati vengono salvati su JSONBin.io e caricati automaticamente da qualsiasi computer.<br>
+        1. Vai su <strong>jsonbin.io</strong> → crea account gratuito<br>
+        2. Crea un nuovo Bin (pulsante + in alto a sinistra) con contenuto <code>{}</code><br>
+        3. Copia il <strong>Bin ID</strong> (numeri nell'URL) e la <strong>Master Key</strong> dal menu API Keys<br>
+        4. Incollali qui sotto e clicca Salva
+      </p>
+      <div class="cfg-row"><span class="cfg-label">Master Key</span><input class="cfg-input" type="password" id="cfg-key" placeholder="$2a$10$..."></div>
+      <div class="cfg-row"><span class="cfg-label">Bin ID</span><input class="cfg-input" type="text" id="cfg-bin" placeholder="es. 68abc123..."></div>
+      <div style="margin-top:10px;display:flex;gap:8px;">
+        <button class="btn-prim" id="btn-salva-cfg">Salva configurazione</button>
+        <button class="btn-sec" id="btn-test-cfg">Testa connessione</button>
+        <span id="cfg-stato" style="font-size:0.58rem;color:var(--muted);align-self:center;margin-left:8px"></span>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end main -->
+
+<!-- MODAL LIBRO -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="modal-h" id="modal-h">Nuovo libro</div>
+    <div class="form-grid fg2">
+      <div class="span2"><label class="f-label">Titolo *</label><input class="f-input" id="m-titolo" placeholder="es. Ryokan III"></div>
+      <div><label class="f-label">Autore</label><input class="f-input" id="m-autore"></div>
+      <div><label class="f-label">Stato *</label>
+        <select class="f-select" id="m-stato">
+          <option>In attesa impaginato</option><option>In attesa scheda</option>
+          <option>In campagna</option><option>In stampa</option>
+          <option>Distribuito</option><option>Altro</option>
+        </select>
+      </div>
+      <div><label class="f-label">Anno</label>
+        <select class="f-select" id="m-anno">
+          <option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option>
+        </select>
+      </div>
+      <div><label class="f-label">Mese</label>
+        <select class="f-select" id="m-mese">
+          <option value="">—</option>
+          <option value="1">Gennaio</option><option value="2">Febbraio</option><option value="3">Marzo</option>
+          <option value="4">Aprile</option><option value="5">Maggio</option><option value="6">Giugno</option>
+          <option value="7">Luglio</option><option value="8">Agosto</option><option value="9">Settembre</option>
+          <option value="10">Ottobre</option><option value="11">Novembre</option><option value="12">Dicembre</option>
+        </select>
+      </div>
+      <div><label class="f-label">N. copie</label><input class="f-input" type="number" id="m-copie"></div>
+      <div><label class="f-label">Costo / copia (€)</label><input class="f-input" type="number" step="0.01" id="m-costo-copia"></div>
+      <div><label class="f-label">Costo totale (€)</label><input class="f-input" type="number" step="0.01" id="m-costo-tot" placeholder="calcolato auto"></div>
+      <div><label class="f-label">Prezzo copertina (€)</label><input class="f-input" type="number" step="0.01" id="m-prezzo"></div>
+      <div><label class="f-label">Stampatore</label><input class="f-input" id="m-stampatore"></div>
+      <div><label class="f-label">ISBN</label><input class="f-input" id="m-isbn"></div>
+      <div><label class="f-label">Data ingresso stato</label><input class="f-input" type="date" id="m-data"></div>
+      <div class="span2"><label class="f-label">Note</label><textarea class="f-textarea" id="m-note"></textarea></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-prim" id="btn-modal-salva">Salva</button>
+      <button class="btn-sec" id="btn-modal-annulla">Annulla</button>
+      <button class="btn-del" id="btn-modal-elimina" style="display:none">Elimina</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL PROGETTO -->
+<div class="overlay" id="overlay-progetto">
+  <div class="modal">
+    <div class="modal-h" id="modal-h-progetto">Nuovo progetto</div>
+    <div class="form-grid fg2">
+      <div class="span2"><label class="f-label">Titolo *</label><input class="f-input" id="mp-titolo" placeholder="es. Venezia Fantastica"></div>
+      <div><label class="f-label">Autore</label><input class="f-input" id="mp-autore"></div>
+      <div><label class="f-label">Genere</label>
+        <select class="f-select" id="mp-genere">
+          <option value="">—</option>
+          <option>Romanzo</option><option>Illustrato</option><option>Poesia</option>
+          <option>Saggistica</option><option>Arte</option><option>Cucina</option>
+          <option>Giallo</option><option>Fantastiche</option><option>Altro</option>
+        </select>
+      </div>
+      <div><label class="f-label">Priorità</label>
+        <select class="f-select" id="mp-priorita">
+          <option value="media">Media</option>
+          <option value="alta">Alta</option>
+          <option value="bassa">Bassa</option>
+        </select>
+      </div>
+      <div><label class="f-label">Anno previsto</label>
+        <select class="f-select" id="mp-anno">
+          <option value="">—</option>
+          <option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option>
+        </select>
+      </div>
+      <div><label class="f-label">Contatto / agente</label><input class="f-input" id="mp-contatto"></div>
+      <div class="span2"><label class="f-label">Note</label><textarea class="f-textarea" id="mp-note" rows="3"></textarea></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-prim" id="btn-mp-salva">Salva</button>
+      <button class="btn-sec" id="btn-mp-annulla">Annulla</button>
+      <button class="btn-prim" id="btn-mp-promuovi" style="display:none;background:var(--green);border-color:var(--green)">→ Porta in Piano</button>
+      <button class="btn-del" id="btn-mp-elimina" style="display:none">Elimina</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// CONFIG JSONBin — inserisci qui i tuoi dati
+// ═══════════════════════════════════════════════════════════
+let JKEY = localStorage.getItem('pe_jkey') || '69bbb436b7ec241ddc8102e5';
+let JBIN = localStorage.getItem('pe_jbin') || '69de4035856a682189320ee4';
+let JURL = () => 'https://api.jsonbin.io/v3/b/' + JBIN;
+
+let DATA = { libri: [], progetti: [], obiettivi: {
+  '2025':{vendite:2000,titoli:16,bookshop:0,fiere:1,venditeReal:1600,bookshopReal:0,fiereReal:1},
+  '2026':{vendite:2600,titoli:16,bookshop:15,fiere:4,venditeReal:0,bookshopReal:6,fiereReal:0}
+}};
+let DIRTY = false;
+let EDITING_ID = null;
+let ANNO_DASH = '2025', ANNO_PIANO = '2025';
+let CHARTS = {};
+
+const MESI = ['','Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+const STATI = ['In attesa impaginato','In attesa scheda','In campagna','In stampa','Distribuito','Altro'];
+const S_CLASS = {'In attesa impaginato':'s-imp','In attesa scheda':'s-sch','In campagna':'s-cam','In stampa':'s-sta','Distribuito':'s-dis','Altro':'s-alt'};
+const S_COLOR = {'In attesa impaginato':'#c4922a','In attesa scheda':'#8b2635','In campagna':'#1a3a6b','In stampa':'#7c3fa0','Distribuito':'#2d5a3d','Altro':'#5a6e8a'};
+
+// DATA dal tuo Excel — precaricato
+const SEED_LIBRI = [
+  {id:1,titolo:'Forbidden Colours',autore:'Helene Blignaut',anno:2025,mese:1,stato:'Distribuito',stampatore:'Ellui',copie:250,costoCopia:2.9,costoTot:725,prezzo:0,isbn:'9791281715103',data:'2025-01-15',note:''},
+  {id:2,titolo:'Nuvolotto',autore:'Bagno Bianchi',anno:2025,mese:1,stato:'Distribuito',stampatore:'Mediagraf',copie:100,costoCopia:3.6,costoTot:360,prezzo:0,isbn:'',data:'2025-01-15',note:''},
+  {id:3,titolo:'Le mie Ballerinette',autore:'Cristina Gastel Chiarelli',anno:2025,mese:1,stato:'Distribuito',stampatore:'Mediagraf',copie:132,costoCopia:3.6,costoTot:475,prezzo:0,isbn:'9791281715110',data:'2025-01-15',note:''},
+  {id:4,titolo:'Righe',autore:'Anna Corradi',anno:2025,mese:2,stato:'Distribuito',stampatore:'Mediagraf',copie:100,costoCopia:2.78,costoTot:278,prezzo:0,isbn:'',data:'2025-02-11',note:''},
+  {id:5,titolo:'Padova Fantastica',autore:'Lazzaron Guarnieri',anno:2025,mese:2,stato:'Distribuito',stampatore:'Mediagraf',copie:250,costoCopia:3.4,costoTot:850,prezzo:0,isbn:'',data:'2025-02-28',note:''},
+  {id:6,titolo:'Il Viaggio di Musasabi',autore:'Kataira',anno:2025,mese:2,stato:'Distribuito',stampatore:'Mediagraf',copie:150,costoCopia:2.6,costoTot:398,prezzo:0,isbn:'',data:'2025-03-20',note:''},
+  {id:7,titolo:'Tante Storie per Pensare',autore:'Dacia Maraini / Corea Cantone',anno:2025,mese:4,stato:'Distribuito',stampatore:'Ellui',copie:250,costoCopia:2.5,costoTot:625,prezzo:19,isbn:'',data:'2025-04-23',note:''},
+  {id:8,titolo:'La Locanda Nakamura',autore:'Aika Avonlea',anno:2025,mese:5,stato:'Distribuito',stampatore:'Ellui',copie:150,costoCopia:2,costoTot:300,prezzo:0,isbn:'9791281715271',data:'2025-06-04',note:''},
+  {id:9,titolo:'Perle Veneziane in Giappone',autore:'Lotter Maurizio',anno:2025,mese:9,stato:'Distribuito',stampatore:'Mediagraf',copie:70,costoCopia:3.8,costoTot:266,prezzo:0,isbn:'',data:'2025-08-28',note:''},
+  {id:10,titolo:'Assolutamente Giappone',autore:'Helene Blignaut',anno:2025,mese:9,stato:'Distribuito',stampatore:'Mediagraf',copie:150,costoCopia:3,costoTot:450,prezzo:0,isbn:'',data:'2025-09-04',note:''},
+  {id:11,titolo:'Pixel in Japan',autore:'Verni / Yuu Tenduto',anno:2025,mese:9,stato:'Distribuito',stampatore:'Mediagraf',copie:200,costoCopia:3,costoTot:600,prezzo:0,isbn:'',data:'2025-09-04',note:''},
+  {id:12,titolo:'Ryokan II — Ali di Carta di Riso',autore:'Hara Rota',anno:2025,mese:10,stato:'Distribuito',stampatore:'Mediagraf',copie:150,costoCopia:1.65,costoTot:248,prezzo:0,isbn:'9791281715233',data:'2025-09-17',note:''},
+  {id:13,titolo:'Torino Fantastica',autore:'Lazzaron Grazia',anno:2025,mese:10,stato:'Distribuito',stampatore:'Mediagraf',copie:100,costoCopia:3.4,costoTot:340,prezzo:0,isbn:'',data:'2025-10-30',note:''},
+  {id:14,titolo:'Galleria delle Ragazze',autore:'Baso Rachele',anno:2025,mese:10,stato:'Distribuito',stampatore:'Mediagraf',copie:100,costoCopia:3,costoTot:300,prezzo:0,isbn:'9791281715141',data:'2025-08-04',note:''},
+  {id:15,titolo:'Carte di Natale',autore:"D'Alconzo",anno:2025,mese:10,stato:'Distribuito',stampatore:'Mediagraf',copie:140,costoCopia:1.9,costoTot:220,prezzo:0,isbn:'',data:'2025-10-28',note:''},
+  {id:16,titolo:'Luna Piena sulla Città Nuova',autore:'Shogoro',anno:2025,mese:10,stato:'Altro',stampatore:'',copie:50,costoCopia:2.2,costoTot:197,prezzo:0,isbn:'',data:'2025-10-01',note:'Non distribuito'},
+  {id:17,titolo:'Demone Samurai (ENG)',autore:'Helene Blignaut',anno:2026,mese:1,stato:'Distribuito',stampatore:'',copie:60,costoCopia:2.9,costoTot:174,prezzo:0,isbn:'',data:'2026-01-15',note:''},
+  {id:18,titolo:'Demone Samurai (ITA)',autore:'Helene Blignaut',anno:2026,mese:1,stato:'Distribuito',stampatore:'',copie:150,costoCopia:2.9,costoTot:435,prezzo:0,isbn:'',data:'2026-01-15',note:''},
+  {id:19,titolo:'AI — Natura e Algoritmi Giapponesi',autore:'Frabasile Renato',anno:2026,mese:1,stato:'Distribuito',stampatore:'',copie:110,costoCopia:4.7,costoTot:517,prezzo:0,isbn:'9791281715172',data:'2026-01-01',note:''},
+  {id:20,titolo:'Milano Fantastica — Nuova Edizione',autore:'',anno:2026,mese:4,stato:'Distribuito',stampatore:'',copie:50,costoCopia:4.5,costoTot:225,prezzo:0,isbn:'',data:'2026-04-01',note:'Nuova edizione'},
+  {id:21,titolo:'Matcha — Everyday Matcha',autore:'Il Signore del Tè',anno:2026,mese:4,stato:'In campagna',stampatore:'',copie:50,costoCopia:3.5,costoTot:175,prezzo:0,isbn:'9791281715189',data:'2026-03-01',note:''},
+  {id:22,titolo:'Libri Cantone',autore:'Cantone / Grosse',anno:2026,mese:5,stato:'In attesa impaginato',stampatore:'',copie:100,costoCopia:2,costoTot:200,prezzo:0,isbn:'',data:'2026-04-01',note:''},
+  {id:23,titolo:'Kyoto — Il Giallo',autore:'Helene Blignaut',anno:2026,mese:5,stato:'In attesa scheda',stampatore:'',copie:150,costoCopia:2.5,costoTot:387,prezzo:0,isbn:'',data:'2026-04-01',note:''},
+];
+
+// ═══════════════════════════════════════════════════════════
+// JSONBIN LOAD / SAVE
+// ═══════════════════════════════════════════════════════════
+function setStatus(s){
+  const el = document.getElementById('save-ind');
+  if(s==='loading') el.textContent='● caricamento...';
+  else if(s==='saving') el.textContent='● salvataggio...';
+  else if(s==='saved') el.textContent='● salvato';
+  else if(s==='dirty') el.textContent='● modifiche non salvate';
+  else if(s==='error') el.textContent='● errore cloud';
+}
+
+async function loadData(){
+  if(!JKEY||!JBIN){ DATA.libri = SEED_LIBRI; renderAll(); return; }
+  setStatus('loading');
+  try{
+    const r = await fetch(JURL()+'/latest',{headers:{'X-Master-Key':JKEY}});
+    const j = await r.json();
+    const d = j.record;
+    if(d&&d.libri&&d.libri.length>0){ DATA=d; if(!DATA.progetti) DATA.progetti=[]; }
+    else { DATA.libri=SEED_LIBRI; await pushData(); }
+  }catch(e){ DATA.libri=SEED_LIBRI; toast('Offline — dati locali'); }
+  setStatus('saved'); renderAll();
+}
+
+async function pushData(){
+  if(!JKEY||!JBIN){ setStatus('error'); toast('Configura JSONBin nelle Impostazioni'); return; }
+  setStatus('saving');
+  try{
+    const r = await fetch(JURL(),{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':JKEY},body:JSON.stringify(DATA)});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    DIRTY=false; setStatus('saved'); toast('Dati salvati nel cloud');
+  }catch(e){ setStatus('error'); toast('Errore salvataggio: '+e.message); }
+}
+
+function markDirty(){ DIRTY=true; setStatus('dirty'); }
+
+// ═══════════════════════════════════════════════════════════
+// NAV
+// ═══════════════════════════════════════════════════════════
+document.querySelectorAll('.nav-tab').forEach(t=>{
+  t.addEventListener('click',function(){
+    document.querySelectorAll('.nav-tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+    this.classList.add('active');
+    document.getElementById('page-'+this.dataset.page).classList.add('active');
+    if(this.dataset.page==='dashboard') renderDashboard();
+    if(this.dataset.page==='piano') renderPiano();
+    if(this.dataset.page==='obiettivi') renderObiettivi();
+    if(this.dataset.page==='settings') loadCfg();
+    if(this.dataset.page==='progetti') renderProgetti();
+  });
+});
+
+document.getElementById('btn-save').addEventListener('click',()=>pushData());
+document.getElementById('btn-new-libro').addEventListener('click',()=>apriModal(null));
+
+// ═══════════════════════════════════════════════════════════
+// ANNO TABS
+// ═══════════════════════════════════════════════════════════
+document.querySelectorAll('#anno-dash .anno-tab').forEach(t=>{
+  t.addEventListener('click',function(){
+    document.querySelectorAll('#anno-dash .anno-tab').forEach(x=>x.classList.remove('active'));
+    this.classList.add('active'); ANNO_DASH=this.dataset.anno; renderDashboard();
+  });
+});
+document.querySelectorAll('#anno-piano .anno-tab').forEach(t=>{
+  t.addEventListener('click',function(){
+    document.querySelectorAll('#anno-piano .anno-tab').forEach(x=>x.classList.remove('active'));
+    this.classList.add('active'); ANNO_PIANO=this.dataset.anno; renderPiano();
+  });
+});
+
+function filtroAnno(anno){
+  if(anno==='tutti') return DATA.libri;
+  return DATA.libri.filter(l=>String(l.anno)===String(anno));
+}
+
+function ggInStato(l){
+  if(!l.data) return null;
+  return Math.floor((Date.now()-new Date(l.data))/86400000);
+}
+
+// ═══════════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════════
+function killChart(id){ if(CHARTS[id]){CHARTS[id].destroy();delete CHARTS[id];} }
+
+function renderDashboard(){
+  const ll = filtroAnno(ANNO_DASH);
+  const totCopie = ll.reduce((s,l)=>s+(l.copie||0),0);
+  const totCosto = ll.reduce((s,l)=>s+(l.costoTot||0),0);
+  const distribuiti = ll.filter(l=>l.stato==='Distribuito').length;
+  const inLav = ll.filter(l=>l.stato!=='Distribuito'&&l.stato!=='Altro').length;
+  const costoMedio = ll.length ? (ll.reduce((s,l)=>s+(l.costoCopia||0),0)/ll.filter(l=>l.costoCopia>0).length||0) : 0;
+
+  document.getElementById('kpi-row').innerHTML =
+    kpi(ll.length,'Titoli totali','') +
+    kpi(distribuiti,'Distribuiti', ll.length ? Math.round(distribuiti/ll.length*100)+'%' : '') +
+    kpi(inLav,'In lavorazione','') +
+    kpi(totCopie.toLocaleString('it-IT'),'Copie stampate','') +
+    kpi('€'+Math.round(totCosto).toLocaleString('it-IT'),'Investimento stampa','');
+
+  // Pipeline
+  killChart('pipeline');
+  const sCounts = STATI.map(s=>ll.filter(l=>l.stato===s).length);
+  CHARTS['pipeline'] = new Chart(document.getElementById('ch-pipeline').getContext('2d'),{
+    type:'doughnut',
+    data:{labels:STATI,datasets:[{data:sCounts,backgroundColor:STATI.map(s=>S_COLOR[s]),borderWidth:2,borderColor:'#f0f4f8'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:10,family:'DM Mono'},padding:8}}}}
+  });
+
+  // Mesi
+  killChart('mesi');
+  const mC = Array(12).fill(0);
+  ll.forEach(l=>{if(l.mese>=1&&l.mese<=12)mC[l.mese-1]++;});
+  CHARTS['mesi'] = new Chart(document.getElementById('ch-mesi').getContext('2d'),{
+    type:'bar',
+    data:{labels:MESI.slice(1).map(m=>m.slice(0,3)),datasets:[{data:mC,backgroundColor:'rgba(196,146,42,0.75)',borderRadius:2}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1,font:{size:10}}}}}
+  });
+
+  // Costi mese
+  killChart('costi');
+  const mCo = Array(12).fill(0);
+  ll.forEach(l=>{if(l.mese>=1&&l.mese<=12)mCo[l.mese-1]+=(l.costoTot||0);});
+  CHARTS['costi'] = new Chart(document.getElementById('ch-costi').getContext('2d'),{
+    type:'bar',
+    data:{labels:MESI.slice(1).map(m=>m.slice(0,3)),datasets:[{data:mCo.map(v=>Math.round(v)),backgroundColor:'rgba(26,58,107,0.7)',borderRadius:2}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{font:{size:10}}}}}
+  });
+
+  // Stampatori
+  killChart('stampatori');
+  const stM={};
+  ll.forEach(l=>{const s=l.stampatore||'N/D';stM[s]=(stM[s]||0)+(l.copie||0);});
+  const stL=Object.keys(stM).filter(k=>stM[k]>0);
+  const stColors=['rgba(196,146,42,0.8)','rgba(26,58,107,0.8)','rgba(45,90,61,0.8)','rgba(139,38,53,0.8)','rgba(90,110,138,0.7)'];
+  CHARTS['stampatori'] = new Chart(document.getElementById('ch-stampatori').getContext('2d'),{
+    type:'bar',
+    data:{labels:stL,datasets:[{data:stL.map(k=>stM[k]),backgroundColor:stColors.slice(0,stL.length),borderRadius:2}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{font:{size:10}}}}}
+  });
+
+  // Alert
+  const alerts = ll.filter(l=>l.stato!=='Distribuito'&&l.stato!=='Altro'&&l.data)
+    .map(l=>({...l,gg:ggInStato(l)}))
+    .filter(l=>l.gg>30)
+    .sort((a,b)=>b.gg-a.gg);
+  document.getElementById('alert-panel').innerHTML = alerts.length ?
+    alerts.map(l=>`<div class="alert-item ${l.gg>60?'crit':'warn'}">
+      <div><strong>${l.titolo}</strong> &nbsp;<span class="stato-badge ${S_CLASS[l.stato]}">${l.stato}</span></div>
+      <div style="font-size:0.58rem;color:var(--muted)">Da <strong>${l.gg}</strong> giorni in questo stato</div>
+    </div>`).join('') :
+    '<p style="font-size:0.62rem;color:var(--muted)">Nessun libro in lavorazione da oltre 30 giorni.</p>';
+}
+
+function kpi(val,label,sub){
+  return `<div class="card"><div class="card-label">${label}</div><div class="card-val">${val}</div>${sub?`<div class="card-sub">${sub}</div>`:''}</div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// PIANO
+// ═══════════════════════════════════════════════════════════
+document.getElementById('f-cerca').addEventListener('input',renderPiano);
+document.getElementById('f-stato').addEventListener('change',renderPiano);
+document.getElementById('f-mese').addEventListener('change',renderPiano);
+
+function renderPiano(){
+  let ll = filtroAnno(ANNO_PIANO);
+  const cerca = document.getElementById('f-cerca').value.toLowerCase();
+  const stato = document.getElementById('f-stato').value;
+  const mese  = document.getElementById('f-mese').value;
+  if(cerca) ll=ll.filter(l=>l.titolo.toLowerCase().includes(cerca)||l.autore.toLowerCase().includes(cerca));
+  if(stato) ll=ll.filter(l=>l.stato===stato);
+  if(mese)  ll=ll.filter(l=>String(l.mese)===mese);
+  ll.sort((a,b)=>(a.anno*100+(a.mese||0))-(b.anno*100+(b.mese||0)));
+
+  document.getElementById('tbody-libri').innerHTML = ll.map((l,i)=>{
+    const gg=ggInStato(l);
+    const ggHtml = gg===null?'—':`<span class="${gg>60?'gg-crit':gg>30?'gg-warn':'gg-ok'}">${gg}gg</span>`;
+    return `<tr>
+      <td style="color:var(--muted);font-size:0.5rem">${i+1}</td>
+      <td style="font-weight:500;max-width:180px">${l.titolo}</td>
+      <td>${l.autore||'—'}</td>
+      <td>${l.anno}</td>
+      <td>${l.mese?MESI[l.mese]:'—'}</td>
+      <td><span class="stato-badge ${S_CLASS[l.stato]}">${l.stato}</span></td>
+      <td class="td-r">${l.copie||'—'}</td>
+      <td class="td-r">${l.costoCopia?'€'+l.costoCopia.toFixed(2):'—'}</td>
+      <td class="td-r">${l.costoTot?'€'+Math.round(l.costoTot).toLocaleString('it-IT'):'—'}</td>
+      <td>${l.stampatore||'—'}</td>
+      <td style="font-size:0.58rem;color:var(--muted)">${l.isbn||'—'}</td>
+      <td class="td-r">${l.prezzo?'€'+l.prezzo.toFixed(2):'—'}</td>
+      <td>${ggHtml}</td>
+      <td><button class="btn-edit" data-id="${l.id}">✎</button></td>
+    </tr>`;
+  }).join('');
+
+  document.querySelectorAll('#tbody-libri .btn-edit').forEach(btn=>{
+    btn.addEventListener('click',()=>apriModal(parseInt(btn.dataset.id)));
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// MODAL
+// ═══════════════════════════════════════════════════════════
+function apriModal(id){
+  EDITING_ID=id;
+  const l = id ? DATA.libri.find(x=>x.id===id) : null;
+  document.getElementById('modal-h').textContent = id ? 'Modifica libro' : 'Nuovo libro';
+  document.getElementById('btn-modal-elimina').style.display = id ? '' : 'none';
+  document.getElementById('m-titolo').value    = l?.titolo||'';
+  document.getElementById('m-autore').value    = l?.autore||'';
+  document.getElementById('m-stato').value     = l?.stato||'In attesa impaginato';
+  document.getElementById('m-anno').value      = l?.anno||2026;
+  document.getElementById('m-mese').value      = l?.mese||'';
+  document.getElementById('m-copie').value     = l?.copie||'';
+  document.getElementById('m-costo-copia').value = l?.costoCopia||'';
+  document.getElementById('m-costo-tot').value = l?.costoTot||'';
+  document.getElementById('m-prezzo').value    = l?.prezzo||'';
+  document.getElementById('m-stampatore').value= l?.stampatore||'';
+  document.getElementById('m-isbn').value      = l?.isbn||'';
+  document.getElementById('m-data').value      = l?.data||new Date().toISOString().slice(0,10);
+  document.getElementById('m-note').value      = l?.note||'';
+  document.getElementById('overlay').classList.add('open');
+}
+
+document.getElementById('m-copie').addEventListener('input',()=>{
+  const c=parseFloat(document.getElementById('m-copie').value)||0;
+  const p=parseFloat(document.getElementById('m-costo-copia').value)||0;
+  if(c&&p) document.getElementById('m-costo-tot').value=(c*p).toFixed(2);
+});
+document.getElementById('m-costo-copia').addEventListener('input',()=>{
+  const c=parseFloat(document.getElementById('m-copie').value)||0;
+  const p=parseFloat(document.getElementById('m-costo-copia').value)||0;
+  if(c&&p) document.getElementById('m-costo-tot').value=(c*p).toFixed(2);
+});
+
+document.getElementById('btn-modal-annulla').addEventListener('click',()=>document.getElementById('overlay').classList.remove('open'));
+document.getElementById('overlay').addEventListener('click',e=>{if(e.target===document.getElementById('overlay'))document.getElementById('overlay').classList.remove('open');});
+
+document.getElementById('btn-modal-salva').addEventListener('click',()=>{
+  const titolo=document.getElementById('m-titolo').value.trim();
+  if(!titolo){toast('Inserisci il titolo');return;}
+  const obj={
+    titolo,autore:document.getElementById('m-autore').value.trim(),
+    stato:document.getElementById('m-stato').value,
+    anno:parseInt(document.getElementById('m-anno').value),
+    mese:parseInt(document.getElementById('m-mese').value)||null,
+    copie:parseInt(document.getElementById('m-copie').value)||0,
+    costoCopia:parseFloat(document.getElementById('m-costo-copia').value)||0,
+    costoTot:parseFloat(document.getElementById('m-costo-tot').value)||0,
+    prezzo:parseFloat(document.getElementById('m-prezzo').value)||0,
+    stampatore:document.getElementById('m-stampatore').value.trim(),
+    isbn:document.getElementById('m-isbn').value.trim(),
+    data:document.getElementById('m-data').value,
+    note:document.getElementById('m-note').value.trim()
+  };
+  if(EDITING_ID){
+    const idx=DATA.libri.findIndex(x=>x.id===EDITING_ID);
+    obj.id=EDITING_ID; DATA.libri[idx]=obj;
+    toast('Libro aggiornato');
+  } else {
+    obj.id=Date.now(); DATA.libri.push(obj);
+    toast('Libro aggiunto');
+  }
+  markDirty(); document.getElementById('overlay').classList.remove('open');
+  renderDashboard(); renderPiano();
+});
+
+document.getElementById('btn-modal-elimina').addEventListener('click',()=>{
+  if(!confirm('Eliminare questo libro?')) return;
+  DATA.libri=DATA.libri.filter(l=>l.id!==EDITING_ID);
+  markDirty(); document.getElementById('overlay').classList.remove('open');
+  renderDashboard(); renderPiano(); toast('Libro eliminato');
+});
+
+// ═══════════════════════════════════════════════════════════
+// OBIETTIVI
+// ═══════════════════════════════════════════════════════════
+function renderObiettivi(){
+  [2025,2026].forEach(anno=>{
+    const o=DATA.obiettivi?.[anno]||{};
+    const titReal=filtroAnno(String(anno)).length;
+    document.getElementById('obj-'+anno).innerHTML =
+      progBar('Vendite',o.venditeReal||0,o.vendite||0,'copie')+
+      progBar('Nuovi titoli',titReal,o.titoli||0,'titoli')+
+      progBar('Bookshop musei',o.bookshopReal||0,o.bookshop||0,'bookshop')+
+      progBar('Fiere / mostre',o.fiereReal||0,o.fiere||0,'eventi');
+  });
+}
+
+function progBar(label,real,target,um){
+  if(!target) return '';
+  const pct=Math.min(Math.round(real/target*100),100);
+  const col=pct>=100?'#2d5a3d':pct>=60?'#c4922a':'#8b2635';
+  return `<div class="prog-row">
+    <div class="prog-label"><span>${label}</span><span>${real} / ${target} ${um}</span></div>
+    <div class="prog-track"><div class="prog-fill" style="width:${pct}%;background:${col}"></div></div>
+    <div class="prog-pct">${pct}%</div>
+  </div>`;
+}
+
+document.getElementById('obj-anno').addEventListener('change',function(){
+  const o=DATA.obiettivi?.[this.value]||{};
+  document.getElementById('obj-vendite').value  =o.vendite||'';
+  document.getElementById('obj-titoli').value   =o.titoli||'';
+  document.getElementById('obj-bookshop').value =o.bookshop||'';
+  document.getElementById('obj-fiere').value    =o.fiere||'';
+  document.getElementById('obj-vendite-r').value=o.venditeReal||'';
+  document.getElementById('obj-bookshop-r').value=o.bookshopReal||'';
+  document.getElementById('obj-fiere-r').value  =o.fiereReal||'';
+});
+
+document.getElementById('btn-salva-obj').addEventListener('click',()=>{
+  const a=document.getElementById('obj-anno').value;
+  if(!DATA.obiettivi) DATA.obiettivi={};
+  DATA.obiettivi[a]={
+    vendite:parseInt(document.getElementById('obj-vendite').value)||0,
+    titoli:parseInt(document.getElementById('obj-titoli').value)||0,
+    bookshop:parseInt(document.getElementById('obj-bookshop').value)||0,
+    fiere:parseInt(document.getElementById('obj-fiere').value)||0,
+    venditeReal:parseInt(document.getElementById('obj-vendite-r').value)||0,
+    bookshopReal:parseInt(document.getElementById('obj-bookshop-r').value)||0,
+    fiereReal:parseInt(document.getElementById('obj-fiere-r').value)||0
+  };
+  markDirty(); renderObiettivi(); toast('Obiettivi salvati');
+});
+
+// ═══════════════════════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════════════════════
+function loadCfg(){
+  document.getElementById('cfg-key').value=JKEY;
+  document.getElementById('cfg-bin').value=JBIN;
+}
+document.getElementById('btn-salva-cfg').addEventListener('click',()=>{
+  JKEY=document.getElementById('cfg-key').value.trim();
+  JBIN=document.getElementById('cfg-bin').value.trim();
+  localStorage.setItem('pe_jkey',JKEY);
+  localStorage.setItem('pe_jbin',JBIN);
+  toast('Configurazione salvata — ricarico i dati');
+  setTimeout(()=>loadData(),500);
+});
+document.getElementById('btn-test-cfg').addEventListener('click',async()=>{
+  const stato=document.getElementById('cfg-stato');
+  stato.textContent='test in corso...';
+  try{
+    const r=await fetch('https://api.jsonbin.io/v3/b/'+document.getElementById('cfg-bin').value+'/latest',{headers:{'X-Master-Key':document.getElementById('cfg-key').value}});
+    const j=await r.json();
+    stato.textContent=r.ok?'✓ connessione OK':'✗ errore: '+j.message;
+    stato.style.color=r.ok?'var(--green)':'var(--red)';
+  }catch(e){stato.textContent='✗ '+e.message;stato.style.color='var(--red)';}
+});
+
+// ═══════════════════════════════════════════════════════════
+// TOAST / DATE
+// ═══════════════════════════════════════════════════════════
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.style.opacity='1';
+  setTimeout(()=>t.style.opacity='0',3000);
+}
+document.getElementById('hdr-date').textContent=new Date().toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+
+// ═══════════════════════════════════════════════════════════
+// PROGETTI
+// ═══════════════════════════════════════════════════════════
+let EDITING_PROG = null;
+const PRIO_COLOR = {alta:'var(--red)',media:'var(--gold)',bassa:'var(--muted)'};
+const PRIO_LABEL = {alta:'Alta',media:'Media',bassa:'Bassa'};
+
+document.getElementById('btn-new-progetto').addEventListener('click',()=>apriModalProgetto(null));
+document.getElementById('fp-cerca').addEventListener('input',renderProgetti);
+document.getElementById('fp-genere').addEventListener('change',renderProgetti);
+document.getElementById('fp-priorita').addEventListener('change',renderProgetti);
+
+function renderProgetti(){
+  if(!DATA.progetti) DATA.progetti=[];
+  let pp = [...DATA.progetti];
+  const cerca = document.getElementById('fp-cerca').value.toLowerCase();
+  const genere = document.getElementById('fp-genere').value;
+  const prio   = document.getElementById('fp-priorita').value;
+  if(cerca)  pp=pp.filter(p=>p.titolo.toLowerCase().includes(cerca)||(p.autore||'').toLowerCase().includes(cerca));
+  if(genere) pp=pp.filter(p=>p.genere===genere);
+  if(prio)   pp=pp.filter(p=>p.priorita===prio);
+  pp.sort((a,b)=>{const ord={alta:0,media:1,bassa:2};return (ord[a.priorita]||1)-(ord[b.priorita]||1);});
+
+  document.getElementById('tbody-progetti').innerHTML = pp.map((p,i)=>{
+    const data = p.inserito ? new Date(p.inserito).toLocaleDateString('it-IT') : '—';
+    const pColor = PRIO_COLOR[p.priorita]||'var(--muted)';
+    return `<tr>
+      <td><input type="checkbox" ${p.flagged?'checked':''} data-flag="${p.id}" style="accent-color:var(--gold);cursor:pointer"></td>
+      <td style="font-weight:500">${p.titolo}</td>
+      <td>${p.autore||'—'}</td>
+      <td style="font-size:0.58rem">${p.genere||'—'}</td>
+      <td><span style="font-size:0.58rem;font-weight:500;color:${pColor}">${PRIO_LABEL[p.priorita]||'—'}</span></td>
+      <td style="font-size:0.58rem">${p.anno||'—'}</td>
+      <td style="font-size:0.58rem;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${p.note||''}">${p.note||'—'}</td>
+      <td style="font-size:0.56rem;color:var(--muted)">${data}</td>
+      <td><button class="btn-edit" data-prog="${p.id}">✎</button></td>
+    </tr>`;
+  }).join('');
+
+  // checkbox flag
+  document.querySelectorAll('#tbody-progetti input[data-flag]').forEach(cb=>{
+    cb.addEventListener('change',function(){
+      const p=DATA.progetti.find(x=>x.id===parseInt(this.dataset.flag));
+      if(p){p.flagged=this.checked;markDirty();}
+    });
+  });
+  // edit button
+  document.querySelectorAll('#tbody-progetti .btn-edit').forEach(btn=>{
+    btn.addEventListener('click',()=>apriModalProgetto(parseInt(btn.dataset.prog)));
+  });
+}
+
+function apriModalProgetto(id){
+  EDITING_PROG=id;
+  const p=id?DATA.progetti.find(x=>x.id===id):null;
+  document.getElementById('modal-h-progetto').textContent=id?'Modifica progetto':'Nuovo progetto';
+  document.getElementById('btn-mp-elimina').style.display=id?'':'none';
+  document.getElementById('btn-mp-promuovi').style.display=id?'':'none';
+  document.getElementById('mp-titolo').value   =p?.titolo||'';
+  document.getElementById('mp-autore').value   =p?.autore||'';
+  document.getElementById('mp-genere').value   =p?.genere||'';
+  document.getElementById('mp-priorita').value =p?.priorita||'media';
+  document.getElementById('mp-anno').value     =p?.anno||'';
+  document.getElementById('mp-contatto').value =p?.contatto||'';
+  document.getElementById('mp-note').value     =p?.note||'';
+  document.getElementById('overlay-progetto').classList.add('open');
+}
+
+document.getElementById('btn-mp-annulla').addEventListener('click',()=>document.getElementById('overlay-progetto').classList.remove('open'));
+document.getElementById('overlay-progetto').addEventListener('click',e=>{if(e.target===document.getElementById('overlay-progetto'))document.getElementById('overlay-progetto').classList.remove('open');});
+
+document.getElementById('btn-mp-salva').addEventListener('click',()=>{
+  const titolo=document.getElementById('mp-titolo').value.trim();
+  if(!titolo){toast('Inserisci il titolo');return;}
+  if(!DATA.progetti) DATA.progetti=[];
+  const obj={
+    titolo, autore:document.getElementById('mp-autore').value.trim(),
+    genere:document.getElementById('mp-genere').value,
+    priorita:document.getElementById('mp-priorita').value,
+    anno:document.getElementById('mp-anno').value,
+    contatto:document.getElementById('mp-contatto').value.trim(),
+    note:document.getElementById('mp-note').value.trim(),
+    flagged:EDITING_PROG?DATA.progetti.find(x=>x.id===EDITING_PROG)?.flagged||false:false
+  };
+  if(EDITING_PROG){
+    const idx=DATA.progetti.findIndex(x=>x.id===EDITING_PROG);
+    obj.id=EDITING_PROG; obj.inserito=DATA.progetti[idx].inserito;
+    DATA.progetti[idx]=obj;
+    toast('Progetto aggiornato');
+  } else {
+    obj.id=Date.now(); obj.inserito=new Date().toISOString().slice(0,10);
+    DATA.progetti.push(obj);
+    toast('Progetto aggiunto');
+  }
+  markDirty(); document.getElementById('overlay-progetto').classList.remove('open');
+  renderProgetti();
+});
+
+document.getElementById('btn-mp-elimina').addEventListener('click',()=>{
+  if(!confirm('Eliminare questo progetto?')) return;
+  DATA.progetti=DATA.progetti.filter(p=>p.id!==EDITING_PROG);
+  markDirty(); document.getElementById('overlay-progetto').classList.remove('open');
+  renderProgetti(); toast('Progetto eliminato');
+});
+
+document.getElementById('btn-mp-promuovi').addEventListener('click',()=>{
+  const p=DATA.progetti.find(x=>x.id===EDITING_PROG);
+  if(!p) return;
+  if(!confirm('Portare "'+p.titolo+'" nel Piano Editoriale?')) return;
+  const nuovoLibro={
+    id:Date.now(), titolo:p.titolo, autore:p.autore||'',
+    stato:'In attesa impaginato',
+    anno:parseInt(p.anno)||new Date().getFullYear()+1,
+    mese:null, copie:0, costoCopia:0, costoTot:0, prezzo:0,
+    stampatore:'', isbn:'',
+    data:new Date().toISOString().slice(0,10),
+    note:p.note||''
+  };
+  DATA.libri.push(nuovoLibro);
+  DATA.progetti=DATA.progetti.filter(x=>x.id!==EDITING_PROG);
+  markDirty();
+  document.getElementById('overlay-progetto').classList.remove('open');
+  renderProgetti(); renderDashboard(); renderPiano();
+  toast('"'+p.titolo+'" spostato nel Piano');
+});
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+loadData();
+</script>
+</body>
+</html>
