@@ -478,7 +478,11 @@ async function pushData(){
   }catch(e){ setStatus('error'); toast('Errore salvataggio: '+e.message); }
 }
 
-function markDirty(){ DIRTY=true; setStatus('dirty'); }
+function markDirty(){
+  DIRTY=true; setStatus('dirty');
+  clearTimeout(window._saveTimer);
+  window._saveTimer=setTimeout(()=>pushData(),1500);
+}
 
 // ═══════════════════════════════════════════════════════════
 // NAV
