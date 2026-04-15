@@ -152,6 +152,9 @@ tr:hover td{background:var(--blue-light);}
   <div class="nav-right">
     <span id="save-ind">● salvato</span>
     <button class="btn-io save" id="btn-save">Salva</button>
+    <button class="btn-io" id="btn-backup-aut">&#11015; Backup JSON</button>
+    <button class="btn-io" id="btn-ripristina-aut">&#11014; Ripristina</button>
+    <input type="file" id="loadFile-aut" accept=".json" style="display:none">
     <button class="btn-io" id="btn-new-autore">+ Nuovo autore</button>
   </div>
 </div>
@@ -298,11 +301,11 @@ tr:hover td{background:var(--blue-light);}
 // ═══════════════════════════════════════════
 // CONFIG
 // ═══════════════════════════════════════════
-let JKEY     = localStorage.getItem('ga_jkey') || '69bbb436b7ec241ddc8102e5';
-let JBIN     = localStorage.getItem('ga_jbin') || '69df35e436566621a8b58643';
-let JBIN_MAG = localStorage.getItem('ga_jbin_mag') || '69bbb6caaa77b81da9fae591';
-let JURL     = () => 'https://api.jsonbin.io/v3/b/' + JBIN;
-let JURL_MAG = () => 'https://api.jsonbin.io/v3/b/' + JBIN_MAG;
+const JKEY='$2a$10$fjUl8IVz2yeZDM9YIaHrk.5c2W8C7Lb1weJR8ye/zj.LHB3z4kHkm';
+const JBIN='69df35e436566621a8b58643';
+const JBIN_MAG='69bbb6caaa77b81da9fae591';
+const JURL='https://api.jsonbin.io/v3/b/'+JBIN;
+const JURL_MAG='https://api.jsonbin.io/v3/b/'+JBIN_MAG;
 
 let DATA = { autori: [], libriAutori: [], storici: [] };
 let MAG  = { libri: [], movimenti: [] };
@@ -326,7 +329,7 @@ async function loadData(){
   // Carica magazzino
   try{
     if(JBIN_MAG && JKEY){
-      const r = await fetch(JURL_MAG()+'/latest',{headers:{'X-Master-Key':JKEY}});
+      const r = await fetch(JURL_MAG+'/latest',{headers:{'X-Master-Key':JKEY}});
       const j = await r.json();
       if(j.record) MAG = j.record;
     }
@@ -334,7 +337,7 @@ async function loadData(){
   // Carica autori
   try{
     if(JBIN && JKEY){
-      const r = await fetch(JURL()+'/latest',{headers:{'X-Master-Key':JKEY}});
+      const r = await fetch(JURL+'/latest',{headers:{'X-Master-Key':JKEY}});
       const j = await r.json();
       if(j.record && j.record.autori) DATA = j.record;
     }
@@ -347,7 +350,7 @@ async function pushData(){
   if(!JKEY||!JBIN){ setStatus('error'); toast('Configura JSONBin nelle Impostazioni'); return; }
   setStatus('saving');
   try{
-    const r = await fetch(JURL(),{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':JKEY},body:JSON.stringify(DATA)});
+    const r = await fetch(JURL,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':JKEY},body:JSON.stringify(DATA)});
     if(!r.ok) throw new Error('HTTP '+r.status);
     DIRTY=false; setStatus('saved'); toast('Salvato');
   }catch(e){ setStatus('error'); toast('Errore: '+e.message); }
