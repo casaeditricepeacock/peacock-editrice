@@ -138,6 +138,9 @@ tr:hover td{background:var(--blue-light);}
   <div class="nav-right">
     <span id="save-ind">● salvato</span>
     <button class="btn-io save" id="btn-save">Salva</button>
+    <button class="btn-io" id="btn-backup">&#11015; Backup JSON</button>
+    <button class="btn-io" id="btn-ripristina">&#11014; Ripristina</button>
+    <input type="file" id="loadFile-piano" accept=".json" style="display:none">
     <button class="btn-io" id="btn-new-libro">+ Nuovo libro</button>
   </div>
 </div>
@@ -398,9 +401,9 @@ tr:hover td{background:var(--blue-light);}
 // ═══════════════════════════════════════════════════════════
 // CONFIG JSONBin — inserisci qui i tuoi dati
 // ═══════════════════════════════════════════════════════════
-let JKEY = localStorage.getItem('pe_jkey') || '$2a$10$fjUl8IVz2yeZDM9YIaHrk.5c2W8C7Lb1weJR8ye/zj.LHB3z4kHkm';
-let JBIN = localStorage.getItem('pe_jbin') || '69de4035856a682189320ee4';
-let JURL = () => 'https://api.jsonbin.io/v3/b/' + JBIN;
+const JKEY='$2a$10$fjUl8IVz2yeZDM9YIaHrk.5c2W8C7Lb1weJR8ye/zj.LHB3z4kHkm';
+const JBIN='69de4035856a682189320ee4';
+const JURL='https://api.jsonbin.io/v3/b/'+JBIN;
 
 let DATA = { libri: [], progetti: [], obiettivi: {
   '2025':{vendite:2000,titoli:16,bookshop:0,fiere:1,venditeReal:1600,bookshopReal:0,fiereReal:1},
@@ -459,7 +462,7 @@ async function loadData(){
   if(!JKEY||!JBIN){ DATA.libri = SEED_LIBRI; renderAll(); return; }
   setStatus('loading');
   try{
-    const r = await fetch(JURL()+'/latest',{headers:{'X-Master-Key':JKEY}});
+    const r = await fetch(JURL+'/latest',{headers:{'X-Master-Key':JKEY}});
     const j = await r.json();
     const d = j.record;
     if(d&&d.libri&&d.libri.length>0){ DATA=d; if(!DATA.progetti) DATA.progetti=[]; }
@@ -472,7 +475,7 @@ async function pushData(){
   if(!JKEY||!JBIN){ setStatus('error'); toast('Configura JSONBin nelle Impostazioni'); return; }
   setStatus('saving');
   try{
-    const r = await fetch(JURL(),{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':JKEY},body:JSON.stringify(DATA)});
+    const r = await fetch(JURL,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':JKEY},body:JSON.stringify(DATA)});
     if(!r.ok) throw new Error('HTTP '+r.status);
     DIRTY=false; setStatus('saved'); toast('Dati salvati nel cloud');
   }catch(e){ setStatus('error'); toast('Errore salvataggio: '+e.message); }
@@ -934,6 +937,30 @@ document.getElementById('btn-mp-promuovi').addEventListener('click',()=>{
   document.getElementById('overlay-progetto').classList.remove('open');
   renderProgetti(); renderDashboard(); renderPiano();
   toast('"'+p.titolo+'" spostato nel Piano');
+});
+
+
+// BACKUP
+document.getElementById('btn-backup').addEventListener('click',function(){
+  const blob=new Blob([JSON.stringify(DATA,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='piano_backup_'+new Date().toISOString().split('T')[0]+'.json';
+  a.click();
+  toast('Backup scaricato');
+});
+document.getElementById('btn-ripristina').addEventListener('click',function(){
+  document.getElementById('loadFile-piano').click();
+});
+document.getElementById('loadFile-piano').addEventListener('change',function(e){
+  const file=e.target.files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=function(ev){
+    try{
+      DATA=JSON.parse(ev.target.result);
+      pushData();renderAll();toast('Dati ripristinati e salvati');
+    }catch(err){alert('File non valido.');}
+  };
+  r.readAsText(file);e.target.value='';
 });
 
 // ═══════════════════════════════════════════════════════════
