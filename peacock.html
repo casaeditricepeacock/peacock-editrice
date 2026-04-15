@@ -121,6 +121,27 @@ body{font-family:'DM Mono',monospace;background:var(--paper);color:var(--ink);mi
 .btn-del-f{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:0.75rem;padding:2px 5px;}
 .btn-del-f:hover{color:var(--red);}
 
+
+/* FATTURE DA PAGARE */
+.fatture-pag-section{background:white;border:1px solid var(--border);border-left:4px solid var(--red);padding:18px;margin-bottom:20px;}
+.fatture-pag-title{font-family:'Cormorant Garamond',serif;font-size:1rem;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.fp-form{display:grid;grid-template-columns:1.4fr 0.8fr 0.8fr 110px 36px;gap:8px;margin-bottom:12px;align-items:end;}
+.fp-item{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--blue-light);border:1px solid var(--border);border-left:3px solid var(--border);margin-bottom:6px;}
+.fp-item.scad-ok{border-left-color:var(--green);}
+.fp-item.scad-warn{border-left-color:var(--gold);background:rgba(196,146,42,0.06);}
+.fp-item.scad-crit{border-left-color:var(--red);background:var(--red-bg);}
+.fp-item.pagata{background:var(--green-bg);border-left-color:var(--green);opacity:0.7;}
+.fp-cat{font-size:0.5rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:2px;}
+.fp-desc{font-size:0.72rem;color:var(--ink);}
+.fp-imp{font-family:'Cormorant Garamond',serif;font-size:1rem;color:var(--red);font-weight:600;}
+.fp-item.pagata .fp-imp{color:var(--green);}
+.fp-scad{font-size:0.58rem;color:var(--muted);}
+.fp-scad.warn{color:#b8860b;font-weight:500;}
+.fp-scad.crit{color:var(--red);font-weight:500;}
+.btn-paga{padding:4px 10px;font-size:0.58rem;background:var(--green);color:white;border:none;cursor:pointer;font-family:'DM Mono',monospace;}
+.btn-paga:hover{background:var(--ink);}
+.fp-item.pagata .btn-paga{background:var(--muted);cursor:default;}
+
 /* TWO COL */
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:20px;}
 .panel{background:white;border:1px solid var(--border);padding:20px;}
@@ -400,6 +421,33 @@ window.addEventListener('load',()=>document.getElementById('pwd-input').focus())
     </div>
     <div class="fattura-list" id="fattura-list">
       <div style="font-size:0.68rem;color:var(--muted);padding:8px 0;">Nessuna fattura in attesa.</div>
+    </div>
+  </div>
+
+
+  <!-- Scadenzario fatture da pagare -->
+  <div class="fatture-pag-section">
+    <div class="fatture-pag-title">
+      Scadenzario Fatture da Pagare
+      <span class="fatture-tot">Da pagare: <span id="fp_tot" style="color:var(--red)">&#8364; 0</span> &nbsp;|&nbsp; Pagate: <span id="fp_pag">&#8364; 0</span></span>
+    </div>
+    <div class="fp-form">
+      <div class="ff-small"><label>Descrizione</label><input type="text" id="fp_desc" placeholder="es. Mediagraf fattura 123"></div>
+      <div class="ff-small"><label>Importo &#8364;</label><input type="number" id="fp_imp" placeholder="0.00" step="0.01" min="0"></div>
+      <div class="ff-small"><label>Scadenza</label><input type="date" id="fp_scad"></div>
+      <div class="ff-small"><label>Categoria</label>
+        <select id="fp_cat" style="width:100%;padding:6px 9px;border:1px solid var(--border);background:white;font-family:'DM Mono',monospace;font-size:0.62rem;">
+          <option value="Stampatori">Stampatori</option>
+          <option value="Sito">Sito</option>
+          <option value="Trasporti">Trasporti</option>
+          <option value="Commercialista">Commercialista</option>
+          <option value="Altro">Altro</option>
+        </select>
+      </div>
+      <div class="ff-small"><label>&nbsp;</label><button class="btn-add-f" onclick="addFatturaPag()" title="Aggiungi" style="background:var(--red);border-color:var(--red)">+</button></div>
+    </div>
+    <div class="fattura-list" id="fp-list">
+      <div style="font-size:0.68rem;color:var(--muted);padding:8px 0;">Nessuna fattura da pagare.</div>
     </div>
   </div>
 
@@ -689,8 +737,8 @@ window.addEventListener('beforeunload',e=>{
 });
 
 // DATA ACCESS
-function getRows(y,m){if(!DATA[y])DATA[y]={};if(!DATA[y][m])DATA[y][m]={rows:[],notes:'',saldi:{b:0,p:0,c:0},fatture:[]};return DATA[y][m].rows;}
-function getMonth(y,m){if(!DATA[y])DATA[y]={};if(!DATA[y][m])DATA[y][m]={rows:[],notes:'',saldi:{b:0,p:0,c:0},fatture:[]};return DATA[y][m];}
+function getRows(y,m){if(!DATA[y])DATA[y]={};if(!DATA[y][m])DATA[y][m]={rows:[],notes:'',saldi:{b:0,p:0,c:0},fatture:[],fattureP:[]};return DATA[y][m].rows;}
+function getMonth(y,m){if(!DATA[y])DATA[y]={};if(!DATA[y][m])DATA[y][m]={rows:[],notes:'',saldi:{b:0,p:0,c:0},fatture:[],fattureP:[]};return DATA[y][m];}
 function getNotes(y,m){return getMonth(y,m).notes||'';}
 function getSaldi(y,m){
   const def={2024:{aprile:{b:4200,p:280,c:200},giugno:{b:4100,p:260,c:180},luglio:{b:3900,p:300,c:220},settembre:{b:3600,p:320,c:200},ottobre:{b:3500,p:310,c:200},dicembre:{b:5296.87,p:304,c:237}},2025:{gennaio:{b:1197.70,p:66.81,c:50},febbraio:{b:1300,p:80,c:50},marzo:{b:1400,p:85,c:50},aprile:{b:1500,p:83,c:50},maggio:{b:1600,p:83,c:50},giugno:{b:3599.09,p:83,c:50},luglio:{b:3571.84,p:83,c:50},agosto:{b:3175,p:83,c:50},settembre:{b:2641.17,p:83,c:50},ottobre:{b:2130.24,p:83,c:50},novembre:{b:2261.39,p:83,c:50},dicembre:{b:1098.11,p:83,c:50}},2026:{gennaio:{b:1936.02,p:98.9,c:50},febbraio:{b:1506.92,p:15.9,c:50},marzo:{b:1700,p:60,c:50}}};
@@ -699,6 +747,79 @@ function getSaldi(y,m){
   return (def[y]&&def[y][m])||{b:0,p:0,c:0};
 }
 function getFatture(y,m){return getMonth(y,m).fatture||[];}
+
+
+// SCADENZARIO FATTURE DA PAGARE
+function getFattureP(y,m){return getMonth(y,m).fattureP||[];}
+
+function addFatturaPag(){
+  var desc=document.getElementById('fp_desc').value.trim();
+  var imp=parseFloat(document.getElementById('fp_imp').value);
+  var scad=document.getElementById('fp_scad').value;
+  var cat=document.getElementById('fp_cat').value;
+  if(!desc||!imp||imp<=0){alert('Inserisci descrizione e importo');return;}
+  var md=getMonth(CY,CM);
+  if(!md.fattureP) md.fattureP=[];
+  md.fattureP.push({id:Date.now(),desc:desc,importo:imp,scadenza:scad,categoria:cat,pagata:false});
+  saveData();
+  document.getElementById('fp_desc').value='';
+  document.getElementById('fp_imp').value='';
+  document.getElementById('fp_scad').value='';
+  renderFattureP();
+  toast('Fattura aggiunta');
+}
+
+function pagaFattura(id){
+  var fp=getFattureP(CY,CM).find(function(f){return f.id===id;});
+  if(fp){fp.pagata=true;saveData();renderFattureP();toast('Fattura pagata ✓');}
+}
+
+function deleteFatturaPag(id){
+  var md=getMonth(CY,CM);
+  md.fattureP=(md.fattureP||[]).filter(function(f){return f.id!==id;});
+  saveData();renderFattureP();
+}
+
+function renderFattureP(){
+  var fp=getFattureP(CY,CM);
+  var list=document.getElementById('fp-list');
+  if(!list) return;
+  var daPag=fp.filter(function(f){return !f.pagata;}).reduce(function(s,f){return s+f.importo;},0);
+  var pag=fp.filter(function(f){return f.pagata;}).reduce(function(s,f){return s+f.importo;},0);
+  document.getElementById('fp_tot').textContent=fmtS(daPag);
+  document.getElementById('fp_pag').textContent=fmtS(pag);
+  if(!fp.length){list.innerHTML='<div style="font-size:0.68rem;color:var(--muted);padding:8px 0;">Nessuna fattura da pagare.</div>';return;}
+  var oggi=new Date(); oggi.setHours(0,0,0,0);
+  list.innerHTML=fp.map(function(f){
+    var cls='scad-ok', scadTxt='', scadCls='';
+    if(f.scadenza && !f.pagata){
+      var sd=new Date(f.scadenza); sd.setHours(0,0,0,0);
+      var gg=Math.round((sd-oggi)/86400000);
+      if(gg<0){cls='scad-crit';scadTxt='SCADUTA da '+Math.abs(gg)+'gg';scadCls='crit';}
+      else if(gg<=7){cls='scad-crit';scadTxt='Scade tra '+gg+' giorni';scadCls='crit';}
+      else if(gg<=15){cls='scad-warn';scadTxt='Scade tra '+gg+' giorni';scadCls='warn';}
+      else{scadTxt=new Date(f.scadenza).toLocaleDateString('it-IT');}
+    } else if(f.scadenza && f.pagata){
+      scadTxt=new Date(f.scadenza).toLocaleDateString('it-IT');
+    }
+    var pagaBtn = f.pagata
+      ? '<button class="btn-paga" disabled>Pagata</button>'
+      : '<button class="btn-paga" onclick="pagaFattura('+f.id+')">Paga</button>';
+    var scadHtml = scadTxt ? '<div class="fp-scad '+scadCls+'">'+scadTxt+'</div>' : '';
+    return '<div class="fp-item '+(f.pagata?'pagata':cls)+'">'
+      +'<div>'
+      +'<div class="fp-cat">'+(f.categoria||'Altro')+'</div>'
+      +'<div class="fp-desc">'+f.desc+'</div>'
+      +scadHtml
+      +'</div>'
+      +'<div style="display:flex;align-items:center;gap:8px">'
+      +'<span class="fp-imp">'+fmtS(f.importo)+'</span>'
+      +pagaBtn
+      +'<button class="btn-del-f" onclick="deleteFatturaPag('+f.id+')">&#x2715;</button>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+}
 
 // HELPERS
 function fmt(n){if(n===null||n===undefined||isNaN(n))return '€ 0,00';return '€ '+Number(n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});}
@@ -865,16 +986,16 @@ function addFattura(){
   document.getElementById('fat_desc').value='';
   document.getElementById('fat_imp').value='';
   document.getElementById('fat_scad').value='';
-  renderFatture();toast('Fattura aggiunta');
+  renderFatture();renderFattureP();toast('Fattura aggiunta');
 }
 function incassaFattura(id){
   const fat=getFatture(CY,CM).find(f=>f.id===id);
-  if(fat){fat.incassata=true;saveData();renderFatture();toast('Fattura incassata ✓');}
+  if(fat){fat.incassata=true;saveData();renderFatture();renderFattureP();toast('Fattura incassata ✓');}
 }
 function deleteFattura(id){
   const md=getMonth(CY,CM);
   md.fatture=(md.fatture||[]).filter(f=>f.id!==id);
-  saveData();renderFatture();
+  saveData();renderFatture();renderFattureP();
 }
 function renderFatture(){
   const fatture=getFatture(CY,CM);
@@ -930,7 +1051,7 @@ function renderDashboard(){
   document.getElementById('d_ri_altro_e').textContent=fmt(t.altro_e||0);
   document.getElementById('d_ri_tot').textContent=fmt(t.e);
   document.getElementById('d_ri_total2').textContent=fmt(t.e);
-  renderFatture();
+  renderFatture();renderFattureP();
   renderSaldiAttuali();
   renderAnnual();
   renderChart();
