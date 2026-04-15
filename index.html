@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Casa Editrice Peacock — Gestionale</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&display=swap');
+:root{
+  --ink:#0a1628;--ink2:#1a3a6b;--paper:#f0f4f8;--cream:#e2eaf3;
+  --gold:#c4922a;--gold-light:#e8c97a;
+  --red:#8b2635;--green:#2d5a3d;
+  --muted:#5a6e8a;--border:#c2d0e0;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Mono',monospace;background:var(--ink);color:var(--paper);min-height:100vh;display:flex;flex-direction:column;}
+
+/* LOGIN */
+#login-screen{position:fixed;inset:0;background:var(--ink);z-index:999;display:flex;align-items:center;justify-content:center;}
+.login-box{display:flex;flex-direction:column;align-items:center;gap:24px;padding:48px 40px;border-top:3px solid var(--gold);background:rgba(255,255,255,0.04);max-width:360px;width:90%;}
+.login-title{font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:300;letter-spacing:0.2em;text-transform:uppercase;color:var(--paper);text-align:center;}
+.login-sub{font-size:0.52rem;letter-spacing:0.26em;text-transform:uppercase;color:var(--gold-light);text-align:center;margin-top:-16px;}
+.login-input{width:100%;padding:11px 14px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.2);color:var(--paper);font-family:'DM Mono',monospace;font-size:0.9rem;letter-spacing:0.15em;text-align:center;outline:none;transition:border-color 0.2s;}
+.login-input:focus{border-color:var(--gold);}
+.login-btn{width:100%;padding:12px;background:var(--gold);color:var(--ink);border:none;font-family:'DM Mono',monospace;font-size:0.68rem;letter-spacing:0.22em;text-transform:uppercase;cursor:pointer;transition:background 0.18s;}
+.login-btn:hover{background:var(--gold-light);}
+.login-err{font-size:0.58rem;color:var(--red);letter-spacing:0.1em;display:none;}
+.login-err.show{display:block;}
+
+/* MAIN */
+#main-screen{display:none;flex-direction:column;min-height:100vh;}
+
+/* HEADER */
+.header{background:var(--ink);padding:20px 40px;display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid var(--gold);}
+.header-title{font-family:'Cormorant Garamond',serif;font-size:1.6rem;font-weight:300;letter-spacing:0.18em;text-transform:uppercase;color:var(--paper);}
+.header-sub{font-size:0.5rem;color:var(--gold-light);letter-spacing:0.28em;text-transform:uppercase;display:block;margin-top:4px;}
+.header-right{text-align:right;}
+#hdr-date{font-family:'Cormorant Garamond',serif;font-size:0.9rem;color:var(--paper);font-style:italic;}
+.btn-logout{display:block;margin-top:6px;padding:5px 12px;font-size:0.52rem;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;border:1px solid rgba(255,255,255,0.25);background:transparent;color:rgba(255,255,255,0.6);font-family:'DM Mono',monospace;transition:all 0.15s;}
+.btn-logout:hover{border-color:var(--red);color:var(--red);}
+
+/* TOOLS */
+.tools-wrap{flex:1;padding:48px 40px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px;background:var(--ink2);}
+.tools-label{font-size:0.52rem;letter-spacing:0.28em;text-transform:uppercase;color:var(--gold-light);text-align:center;}
+.tools-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;width:100%;max-width:880px;}
+.tool-card{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-top:3px solid var(--gold);padding:26px 22px;cursor:pointer;transition:all 0.2s;text-decoration:none;color:var(--paper);display:flex;flex-direction:column;gap:10px;}
+.tool-card:hover{background:rgba(255,255,255,0.1);border-color:var(--gold);transform:translateY(-2px);}
+.tool-icon{font-size:1.5rem;}
+.tool-name{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:400;letter-spacing:0.06em;}
+.tool-desc{font-size:0.52rem;color:rgba(255,255,255,0.5);letter-spacing:0.06em;line-height:1.6;}
+.tool-card.mail{border-top-color:var(--gold-light);}
+
+/* FOOTER */
+footer{padding:16px 40px;border-top:1px solid rgba(255,255,255,0.08);background:var(--ink);display:flex;justify-content:space-between;align-items:center;}
+.footer-txt{font-size:0.48rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);}
+
+@media(max-width:700px){.tools-grid{grid-template-columns:1fr 1fr;}.header,.tools-wrap{padding:18px 20px;}}
+@media(max-width:440px){.tools-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-title">Casa Editrice<br>Peacock</div>
+    <div class="login-sub">Gestionale interno</div>
+    <input class="login-input" type="password" id="pw-input" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="login-btn" onclick="doLogin()">Accedi</button>
+    <div class="login-err" id="login-err">Password errata</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main-screen">
+
+  <div class="header">
+    <div>
+      <div class="header-title">Casa Editrice Peacock</div>
+      <span class="header-sub">Gestionale interno</span>
+    </div>
+    <div class="header-right">
+      <div id="hdr-date"></div>
+      <button class="btn-logout" onclick="doLogout()">Esci</button>
+    </div>
+  </div>
+
+  <div class="tools-wrap">
+    <div class="tools-label">Seleziona uno strumento</div>
+    <div class="tools-grid">
+
+      <a class="tool-card" href="peacock.html" target="_blank">
+        <div class="tool-icon">📊</div>
+        <div class="tool-name">Bilancio</div>
+        <div class="tool-desc">Entrate, uscite, libro mastro, scadenzario fatture</div>
+      </a>
+
+      <a class="tool-card" href="magazzino.html" target="_blank">
+        <div class="tool-icon">📦</div>
+        <div class="tool-name">Magazzino</div>
+        <div class="tool-desc">Giacenze, bolle, distributori, rendiconti, movimenti</div>
+      </a>
+
+      <a class="tool-card" href="piano_editoriale.html" target="_blank">
+        <div class="tool-icon">📋</div>
+        <div class="tool-name">Piano Editoriale</div>
+        <div class="tool-desc">Produzione, pipeline, obiettivi, progetti in attesa</div>
+      </a>
+
+      <a class="tool-card" href="gestione_autori.html" target="_blank">
+        <div class="tool-icon">✍️</div>
+        <div class="tool-name">Autori &amp; Royalty</div>
+        <div class="tool-desc">Schede autori, contratti, rendiconti reale e comunicato</div>
+      </a>
+
+      <a class="tool-card mail" href="https://snazzy-crumble-1fa1c9.netlify.app" target="_blank">
+        <div class="tool-icon">📧</div>
+        <div class="tool-name">Mail Marketing</div>
+        <div class="tool-desc">Invio cedole e promozioni alle librerie, archivio zone e gruppi</div>
+      </a>
+
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-txt">Casa Editrice Peacock &copy; 2026</div>
+    <div class="footer-txt">Gestionale interno — accesso riservato</div>
+  </footer>
+
+</div>
+
+<script>
+var PW = 'Timea17';
+var SK = 'peacock_auth';
+
+function doLogin(){
+  if(document.getElementById('pw-input').value === PW){
+    sessionStorage.setItem(SK,'1');
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('main-screen').style.display='flex';
+  } else {
+    document.getElementById('login-err').classList.add('show');
+    document.getElementById('pw-input').value='';
+    document.getElementById('pw-input').focus();
+  }
+}
+
+function doLogout(){
+  sessionStorage.removeItem(SK);
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('main-screen').style.display='none';
+  document.getElementById('pw-input').value='';
+}
+
+if(sessionStorage.getItem(SK)==='1'){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('main-screen').style.display='flex';
+}
+
+document.getElementById('hdr-date').textContent = new Date().toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+document.getElementById('pw-input').focus();
+</script>
+</body>
+</html>
