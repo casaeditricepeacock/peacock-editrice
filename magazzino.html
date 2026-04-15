@@ -194,6 +194,7 @@ tfoot td:first-child{font-family:'Cormorant Garamond',serif;color:var(--gold-lig
 <script>
 function checkPwd(){
   if(document.getElementById('pwd-input').value==='Timea17'){
+    sessionStorage.setItem('peacock_auth','1');
     document.getElementById('login-screen').style.display='none';
   } else {
     document.getElementById('pwd-error').style.display='block';
@@ -201,7 +202,13 @@ function checkPwd(){
     document.getElementById('pwd-input').focus();
   }
 }
-window.addEventListener('load',()=>document.getElementById('pwd-input').focus());
+window.addEventListener('load',function(){
+  if(sessionStorage.getItem('peacock_auth')==='1'){
+    document.getElementById('login-screen').style.display='none';
+  } else {
+    document.getElementById('pwd-input').focus();
+  }
+});
 </script>
 
 
