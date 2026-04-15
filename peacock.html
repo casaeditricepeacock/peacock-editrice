@@ -122,6 +122,22 @@ body{font-family:'DM Mono',monospace;background:var(--paper);color:var(--ink);mi
 .btn-del-f:hover{color:var(--red);}
 
 
+
+/* FATTURE DA EMETTERE */
+.fatture-eme-section{background:white;border:1px solid var(--border);border-left:4px solid var(--blue-mid);padding:18px;margin-bottom:20px;}
+.fatture-eme-title{font-family:'Cormorant Garamond',serif;font-size:1rem;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.fe-form{display:grid;grid-template-columns:1.4fr 0.8fr 0.8fr 1fr 36px;gap:8px;margin-bottom:12px;align-items:end;}
+.fe-item{display:flex;justify-content:space-between;align-items:flex-start;padding:8px 12px;background:var(--blue-light);border:1px solid var(--border);border-left:3px solid var(--blue-mid);margin-bottom:6px;}
+.fe-item.emessa{background:var(--green-bg);border-left-color:var(--green);opacity:0.7;}
+.fe-desc{font-size:0.72rem;color:var(--ink);}
+.fe-note{font-size:0.6rem;color:var(--muted);margin-top:2px;font-style:italic;}
+.fe-imp{font-family:'Cormorant Garamond',serif;font-size:1rem;color:var(--blue-mid);font-weight:600;}
+.fe-item.emessa .fe-imp{color:var(--green);}
+.fe-data{font-size:0.58rem;color:var(--muted);}
+.btn-emetti{padding:4px 10px;font-size:0.58rem;background:var(--blue-mid);color:white;border:none;cursor:pointer;font-family:'DM Mono',monospace;}
+.btn-emetti:hover{background:var(--ink);}
+.fe-item.emessa .btn-emetti{background:var(--muted);cursor:default;}
+
 /* FATTURE DA PAGARE */
 .fatture-pag-section{background:white;border:1px solid var(--border);border-left:4px solid var(--red);padding:18px;margin-bottom:20px;}
 .fatture-pag-title{font-family:'Cormorant Garamond',serif;font-size:1rem;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
@@ -458,6 +474,25 @@ window.addEventListener('load',function(){
     </div>
   </div>
 
+
+  <!-- Fatture da emettere -->
+  <div class="fatture-eme-section">
+    <div class="fatture-eme-title">
+      Fatture da Emettere
+      <span class="fatture-tot">Da emettere: <span id="fe_tot" style="color:var(--blue-mid)">&#8364; 0</span> &nbsp;|&nbsp; Emesse: <span id="fe_eme">&#8364; 0</span></span>
+    </div>
+    <div class="fe-form">
+      <div class="ff-small"><label>Descrizione</label><input type="text" id="fe_desc" placeholder="es. Rendiconto Torino Q1 2026"></div>
+      <div class="ff-small"><label>Importo &#8364;</label><input type="number" id="fe_imp" placeholder="0.00" step="0.01" min="0"></div>
+      <div class="ff-small"><label>Data prevista</label><input type="date" id="fe_data"></div>
+      <div class="ff-small"><label>Note</label><input type="text" id="fe_note" placeholder="es. distributore Milano"></div>
+      <div class="ff-small"><label>&nbsp;</label><button class="btn-add-f" onclick="addFatturaEme()" title="Aggiungi" style="background:var(--blue-mid);border-color:var(--blue-mid)">+</button></div>
+    </div>
+    <div class="fattura-list" id="fe-list">
+      <div style="font-size:0.68rem;color:var(--muted);padding:8px 0;">Nessuna fattura da emettere.</div>
+    </div>
+  </div>
+
   <div class="two-col">
     <div class="panel">
       <div class="panel-title">Spese <span class="panel-tot neg" id="d_sp_tot">—</span></div>
@@ -744,8 +779,8 @@ window.addEventListener('beforeunload',e=>{
 });
 
 // DATA ACCESS
-function getRows(y,m){if(!DATA[y])DATA[y]={};if(!DATA[y][m])DATA[y][m]={rows:[],notes:'',saldi:{b:0,p:0,c:0},fatture:[],fattureP:[]};return DATA[y][m].rows;}
-function getMonth(y,m){if(!DATA[y])DATA[y]={};if(!DATA[y][m])DATA[y][m]={rows:[],notes:'',saldi:{b:0,p:0,c:0},fatture:[],fattureP:[]};return DATA[y][m];}
+function getRows(y,m){if(!DATA[y])DATA[y]={};if(!DATA[y][m])DATA[y][m]={rows:[],notes:'',saldi:{b:0,p:0,c:0},fatture:[],fattureP:[],fattureE:[]};return DATA[y][m].rows;}
+function getMonth(y,m){if(!DATA[y])DATA[y]={};if(!DATA[y][m])DATA[y][m]={rows:[],notes:'',saldi:{b:0,p:0,c:0},fatture:[],fattureP:[],fattureE:[]};return DATA[y][m];}
 function getNotes(y,m){return getMonth(y,m).notes||'';}
 function getSaldi(y,m){
   const def={2024:{aprile:{b:4200,p:280,c:200},giugno:{b:4100,p:260,c:180},luglio:{b:3900,p:300,c:220},settembre:{b:3600,p:320,c:200},ottobre:{b:3500,p:310,c:200},dicembre:{b:5296.87,p:304,c:237}},2025:{gennaio:{b:1197.70,p:66.81,c:50},febbraio:{b:1300,p:80,c:50},marzo:{b:1400,p:85,c:50},aprile:{b:1500,p:83,c:50},maggio:{b:1600,p:83,c:50},giugno:{b:3599.09,p:83,c:50},luglio:{b:3571.84,p:83,c:50},agosto:{b:3175,p:83,c:50},settembre:{b:2641.17,p:83,c:50},ottobre:{b:2130.24,p:83,c:50},novembre:{b:2261.39,p:83,c:50},dicembre:{b:1098.11,p:83,c:50}},2026:{gennaio:{b:1936.02,p:98.9,c:50},febbraio:{b:1506.92,p:15.9,c:50},marzo:{b:1700,p:60,c:50}}};
@@ -772,19 +807,19 @@ function addFatturaPag(){
   document.getElementById('fp_desc').value='';
   document.getElementById('fp_imp').value='';
   document.getElementById('fp_scad').value='';
-  renderFattureP();
+  renderFattureP();renderFattureE();
   toast('Fattura aggiunta');
 }
 
 function pagaFattura(id){
   var fp=getFattureP(CY,CM).find(function(f){return f.id===id;});
-  if(fp){fp.pagata=true;saveData();renderFattureP();toast('Fattura pagata ✓');}
+  if(fp){fp.pagata=true;saveData();renderFattureP();renderFattureE();toast('Fattura pagata ✓');}
 }
 
 function deleteFatturaPag(id){
   var md=getMonth(CY,CM);
   md.fattureP=(md.fattureP||[]).filter(function(f){return f.id!==id;});
-  saveData();renderFattureP();
+  saveData();renderFattureP();renderFattureE();
 }
 
 function renderFattureP(){
@@ -823,6 +858,68 @@ function renderFattureP(){
       +'<span class="fp-imp">'+fmtS(f.importo)+'</span>'
       +pagaBtn
       +'<button class="btn-del-f" onclick="deleteFatturaPag('+f.id+')">&#x2715;</button>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+}
+
+
+// FATTURE DA EMETTERE
+function getFattureE(y,m){return getMonth(y,m).fattureE||[];}
+
+function addFatturaEme(){
+  var desc=document.getElementById('fe_desc').value.trim();
+  var imp=parseFloat(document.getElementById('fe_imp').value);
+  var data=document.getElementById('fe_data').value;
+  var note=document.getElementById('fe_note').value.trim();
+  if(!desc||!imp||imp<=0){alert('Inserisci descrizione e importo');return;}
+  var md=getMonth(CY,CM);
+  if(!md.fattureE) md.fattureE=[];
+  md.fattureE.push({id:Date.now(),desc:desc,importo:imp,data:data,note:note,emessa:false});
+  saveData();
+  document.getElementById('fe_desc').value='';
+  document.getElementById('fe_imp').value='';
+  document.getElementById('fe_data').value='';
+  document.getElementById('fe_note').value='';
+  renderFattureE();
+  toast('Fattura da emettere aggiunta');
+}
+
+function emettiFattura(id){
+  var fe=getFattureE(CY,CM).find(function(f){return f.id===id;});
+  if(fe){fe.emessa=true;saveData();renderFattureE();toast('Fattura segnata come emessa ✓');}
+}
+
+function deleteFatturaEme(id){
+  var md=getMonth(CY,CM);
+  md.fattureE=(md.fattureE||[]).filter(function(f){return f.id!==id;});
+  saveData();renderFattureE();
+}
+
+function renderFattureE(){
+  var fe=getFattureE(CY,CM);
+  var list=document.getElementById('fe-list');
+  if(!list) return;
+  var daEme=fe.filter(function(f){return !f.emessa;}).reduce(function(s,f){return s+f.importo;},0);
+  var eme=fe.filter(function(f){return f.emessa;}).reduce(function(s,f){return s+f.importo;},0);
+  document.getElementById('fe_tot').textContent=fmtS(daEme);
+  document.getElementById('fe_eme').textContent=fmtS(eme);
+  if(!fe.length){list.innerHTML='<div style="font-size:0.68rem;color:var(--muted);padding:8px 0;">Nessuna fattura da emettere.</div>';return;}
+  list.innerHTML=fe.map(function(f){
+    var dataFmt=f.data?new Date(f.data).toLocaleDateString('it-IT'):'';
+    var emettiBtn=f.emessa
+      ?'<button class="btn-emetti" disabled>Emessa</button>'
+      :'<button class="btn-emetti" onclick="emettiFattura('+f.id+')">Emetti</button>';
+    return '<div class="fe-item'+(f.emessa?' emessa':'')+'">'
+      +'<div>'
+      +'<div class="fe-desc">'+f.desc+'</div>'
+      +(f.note?'<div class="fe-note">'+f.note+'</div>':'')
+      +(dataFmt?'<div class="fe-data">Entro: '+dataFmt+'</div>':'')
+      +'</div>'
+      +'<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">'
+      +'<span class="fe-imp">'+fmtS(f.importo)+'</span>'
+      +emettiBtn
+      +'<button class="btn-del-f" onclick="deleteFatturaEme('+f.id+')">&#x2715;</button>'
       +'</div>'
       +'</div>';
   }).join('');
@@ -993,16 +1090,16 @@ function addFattura(){
   document.getElementById('fat_desc').value='';
   document.getElementById('fat_imp').value='';
   document.getElementById('fat_scad').value='';
-  renderFatture();renderFattureP();toast('Fattura aggiunta');
+  renderFatture();renderFattureP();renderFattureE();toast('Fattura aggiunta');
 }
 function incassaFattura(id){
   const fat=getFatture(CY,CM).find(f=>f.id===id);
-  if(fat){fat.incassata=true;saveData();renderFatture();renderFattureP();toast('Fattura incassata ✓');}
+  if(fat){fat.incassata=true;saveData();renderFatture();renderFattureP();renderFattureE();toast('Fattura incassata ✓');}
 }
 function deleteFattura(id){
   const md=getMonth(CY,CM);
   md.fatture=(md.fatture||[]).filter(f=>f.id!==id);
-  saveData();renderFatture();renderFattureP();
+  saveData();renderFatture();renderFattureP();renderFattureE();
 }
 function renderFatture(){
   const fatture=getFatture(CY,CM);
@@ -1058,7 +1155,7 @@ function renderDashboard(){
   document.getElementById('d_ri_altro_e').textContent=fmt(t.altro_e||0);
   document.getElementById('d_ri_tot').textContent=fmt(t.e);
   document.getElementById('d_ri_total2').textContent=fmt(t.e);
-  renderFatture();renderFattureP();
+  renderFatture();renderFattureP();renderFattureE();
   renderSaldiAttuali();
   renderAnnual();
   renderChart();
