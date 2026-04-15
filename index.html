@@ -135,7 +135,7 @@ var SK = 'peacock_auth';
 
 function doLogin(){
   if(document.getElementById('pw-input').value === PW){
-    sessionStorage.setItem(SK,'1');
+    localStorage.setItem(SK,'1');
     document.getElementById('login-screen').style.display='none';
     document.getElementById('main-screen').style.display='flex';
   } else {
@@ -146,13 +146,13 @@ function doLogin(){
 }
 
 function doLogout(){
-  sessionStorage.removeItem(SK);
+  localStorage.removeItem(SK);
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('main-screen').style.display='none';
   document.getElementById('pw-input').value='';
 }
 
-if(sessionStorage.getItem(SK)==='1'){
+if(localStorage.getItem(SK)==='1'){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('main-screen').style.display='flex';
 }
