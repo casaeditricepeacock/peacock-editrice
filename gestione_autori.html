@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Peacock — Gestione Autori</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&display=swap');
+:root{
+  --ink:#0a1628;--ink2:#1a3a6b;--paper:#f0f4f8;--cream:#e2eaf3;
+  --gold:#c4922a;--gold-light:#e8c97a;
+  --red:#8b2635;--red-bg:rgba(139,38,53,0.07);
+  --green:#2d5a3d;--green-bg:rgba(45,90,61,0.07);
+  --muted:#5a6e8a;--border:#c2d0e0;--blue-light:#eef3fa;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Mono',monospace;background:var(--paper);color:var(--ink);min-height:100vh;}
+.header{background:var(--ink);color:var(--paper);padding:16px 32px;display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid var(--gold);}
+.header h1{font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:300;letter-spacing:0.15em;text-transform:uppercase;}
+.header-sub{font-size:0.54rem;color:var(--gold-light);letter-spacing:0.3em;text-transform:uppercase;display:block;margin-top:3px;}
+.hdr-right{text-align:right;font-size:0.54rem;color:var(--gold-light);}
+#hdr-date{font-family:'Cormorant Garamond',serif;font-size:0.85rem;color:var(--paper);font-style:italic;}
+.topbar{background:var(--ink2);padding:8px 32px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+.nav-left{display:flex;gap:0;}
+.nav-tab{padding:9px 20px;font-size:0.62rem;letter-spacing:0.14em;text-transform:uppercase;cursor:pointer;border:none;background:transparent;color:rgba(255,255,255,0.55);border-bottom:3px solid transparent;transition:all 0.18s;font-family:'DM Mono',monospace;}
+.nav-tab.active{color:var(--gold-light);border-bottom-color:var(--gold);background:rgba(0,0,0,0.15);}
+.nav-tab:hover:not(.active){color:white;background:rgba(255,255,255,0.08);}
+.nav-right{display:flex;gap:6px;align-items:center;}
+#save-ind{font-size:0.54rem;letter-spacing:0.1em;color:rgba(125,220,150,0.9);margin-right:6px;}
+.btn-io{padding:5px 11px;font-size:0.56rem;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;border:1px solid rgba(255,255,255,0.3);background:transparent;color:rgba(255,255,255,0.7);font-family:'DM Mono',monospace;transition:all 0.12s;}
+.btn-io:hover{background:var(--gold);color:var(--ink);border-color:var(--gold);}
+.btn-io.save{border-color:rgba(125,220,150,0.5);color:rgba(125,220,150,0.9);}
+.btn-io.save:hover{background:var(--green);color:white;border-color:var(--green);}
+.main{padding:20px 32px;max-width:1600px;margin:0 auto;}
+.page{display:none;}.page.active{display:block;}
+.sec-title{font-family:'Cormorant Garamond',serif;font-size:0.66rem;letter-spacing:0.26em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid var(--border);}
+.panel{background:white;border:1px solid var(--border);padding:16px;margin-bottom:14px;}
+.panel-title{font-family:'Cormorant Garamond',serif;font-size:0.7rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.cards-row{display:grid;gap:9px;margin-bottom:16px;}
+.c4{grid-template-columns:repeat(4,1fr);}
+.c2{grid-template-columns:1fr 1fr;}
+.c3{grid-template-columns:1fr 1fr 1fr;}
+.card{background:var(--ink2);color:var(--paper);padding:12px 14px;position:relative;}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--gold);}
+.card-label{font-size:0.5rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold-light);margin-bottom:4px;}
+.card-val{font-family:'Cormorant Garamond',serif;font-size:1.25rem;font-weight:300;line-height:1;}
+.card-sub{font-size:0.5rem;color:rgba(255,255,255,0.5);margin-top:4px;}
+.cg{color:#7ecfa0;}.cr{color:#e07070;}.cgo{color:var(--gold-light);}
+table{width:100%;border-collapse:collapse;font-size:0.64rem;}
+th{text-align:left;padding:7px 8px;font-size:0.5rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border);white-space:nowrap;}
+td{padding:7px 8px;border-bottom:1px solid var(--cream);vertical-align:middle;}
+tr:hover td{background:var(--blue-light);}
+.td-r{text-align:right;font-variant-numeric:tabular-nums;}
+.badge{display:inline-block;padding:2px 7px;font-size:0.52rem;letter-spacing:0.08em;text-transform:uppercase;border:1px solid;}
+.badge-ok{background:var(--green-bg);color:var(--green);border-color:rgba(45,90,61,0.3);}
+.badge-no{background:var(--red-bg);color:var(--red);border-color:rgba(139,38,53,0.3);}
+.badge-warn{background:rgba(196,146,42,0.1);color:#7a5800;border-color:rgba(196,146,42,0.4);}
+.filters{background:var(--cream);border:1px solid var(--border);padding:9px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px;}
+.fil-label{font-size:0.5rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);}
+.fil-input,.fil-select{padding:5px 9px;border:1px solid var(--border);background:white;font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--ink);}
+.fil-input:focus,.fil-select:focus{outline:none;border-color:var(--ink2);}
+.btn-edit{padding:3px 8px;font-size:0.52rem;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'DM Mono',monospace;transition:all 0.12s;}
+.btn-edit:hover{border-color:var(--ink2);color:var(--ink2);}
+.btn-sm{padding:4px 10px;font-size:0.54rem;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;border:1px solid var(--ink2);background:var(--ink2);color:white;font-family:'DM Mono',monospace;transition:all 0.12s;}
+.btn-sm:hover{background:var(--gold);border-color:var(--gold);color:var(--ink);}
+.btn-green{background:var(--green);border-color:var(--green);color:white;}
+.btn-green:hover{background:#1a3a28;border-color:#1a3a28;}
+/* AUTORE CARD */
+.autore-card{background:white;border:1px solid var(--border);padding:14px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;cursor:pointer;transition:background 0.12s;}
+.autore-card:hover{background:var(--blue-light);}
+.autore-card.selected{background:var(--blue-light);border-color:var(--ink2);}
+.autore-nome{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:400;}
+.autore-meta{font-size:0.56rem;color:var(--muted);margin-top:4px;line-height:1.6;}
+.autore-flags{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
+.flag-item{display:inline-flex;align-items:center;gap:4px;font-size:0.5rem;letter-spacing:0.08em;text-transform:uppercase;}
+/* RENDICONTO */
+.rend-table{width:100%;border-collapse:collapse;font-size:0.62rem;}
+.rend-table th{padding:6px 10px;font-size:0.5rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border);}
+.rend-table td{padding:6px 10px;border-bottom:1px solid var(--cream);}
+.rend-table .col-reale{background:rgba(45,90,61,0.04);}
+.rend-table .col-com{background:rgba(196,146,42,0.04);}
+.rend-sep{width:1px;background:var(--border);}
+.rend-head-reale{background:var(--green-bg);color:var(--green);text-align:center;padding:6px;font-size:0.5rem;letter-spacing:0.12em;text-transform:uppercase;border:1px solid rgba(45,90,61,0.2);}
+.rend-head-com{background:rgba(196,146,42,0.08);color:#7a5800;text-align:center;padding:6px;font-size:0.5rem;letter-spacing:0.12em;text-transform:uppercase;border:1px solid rgba(196,146,42,0.2);}
+.tot-row td{font-weight:500;border-top:2px solid var(--border);background:var(--cream)!important;}
+.inp-com{width:80px;padding:3px 6px;border:1px solid var(--border);background:white;font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--ink);text-align:right;}
+.inp-com:focus{outline:none;border-color:var(--gold);}
+/* STORICO RENDICONTI */
+.storico-item{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-left:3px solid var(--gold);background:white;margin-bottom:6px;font-size:0.62rem;}
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(10,22,40,0.6);display:none;align-items:center;justify-content:center;z-index:200;}
+.overlay.open{display:flex;}
+.modal{background:var(--paper);border-top:3px solid var(--gold);padding:24px;width:700px;max-width:95vw;max-height:92vh;overflow-y:auto;}
+.modal-h{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:300;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:18px;color:var(--ink2);}
+.form-grid{display:grid;gap:10px;}
+.fg2{grid-template-columns:1fr 1fr;}
+.fg3{grid-template-columns:1fr 1fr 1fr;}
+.span2{grid-column:1/-1;}
+.f-label{font-size:0.5rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:3px;display:block;}
+.f-input,.f-select,.f-textarea{width:100%;padding:7px 9px;border:1px solid var(--border);background:white;font-family:'DM Mono',monospace;font-size:0.64rem;color:var(--ink);}
+.f-input:focus,.f-select:focus,.f-textarea:focus{outline:none;border-color:var(--ink2);}
+.f-textarea{resize:vertical;min-height:60px;line-height:1.5;}
+.modal-actions{display:flex;gap:8px;margin-top:16px;align-items:center;}
+.btn-prim{padding:7px 16px;font-size:0.58rem;letter-spacing:0.14em;text-transform:uppercase;cursor:pointer;border:1px solid var(--ink2);background:var(--ink2);color:white;font-family:'DM Mono',monospace;transition:all 0.12s;}
+.btn-prim:hover{background:var(--gold);border-color:var(--gold);color:var(--ink);}
+.btn-sec{padding:7px 16px;font-size:0.58rem;letter-spacing:0.14em;text-transform:uppercase;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'DM Mono',monospace;}
+.btn-del{padding:7px 16px;font-size:0.58rem;letter-spacing:0.14em;text-transform:uppercase;cursor:pointer;border:1px solid var(--red);background:transparent;color:var(--red);font-family:'DM Mono',monospace;margin-left:auto;}
+.btn-del:hover{background:var(--red);color:white;}
+.f-check-row{display:flex;align-items:center;gap:8px;padding:8px 0;}
+.f-check-row label{font-size:0.58rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink);cursor:pointer;}
+.f-check-row input[type=checkbox]{accent-color:var(--gold);width:15px;height:15px;cursor:pointer;}
+/* CANALI PERC */
+.canali-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;background:var(--cream);padding:10px;border:1px solid var(--border);margin-top:8px;}
+.canale-item{display:flex;flex-direction:column;gap:3px;}
+.canale-label{font-size:0.48rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);}
+.canale-input{padding:5px 8px;border:1px solid var(--border);background:white;font-family:'DM Mono',monospace;font-size:0.62rem;text-align:right;}
+/* CFG */
+.cfg-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.cfg-label{font-size:0.54rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);min-width:140px;}
+.cfg-input{flex:1;padding:6px 9px;border:1px solid var(--border);background:white;font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--ink);}
+.cfg-input:focus{outline:none;border-color:var(--ink2);}
+/* TOAST */
+#toast{position:fixed;bottom:20px;right:20px;background:var(--ink2);color:white;padding:10px 18px;font-size:0.62rem;letter-spacing:0.1em;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:999;border-left:3px solid var(--gold);}
+/* PRINT */
+@media print{
+  .topbar,.nav-right,.btn-io,.btn-sm,.btn-edit,.modal,.overlay,#toast,.filters,.nav-left,.header{display:none!important;}
+  .main{padding:0;}
+  .panel{border:none;padding:0;}
+  body{background:white;}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>Casa Editrice Peacock<span class="header-sub">Gestione Autori & Royalty</span></h1>
+  </div>
+  <div class="hdr-right">
+    <div id="hdr-date"></div>
+  </div>
+</div>
+
+<div class="topbar">
+  <div class="nav-left">
+    <button class="nav-tab active" data-page="autori">Autori</button>
+    <button class="nav-tab" data-page="rendiconto">Rendiconto</button>
+    <button class="nav-tab" data-page="storico">Storico</button>
+    <button class="nav-tab" data-page="settings">Impostazioni</button>
+  </div>
+  <div class="nav-right">
+    <span id="save-ind">● salvato</span>
+    <button class="btn-io save" id="btn-save">Salva</button>
+    <button class="btn-io" id="btn-new-autore">+ Nuovo autore</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- AUTORI -->
+  <div class="page active" id="page-autori">
+    <div class="filters">
+      <span class="fil-label">Cerca</span>
+      <input class="fil-input" id="f-cerca-autore" placeholder="Nome autore...">
+    </div>
+    <div class="cards-row c4" id="kpi-autori"></div>
+    <div id="lista-autori"></div>
+  </div>
+
+  <!-- RENDICONTO -->
+  <div class="page" id="page-rendiconto">
+    <div class="filters">
+      <span class="fil-label">Autore</span>
+      <select class="fil-select" id="rend-autore-sel" style="min-width:220px"></select>
+      <span class="fil-label">Anno</span>
+      <select class="fil-select" id="rend-anno">
+        <option value="2024">2024</option>
+        <option value="2025">2025</option>
+        <option value="2026" selected>2026</option>
+      </select>
+      <span class="fil-label">Periodo</span>
+      <select class="fil-select" id="rend-periodo">
+        <option value="annuale">Annuale</option>
+        <option value="Q1">Q1 (gen-mar)</option>
+        <option value="Q2">Q2 (apr-giu)</option>
+        <option value="Q3">Q3 (lug-set)</option>
+        <option value="Q4">Q4 (ott-dic)</option>
+      </select>
+      <button class="btn-sm" id="btn-calcola-rend">Calcola</button>
+    </div>
+
+    <div id="rend-content">
+      <p style="font-size:0.62rem;color:var(--muted);padding:20px 0">Seleziona un autore e clicca Calcola.</p>
+    </div>
+  </div>
+
+  <!-- STORICO -->
+  <div class="page" id="page-storico">
+    <div class="filters">
+      <span class="fil-label">Autore</span>
+      <select class="fil-select" id="stor-autore-sel" style="min-width:220px">
+        <option value="">Tutti</option>
+      </select>
+    </div>
+    <div id="lista-storico"></div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="page" id="page-settings">
+    <div class="panel">
+      <div class="panel-title">Connessione cloud — JSONBin.io (Autori)</div>
+      <p style="font-size:0.62rem;color:var(--muted);margin-bottom:14px;line-height:1.6">
+        Crea un Bin dedicato su jsonbin.io per i dati autori.<br>
+        Inserisci la stessa Master Key degli altri programmi Peacock.
+      </p>
+      <div class="cfg-row"><span class="cfg-label">Master Key</span><input class="cfg-input" type="password" id="cfg-key" placeholder="$2a$10$..."></div>
+      <div class="cfg-row"><span class="cfg-label">Bin ID Autori</span><input class="cfg-input" type="text" id="cfg-bin" placeholder="es. 69de..."></div>
+      <div class="cfg-row"><span class="cfg-label">Bin ID Magazzino</span><input class="cfg-input" type="text" id="cfg-bin-mag" placeholder="69bbb6caaa77b81da9fae591"></div>
+      <div style="margin-top:10px;display:flex;gap:8px;">
+        <button class="btn-prim" id="btn-salva-cfg">Salva</button>
+        <button class="btn-sec" id="btn-test-cfg">Testa</button>
+        <span id="cfg-stato" style="font-size:0.58rem;color:var(--muted);align-self:center;margin-left:8px"></span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL AUTORE -->
+<div class="overlay" id="overlay-autore">
+  <div class="modal">
+    <div class="modal-h" id="modal-h-autore">Nuovo autore</div>
+    <div class="form-grid fg2">
+      <div><label class="f-label">Nome *</label><input class="f-input" id="ma-nome"></div>
+      <div><label class="f-label">Cognome *</label><input class="f-input" id="ma-cognome"></div>
+      <div><label class="f-label">Email</label><input class="f-input" type="email" id="ma-email"></div>
+      <div><label class="f-label">Telefono</label><input class="f-input" id="ma-tel"></div>
+      <div class="span2"><label class="f-label">Indirizzo</label><input class="f-input" id="ma-indirizzo"></div>
+      <div><label class="f-label">Codice fiscale</label><input class="f-input" id="ma-cf"></div>
+      <div><label class="f-label">IBAN</label><input class="f-input" id="ma-iban"></div>
+      <div class="span2"><label class="f-label">Note</label><textarea class="f-textarea" id="ma-note" rows="2"></textarea></div>
+    </div>
+    <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px;">
+      <div style="font-size:0.56rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Documenti</div>
+      <div class="f-check-row"><input type="checkbox" id="ma-contratto"><label for="ma-contratto">Contratto firmato</label></div>
+      <div class="f-check-row"><input type="checkbox" id="ma-privacy"><label for="ma-privacy">Privacy firmata</label></div>
+      <div class="f-check-row"><input type="checkbox" id="ma-docid"><label for="ma-docid">Documento identità ricevuto</label></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-prim" id="btn-ma-salva">Salva</button>
+      <button class="btn-sec" id="btn-ma-annulla">Annulla</button>
+      <button class="btn-del" id="btn-ma-elimina" style="display:none">Elimina</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL LIBRO AUTORE -->
+<div class="overlay" id="overlay-libro">
+  <div class="modal">
+    <div class="modal-h" id="modal-h-libro">Collega libro</div>
+    <div class="form-grid fg2">
+      <div class="span2">
+        <label class="f-label">Libro *</label>
+        <select class="f-select" id="ml-libro"></select>
+      </div>
+      <div><label class="f-label">Cadenza rendiconto</label>
+        <select class="f-select" id="ml-cadenza">
+          <option value="annuale">Annuale</option>
+          <option value="trimestrale">Trimestrale</option>
+        </select>
+      </div>
+      <div><label class="f-label">Anticipo versato (€)</label>
+        <input class="f-input" type="number" id="ml-anticipo" placeholder="0" step="0.01">
+      </div>
+    </div>
+    <div style="margin-top:12px">
+      <div style="font-size:0.56rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Percentuali royalty per canale</div>
+      <div class="canali-grid" id="canali-grid">
+        <div class="canale-item"><span class="canale-label">Distributori (%)</span><input class="canale-input f-input" id="c-dist" type="number" placeholder="10" step="0.1"></div>
+        <div class="canale-item"><span class="canale-label">E-commerce (%)</span><input class="canale-input f-input" id="c-eco" type="number" placeholder="30" step="0.1"></div>
+        <div class="canale-item"><span class="canale-label">Diretto / Fiere (%)</span><input class="canale-input f-input" id="c-dir" type="number" placeholder="50" step="0.1"></div>
+        <div class="canale-item" id="altro-wrap"><span class="canale-label" id="altro-label-span">Altro (%)</span><input class="canale-input f-input" id="c-altro" type="number" placeholder="0" step="0.1"></div>
+        <div class="canale-item"><span class="canale-label">Etichetta "Altro"</span><input class="canale-input f-input" id="c-altro-label" type="text" placeholder="es. Fiera Bologna" style="text-align:left"></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-prim" id="btn-ml-salva">Salva</button>
+      <button class="btn-sec" id="btn-ml-annulla">Annulla</button>
+      <button class="btn-del" id="btn-ml-elimina" style="display:none">Rimuovi collegamento</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════
+let JKEY     = localStorage.getItem('ga_jkey') || '69bbb436b7ec241ddc8102e5';
+let JBIN     = localStorage.getItem('ga_jbin') || '69df35e436566621a8b58643';
+let JBIN_MAG = localStorage.getItem('ga_jbin_mag') || '69bbb6caaa77b81da9fae591';
+let JURL     = () => 'https://api.jsonbin.io/v3/b/' + JBIN;
+let JURL_MAG = () => 'https://api.jsonbin.io/v3/b/' + JBIN_MAG;
+
+let DATA = { autori: [], libriAutori: [], storici: [] };
+let MAG  = { libri: [], movimenti: [] };
+let DIRTY = false;
+let EDITING_AUT = null, EDITING_LIB = null, CURRENT_AUT = null;
+
+// ═══════════════════════════════════════════
+// LOAD / SAVE
+// ═══════════════════════════════════════════
+function setStatus(s){
+  const el = document.getElementById('save-ind');
+  if(s==='loading') el.textContent='● caricamento...';
+  else if(s==='saving') el.textContent='● salvataggio...';
+  else if(s==='saved'){el.textContent='● salvato';el.style.color='rgba(125,220,150,0.9)';}
+  else if(s==='dirty'){el.textContent='● non salvato';el.style.color='rgba(232,160,32,0.9)';}
+  else if(s==='error'){el.textContent='● errore';el.style.color='rgba(232,80,80,0.9)';}
+}
+
+async function loadData(){
+  setStatus('loading');
+  // Carica magazzino
+  try{
+    if(JBIN_MAG && JKEY){
+      const r = await fetch(JURL_MAG()+'/latest',{headers:{'X-Master-Key':JKEY}});
+      const j = await r.json();
+      if(j.record) MAG = j.record;
+    }
+  }catch(e){ toast('Magazzino non caricato — usa dati locali'); }
+  // Carica autori
+  try{
+    if(JBIN && JKEY){
+      const r = await fetch(JURL()+'/latest',{headers:{'X-Master-Key':JKEY}});
+      const j = await r.json();
+      if(j.record && j.record.autori) DATA = j.record;
+    }
+  }catch(e){ toast('Offline — dati autori locali'); }
+  setStatus('saved');
+  renderAll();
+}
+
+async function pushData(){
+  if(!JKEY||!JBIN){ setStatus('error'); toast('Configura JSONBin nelle Impostazioni'); return; }
+  setStatus('saving');
+  try{
+    const r = await fetch(JURL(),{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':JKEY},body:JSON.stringify(DATA)});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    DIRTY=false; setStatus('saved'); toast('Salvato');
+  }catch(e){ setStatus('error'); toast('Errore: '+e.message); }
+}
+
+function markDirty(){ DIRTY=true; setStatus('dirty'); }
+
+// ═══════════════════════════════════════════
+// NAV
+// ═══════════════════════════════════════════
+document.querySelectorAll('.nav-tab').forEach(t=>{
+  t.addEventListener('click',function(){
+    document.querySelectorAll('.nav-tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+    this.classList.add('active');
+    document.getElementById('page-'+this.dataset.page).classList.add('active');
+    if(this.dataset.page==='autori') renderAutori();
+    if(this.dataset.page==='rendiconto') renderRendicontoPage();
+    if(this.dataset.page==='storico') renderStorico();
+    if(this.dataset.page==='settings') loadCfg();
+  });
+});
+document.getElementById('btn-save').addEventListener('click',()=>pushData());
+document.getElementById('btn-new-autore').addEventListener('click',()=>apriModalAutore(null));
+
+// ═══════════════════════════════════════════
+// AUTORI
+// ═══════════════════════════════════════════
+document.getElementById('f-cerca-autore').addEventListener('input',renderAutori);
+
+function renderAutori(){
+  const cerca = document.getElementById('f-cerca-autore').value.toLowerCase();
+  let aa = DATA.autori.filter(a=> !cerca || (a.nome+' '+a.cognome).toLowerCase().includes(cerca));
+
+  // KPI
+  const totLibri = DATA.libriAutori.length;
+  const conAnticipo = DATA.autori.filter(a=> DATA.libriAutori.some(l=>l.autoreId===a.id&&(l.anticipo||0)>0)).length;
+  const senzaContratto = DATA.autori.filter(a=>!a.contratto).length;
+  document.getElementById('kpi-autori').innerHTML =
+    kpi(DATA.autori.length,'Autori','') +
+    kpi(totLibri,'Libri collegati','') +
+    kpi(conAnticipo,'Con anticipo','da scalare') +
+    kpi(senzaContratto,'Senza contratto','da regolarizzare','cr');
+
+  document.getElementById('lista-autori').innerHTML = aa.map(a=>{
+    const libriA = DATA.libriAutori.filter(l=>l.autoreId===a.id);
+    const titoli = libriA.map(l=>{
+      const lib = MAG.libri.find(x=>x.id===l.libroId);
+      return lib ? lib.titolo : '?';
+    }).join(', ');
+    return `<div class="autore-card" data-id="${a.id}">
+      <div>
+        <div class="autore-nome">${a.nome} ${a.cognome}</div>
+        <div class="autore-meta">${a.email||''}${a.email&&titoli?' · ':''}<span style="color:var(--gold)">${titoli||'Nessun libro collegato'}</span></div>
+        <div class="autore-flags">
+          <span class="flag-item"><span style="color:${a.contratto?'var(--green)':'var(--red)'}">●</span> Contratto</span>
+          <span class="flag-item"><span style="color:${a.privacy?'var(--green)':'var(--red)'}">●</span> Privacy</span>
+          <span class="flag-item"><span style="color:${a.docid?'var(--green)':'var(--red)'}">●</span> Doc ID</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button class="btn-edit btn-collega" data-id="${a.id}">+ Libro</button>
+        <button class="btn-edit btn-rend" data-id="${a.id}">Rendiconto</button>
+        <button class="btn-edit" data-edit="${a.id}">✎</button>
+      </div>
+    </div>`;
+  }).join('') || '<p style="font-size:0.62rem;color:var(--muted);padding:16px 0">Nessun autore. Clicca "+ Nuovo autore".</p>';
+
+  document.querySelectorAll('.autore-card [data-edit]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();apriModalAutore(parseInt(b.dataset.edit));}));
+  document.querySelectorAll('.autore-card .btn-collega').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();apriModalLibro(parseInt(b.dataset.id),null);}));
+  document.querySelectorAll('.autore-card .btn-rend').forEach(b=>b.addEventListener('click',e=>{
+    e.stopPropagation();
+    const id=parseInt(b.dataset.id);
+    document.querySelectorAll('.nav-tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+    document.querySelector('[data-page="rendiconto"]').classList.add('active');
+    document.getElementById('page-rendiconto').classList.add('active');
+    renderRendicontoPage(id);
+  }));
+}
+
+function kpi(val,label,sub,cl){
+  return `<div class="card"><div class="card-label">${label}</div><div class="card-val ${cl||''}">${val}</div>${sub?`<div class="card-sub">${sub}</div>`:''}</div>`;
+}
+
+// ═══════════════════════════════════════════
+// MODAL AUTORE
+// ═══════════════════════════════════════════
+function apriModalAutore(id){
+  EDITING_AUT=id;
+  const a=id?DATA.autori.find(x=>x.id===id):null;
+  document.getElementById('modal-h-autore').textContent=id?'Modifica autore':'Nuovo autore';
+  document.getElementById('btn-ma-elimina').style.display=id?'':'none';
+  document.getElementById('ma-nome').value=a?.nome||'';
+  document.getElementById('ma-cognome').value=a?.cognome||'';
+  document.getElementById('ma-email').value=a?.email||'';
+  document.getElementById('ma-tel').value=a?.tel||'';
+  document.getElementById('ma-indirizzo').value=a?.indirizzo||'';
+  document.getElementById('ma-cf').value=a?.cf||'';
+  document.getElementById('ma-iban').value=a?.iban||'';
+  document.getElementById('ma-note').value=a?.note||'';
+  document.getElementById('ma-contratto').checked=a?.contratto||false;
+  document.getElementById('ma-privacy').checked=a?.privacy||false;
+  document.getElementById('ma-docid').checked=a?.docid||false;
+  document.getElementById('overlay-autore').classList.add('open');
+}
+document.getElementById('btn-ma-annulla').addEventListener('click',()=>document.getElementById('overlay-autore').classList.remove('open'));
+document.getElementById('overlay-autore').addEventListener('click',e=>{if(e.target===document.getElementById('overlay-autore'))document.getElementById('overlay-autore').classList.remove('open');});
+document.getElementById('btn-ma-salva').addEventListener('click',()=>{
+  const nome=document.getElementById('ma-nome').value.trim();
+  const cognome=document.getElementById('ma-cognome').value.trim();
+  if(!nome||!cognome){toast('Inserisci nome e cognome');return;}
+  const obj={nome,cognome,email:document.getElementById('ma-email').value.trim(),
+    tel:document.getElementById('ma-tel').value.trim(),
+    indirizzo:document.getElementById('ma-indirizzo').value.trim(),
+    cf:document.getElementById('ma-cf').value.trim(),
+    iban:document.getElementById('ma-iban').value.trim(),
+    note:document.getElementById('ma-note').value.trim(),
+    contratto:document.getElementById('ma-contratto').checked,
+    privacy:document.getElementById('ma-privacy').checked,
+    docid:document.getElementById('ma-docid').checked
+  };
+  if(EDITING_AUT){
+    const idx=DATA.autori.findIndex(x=>x.id===EDITING_AUT);
+    obj.id=EDITING_AUT; DATA.autori[idx]=obj;
+  } else { obj.id=Date.now(); DATA.autori.push(obj); }
+  markDirty(); document.getElementById('overlay-autore').classList.remove('open');
+  renderAutori(); aggiornaSel(); toast('Autore salvato');
+});
+document.getElementById('btn-ma-elimina').addEventListener('click',()=>{
+  if(!confirm('Eliminare autore e tutti i suoi collegamenti?')) return;
+  DATA.autori=DATA.autori.filter(a=>a.id!==EDITING_AUT);
+  DATA.libriAutori=DATA.libriAutori.filter(l=>l.autoreId!==EDITING_AUT);
+  markDirty(); document.getElementById('overlay-autore').classList.remove('open');
+  renderAutori(); toast('Autore eliminato');
+});
+
+// ═══════════════════════════════════════════
+// MODAL LIBRO-AUTORE
+// ═══════════════════════════════════════════
+function apriModalLibro(autoreId, libroAutoreId){
+  EDITING_LIB=libroAutoreId; CURRENT_AUT=autoreId;
+  const la=libroAutoreId?DATA.libriAutori.find(x=>x.id===libroAutoreId):null;
+  document.getElementById('modal-h-libro').textContent=libroAutoreId?'Modifica collegamento':'Collega libro';
+  document.getElementById('btn-ml-elimina').style.display=libroAutoreId?'':'none';
+  // Popola select libri
+  const sel=document.getElementById('ml-libro');
+  sel.innerHTML='<option value="">— seleziona —</option>'+MAG.libri.map(l=>`<option value="${l.id}"${la?.libroId===l.id?' selected':''}>${l.titolo}</option>`).join('');
+  document.getElementById('ml-cadenza').value=la?.cadenza||'annuale';
+  document.getElementById('ml-anticipo').value=la?.anticipo||'';
+  document.getElementById('c-dist').value=la?.perc?.dist||'';
+  document.getElementById('c-eco').value=la?.perc?.eco||'';
+  document.getElementById('c-dir').value=la?.perc?.dir||'';
+  document.getElementById('c-altro').value=la?.perc?.altro||'';
+  document.getElementById('c-altro-label').value=la?.perc?.altroLabel||'Altro';
+  document.getElementById('overlay-libro').classList.add('open');
+}
+document.getElementById('btn-ml-annulla').addEventListener('click',()=>document.getElementById('overlay-libro').classList.remove('open'));
+document.getElementById('overlay-libro').addEventListener('click',e=>{if(e.target===document.getElementById('overlay-libro'))document.getElementById('overlay-libro').classList.remove('open');});
+document.getElementById('btn-ml-salva').addEventListener('click',()=>{
+  const libroId=parseInt(document.getElementById('ml-libro').value);
+  if(!libroId){toast('Seleziona un libro');return;}
+  const obj={
+    autoreId:CURRENT_AUT, libroId,
+    cadenza:document.getElementById('ml-cadenza').value,
+    anticipo:parseFloat(document.getElementById('ml-anticipo').value)||0,
+    anticipoScalato:EDITING_LIB?DATA.libriAutori.find(x=>x.id===EDITING_LIB)?.anticipoScalato||0:0,
+    perc:{
+      dist:parseFloat(document.getElementById('c-dist').value)||0,
+      eco:parseFloat(document.getElementById('c-eco').value)||0,
+      dir:parseFloat(document.getElementById('c-dir').value)||0,
+      altro:parseFloat(document.getElementById('c-altro').value)||0,
+      altroLabel:document.getElementById('c-altro-label').value||'Altro'
+    }
+  };
+  if(EDITING_LIB){ obj.id=EDITING_LIB; const idx=DATA.libriAutori.findIndex(x=>x.id===EDITING_LIB); DATA.libriAutori[idx]=obj; }
+  else { obj.id=Date.now(); DATA.libriAutori.push(obj); }
+  markDirty(); document.getElementById('overlay-libro').classList.remove('open');
+  renderAutori(); toast('Collegamento salvato');
+});
+document.getElementById('btn-ml-elimina').addEventListener('click',()=>{
+  if(!confirm('Rimuovere collegamento?')) return;
+  DATA.libriAutori=DATA.libriAutori.filter(l=>l.id!==EDITING_LIB);
+  markDirty(); document.getElementById('overlay-libro').classList.remove('open');
+  renderAutori(); toast('Collegamento rimosso');
+});
+
+// ═══════════════════════════════════════════
+// RENDICONTO
+// ═══════════════════════════════════════════
+function renderRendicontoPage(forceAutoreId){
+  aggiornaSel();
+  if(forceAutoreId) document.getElementById('rend-autore-sel').value=forceAutoreId;
+}
+
+document.getElementById('btn-calcola-rend').addEventListener('click',()=>{
+  const autId=parseInt(document.getElementById('rend-autore-sel').value);
+  if(!autId){toast('Seleziona un autore');return;}
+  calcolaRendiconto(autId);
+});
+
+function calcolaRendiconto(autId){
+  const aut=DATA.autori.find(a=>a.id===autId);
+  if(!aut){toast('Autore non trovato');return;}
+  const anno=parseInt(document.getElementById('rend-anno').value);
+  const periodo=document.getElementById('rend-periodo').value;
+  const libriA=DATA.libriAutori.filter(l=>l.autoreId===autId);
+
+  if(!libriA.length){
+    document.getElementById('rend-content').innerHTML='<p style="font-size:0.62rem;color:var(--muted);padding:20px 0">Nessun libro collegato a questo autore.</p>';
+    return;
+  }
+
+  // Calcola vendite reali per ogni libro dal magazzino
+  const righe=libriA.map(la=>{
+    const lib=MAG.libri.find(x=>x.id===la.libroId);
+    if(!lib) return null;
+
+    // Vendite distribuite: somma tutti i distributori
+    const distVend = Object.values(lib.dist||{}).reduce((s,z)=>s+(z.vend||0),0);
+    const ecoVend  = lib.eco_vend||0;
+    const dirVend  = lib.dir_vend||0;
+
+    // Royalty reali
+    const royDist = distVend * (lib.prezzo||0) * (la.perc?.dist||0) / 100;
+    const royEco  = ecoVend  * (lib.prezzo||0) * (la.perc?.eco||0)  / 100;
+    const royDir  = dirVend  * (lib.prezzo||0) * (la.perc?.dir||0)  / 100;
+    const royTot  = royDist + royEco + royDir;
+
+    // Anticipo residuo
+    const anticipoRes = Math.max(0, (la.anticipo||0) - (la.anticipoScalato||0));
+    const netto = Math.max(0, royTot - anticipoRes);
+
+    return {
+      la, lib, distVend, ecoVend, dirVend,
+      royDist, royEco, royDir, royTot, anticipoRes, netto,
+      // Comunicato (modificabile)
+      com: {
+        distVend: la.com?.distVend??distVend,
+        ecoVend:  la.com?.ecoVend??ecoVend,
+        dirVend:  la.com?.dirVend??dirVend,
+        royTot:   la.com?.royTot??royTot,
+        netto:    la.com?.netto??netto,
+        note:     la.com?.note??''
+      }
+    };
+  }).filter(Boolean);
+
+  const totReale  = righe.reduce((s,r)=>s+r.royTot,0);
+  const totNetto  = righe.reduce((s,r)=>s+r.netto,0);
+  const totCom    = righe.reduce((s,r)=>s+r.com.royTot,0);
+  const totNetCom = righe.reduce((s,r)=>s+r.com.netto,0);
+
+  let html=`
+  <div class="panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:1.2rem">${aut.nome} ${aut.cognome}</div>
+        <div style="font-size:0.56rem;color:var(--muted)">Rendiconto ${periodo==='annuale'?anno:periodo+' '+anno}</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-sm" id="btn-salva-com">Salva comunicato</button>
+        <button class="btn-sm btn-green" id="btn-stampa-rend">Stampa / PDF</button>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+      <div style="background:var(--green-bg);border:1px solid rgba(45,90,61,0.2);padding:10px 14px">
+        <div style="font-size:0.5rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--green);margin-bottom:4px">Totale reale</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--green)">€ ${totReale.toFixed(2)}</div>
+        <div style="font-size:0.5rem;color:var(--muted)">Netto anticipo: € ${totNetto.toFixed(2)}</div>
+      </div>
+      <div style="background:rgba(196,146,42,0.06);border:1px solid rgba(196,146,42,0.25);padding:10px 14px">
+        <div style="font-size:0.5rem;letter-spacing:0.12em;text-transform:uppercase;color:#7a5800;margin-bottom:4px">Totale comunicato</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:#7a5800">€ <span id="tot-com-val">${totCom.toFixed(2)}</span></div>
+        <div style="font-size:0.5rem;color:var(--muted)">Netto anticipo: € <span id="tot-netto-com">${totNetCom.toFixed(2)}</span></div>
+      </div>
+    </div>
+
+    <div style="overflow-x:auto">
+    <table class="rend-table">
+      <thead>
+        <tr>
+          <th rowspan="2">Libro</th>
+          <th colspan="4" class="rend-head-reale">Reale (dal magazzino)</th>
+          <td class="rend-sep" rowspan="2"></td>
+          <th colspan="4" class="rend-head-com">Comunicato (modificabile)</th>
+          <th rowspan="2">Anticipo res.</th>
+          <th rowspan="2">Note</th>
+        </tr>
+        <tr>
+          <th>Dist.</th><th>Eco.</th><th>Dir.</th><th>Royalty tot.</th>
+          <th>Dist.</th><th>Eco.</th><th>Dir.</th><th>Royalty tot.</th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+  righe.forEach((r,i)=>{
+    html+=`<tr>
+      <td style="font-weight:500">${r.lib.titolo}<div style="font-size:0.5rem;color:var(--muted)">Dist:${r.la.perc?.dist||0}% · Eco:${r.la.perc?.eco||0}% · Dir:${r.la.perc?.dir||0}%</div></td>
+      <td class="td-r col-reale">${r.distVend}</td>
+      <td class="td-r col-reale">${r.ecoVend}</td>
+      <td class="td-r col-reale">${r.dirVend}</td>
+      <td class="td-r col-reale" style="font-weight:500">€${r.royTot.toFixed(2)}</td>
+      <td class="rend-sep"></td>
+      <td class="td-r col-com"><input class="inp-com" data-row="${i}" data-campo="distVend" value="${r.com.distVend}"></td>
+      <td class="td-r col-com"><input class="inp-com" data-row="${i}" data-campo="ecoVend" value="${r.com.ecoVend}"></td>
+      <td class="td-r col-com"><input class="inp-com" data-row="${i}" data-campo="dirVend" value="${r.com.dirVend}"></td>
+      <td class="td-r col-com" style="font-weight:500">€<span class="roy-com-val" data-row="${i}">${r.com.royTot.toFixed(2)}</span></td>
+      <td class="td-r" style="color:${r.anticipoRes>0?'var(--red)':'var(--muted)'}">€${r.anticipoRes.toFixed(2)}</td>
+      <td><input class="inp-com" data-row="${i}" data-campo="note" value="${r.com.note||''}" style="width:120px;text-align:left;font-size:0.56rem"></td>
+    </tr>`;
+  });
+
+  html+=`<tr class="tot-row">
+    <td>TOTALE</td>
+    <td class="td-r col-reale">${righe.reduce((s,r)=>s+r.distVend,0)}</td>
+    <td class="td-r col-reale">${righe.reduce((s,r)=>s+r.ecoVend,0)}</td>
+    <td class="td-r col-reale">${righe.reduce((s,r)=>s+r.dirVend,0)}</td>
+    <td class="td-r col-reale">€${totReale.toFixed(2)}</td>
+    <td class="rend-sep"></td>
+    <td colspan="3" class="col-com"></td>
+    <td class="td-r col-com">€<span id="grand-tot-com">${totCom.toFixed(2)}</span></td>
+    <td class="td-r">€${righe.reduce((s,r)=>s+r.anticipoRes,0).toFixed(2)}</td>
+    <td></td>
+  </tr>`;
+
+  html+=`</tbody></table></div>
+  </div>`;
+
+  document.getElementById('rend-content').innerHTML=html;
+
+  // Aggiorna totale comunicato al cambio
+  document.querySelectorAll('.inp-com[data-campo]').forEach(inp=>{
+    inp.addEventListener('input',function(){
+      const i=parseInt(this.dataset.row);
+      const r=righe[i];
+      if(this.dataset.campo==='distVend'||this.dataset.campo==='ecoVend'||this.dataset.campo==='dirVend'){
+        const dv=parseFloat(document.querySelector(`.inp-com[data-row="${i}"][data-campo="distVend"]`).value)||0;
+        const ev=parseFloat(document.querySelector(`.inp-com[data-row="${i}"][data-campo="ecoVend"]`).value)||0;
+        const dv2=parseFloat(document.querySelector(`.inp-com[data-row="${i}"][data-campo="dirVend"]`).value)||0;
+        const lib=r.lib;
+        const newTot=(dv*(r.la.perc?.dist||0)/100+ev*(r.la.perc?.eco||0)/100+dv2*(r.la.perc?.dir||0)/100)*lib.prezzo;
+        document.querySelector(`.roy-com-val[data-row="${i}"]`).textContent=newTot.toFixed(2);
+        // ricalcola grand total
+        let gt=0;
+        document.querySelectorAll('.roy-com-val').forEach(s=>gt+=parseFloat(s.textContent)||0);
+        document.getElementById('grand-tot-com').textContent=gt.toFixed(2);
+        document.getElementById('tot-com-val').textContent=gt.toFixed(2);
+      }
+    });
+  });
+
+  // Salva comunicato
+  document.getElementById('btn-salva-com').addEventListener('click',()=>{
+    righe.forEach((r,i)=>{
+      const dv=parseFloat(document.querySelector(`.inp-com[data-row="${i}"][data-campo="distVend"]`).value)||0;
+      const ev=parseFloat(document.querySelector(`.inp-com[data-row="${i}"][data-campo="ecoVend"]`).value)||0;
+      const dv2=parseFloat(document.querySelector(`.inp-com[data-row="${i}"][data-campo="dirVend"]`).value)||0;
+      const note=document.querySelector(`.inp-com[data-row="${i}"][data-campo="note"]`).value;
+      const lib=r.lib;
+      const newTot=(dv*(r.la.perc?.dist||0)/100+ev*(r.la.perc?.eco||0)/100+dv2*(r.la.perc?.dir||0)/100)*lib.prezzo;
+      const anticipoRes=r.anticipoRes;
+      const netto=Math.max(0,newTot-anticipoRes);
+      r.la.com={distVend:dv,ecoVend:ev,dirVend:dv2,royTot:newTot,netto,note};
+    });
+    // Salva in storico
+    if(!DATA.storici) DATA.storici=[];
+    DATA.storici.unshift({
+      id:Date.now(),
+      autoreId:autId,
+      autoreNome:aut.nome+' '+aut.cognome,
+      anno, periodo,
+      data:new Date().toISOString().slice(0,10),
+      totReale:totReale.toFixed(2),
+      totCom:parseFloat(document.getElementById('grand-tot-com').textContent).toFixed(2),
+      righe:righe.map(r=>({titolo:r.lib.titolo,royReale:r.royTot.toFixed(2),royCom:r.la.com?.royTot?.toFixed(2)||0}))
+    });
+    markDirty(); toast('Comunicato salvato nello storico');
+  });
+
+  // Stampa
+  document.getElementById('btn-stampa-rend').addEventListener('click',()=>window.print());
+}
+
+// ═══════════════════════════════════════════
+// STORICO
+// ═══════════════════════════════════════════
+function renderStorico(){
+  const sel=document.getElementById('stor-autore-sel');
+  sel.innerHTML='<option value="">Tutti</option>'+DATA.autori.map(a=>`<option value="${a.id}">${a.nome} ${a.cognome}</option>`).join('');
+  const filtId=parseInt(sel.value)||null;
+  const lista=DATA.storici?.filter(s=>!filtId||s.autoreId===filtId)||[];
+  document.getElementById('lista-storico').innerHTML = lista.length ?
+    lista.map((s,i)=>`
+      <div class="storico-item">
+        <div>
+          <div style="font-weight:500">${s.autoreNome}</div>
+          <div style="font-size:0.56rem;color:var(--muted)">${s.periodo==='annuale'?'Anno '+s.anno:s.periodo+' '+s.anno} · Salvato il ${s.data}</div>
+          <div style="font-size:0.56rem;margin-top:4px">${s.righe?.map(r=>r.titolo).join(', ')}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--green)">€${s.totCom}</div>
+          <div style="font-size:0.5rem;color:var(--muted)">Reale: €${s.totReale}</div>
+          <button class="btn-edit" style="margin-top:4px" data-del="${i}">✕ Elimina</button>
+        </div>
+      </div>`).join('') :
+    '<p style="font-size:0.62rem;color:var(--muted);padding:16px 0">Nessun rendiconto salvato.</p>';
+
+  document.getElementById('lista-storico').querySelectorAll('[data-del]').forEach(b=>{
+    b.addEventListener('click',()=>{
+      if(!confirm('Eliminare questo rendiconto dallo storico?')) return;
+      DATA.storici.splice(parseInt(b.dataset.del),1);
+      markDirty(); renderStorico();
+    });
+  });
+}
+document.getElementById('stor-autore-sel').addEventListener('change',renderStorico);
+
+// ═══════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════
+function loadCfg(){
+  document.getElementById('cfg-key').value=JKEY;
+  document.getElementById('cfg-bin').value=JBIN;
+  document.getElementById('cfg-bin-mag').value=JBIN_MAG;
+}
+document.getElementById('btn-salva-cfg').addEventListener('click',()=>{
+  JKEY=document.getElementById('cfg-key').value.trim();
+  JBIN=document.getElementById('cfg-bin').value.trim();
+  JBIN_MAG=document.getElementById('cfg-bin-mag').value.trim();
+  localStorage.setItem('ga_jkey',JKEY);
+  localStorage.setItem('ga_jbin',JBIN);
+  localStorage.setItem('ga_jbin_mag',JBIN_MAG);
+  toast('Configurazione salvata'); setTimeout(()=>loadData(),500);
+});
+document.getElementById('btn-test-cfg').addEventListener('click',async()=>{
+  const stato=document.getElementById('cfg-stato');
+  stato.textContent='test...';
+  try{
+    const r=await fetch('https://api.jsonbin.io/v3/b/'+document.getElementById('cfg-bin-mag').value+'/latest',{headers:{'X-Master-Key':document.getElementById('cfg-key').value}});
+    const j=await r.json();
+    stato.textContent=r.ok?'✓ Magazzino OK ('+j.record?.libri?.length+' libri)':'✗ '+j.message;
+    stato.style.color=r.ok?'var(--green)':'var(--red)';
+  }catch(e){stato.textContent='✗ '+e.message;stato.style.color='var(--red)';}
+});
+
+// ═══════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════
+function aggiornaSel(){
+  const sel=document.getElementById('rend-autore-sel');
+  sel.innerHTML='<option value="">— seleziona autore —</option>'+DATA.autori.map(a=>`<option value="${a.id}">${a.nome} ${a.cognome}</option>`).join('');
+}
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.style.opacity='1';
+  setTimeout(()=>t.style.opacity='0',3000);
+}
+function renderAll(){ renderAutori(); aggiornaSel(); }
+document.getElementById('hdr-date').textContent=new Date().toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+loadData();
+</script>
+</body>
+</html>
