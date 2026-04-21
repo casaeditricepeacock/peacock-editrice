@@ -398,9 +398,9 @@ tr:hover td{background:var(--blue-light);}
 // ═══════════════════════════════════════════════════════════
 // CONFIG JSONBin — inserisci qui i tuoi dati
 // ═══════════════════════════════════════════════════════════
-let JKEY = localStorage.getItem('pe_jkey') || '69bbb436b7ec241ddc8102e5';
-let JBIN = localStorage.getItem('pe_jbin') || '69de4035856a682189320ee4';
-let JURL = () => 'https://api.jsonbin.io/v3/b/' + JBIN;
+const JKEY='$2a$10$fjUl8IVz2yeZDM9YIaHrk.5c2W8C7Lb1weJR8ye/zj.LHB3z4kHkm';
+const JBIN='69de4035856a682189320ee4';
+const JURL='https://api.jsonbin.io/v3/b/'+JBIN;
 
 let DATA = { libri: [], progetti: [], obiettivi: {
   '2025':{vendite:2000,titoli:16,bookshop:0,fiere:1,venditeReal:1600,bookshopReal:0,fiereReal:1},
@@ -459,7 +459,7 @@ async function loadData(){
   if(!JKEY||!JBIN){ DATA.libri = SEED_LIBRI; renderAll(); return; }
   setStatus('loading');
   try{
-    const r = await fetch(JURL()+'/latest',{headers:{'X-Master-Key':JKEY}});
+    const r = await fetch(JURL+'/latest',{headers:{'X-Master-Key':JKEY}});
     const j = await r.json();
     const d = j.record;
     if(d&&d.libri&&d.libri.length>0){ DATA=d; if(!DATA.progetti) DATA.progetti=[]; }
@@ -472,7 +472,7 @@ async function pushData(){
   if(!JKEY||!JBIN){ setStatus('error'); toast('Configura JSONBin nelle Impostazioni'); return; }
   setStatus('saving');
   try{
-    const r = await fetch(JURL(),{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':JKEY},body:JSON.stringify(DATA)});
+    const r = await fetch(JURL,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':JKEY},body:JSON.stringify(DATA)});
     if(!r.ok) throw new Error('HTTP '+r.status);
     DIRTY=false; setStatus('saved'); toast('Dati salvati nel cloud');
   }catch(e){ setStatus('error'); toast('Errore salvataggio: '+e.message); }
