@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Peacock — Fiera</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=DM+Mono:wght@300;400;500&display=swap');
+:root{
+  --ink:#0a1628;--ink2:#1a3a6b;--paper:#f0f4f8;--cream:#e2eaf3;
+  --gold:#c4922a;--gold-light:#e8c97a;
+  --red:#8b2635;--green:#2d5a3d;
+  --muted:#5a6e8a;--border:#c2d0e0;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{font-family:'DM Mono',monospace;background:var(--paper);color:var(--ink);min-height:100vh;max-width:480px;margin:0 auto;}
+
+/* HEADER */
+.header{background:var(--ink);color:var(--paper);padding:14px 18px;border-bottom:3px solid var(--gold);position:sticky;top:0;z-index:100;}
+.header-top{display:flex;justify-content:space-between;align-items:center;}
+.header h1{font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:300;letter-spacing:0.12em;text-transform:uppercase;}
+.header-sub{font-size:0.48rem;color:var(--gold-light);letter-spacing:0.24em;text-transform:uppercase;margin-top:2px;}
+.header-totale{text-align:right;}
+.tot-label{font-size:0.46rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold-light);}
+.tot-val{font-family:'Cormorant Garamond',serif;font-size:1.3rem;color:var(--gold-light);}
+
+/* INFO FIERA */
+.fiera-info{background:var(--ink2);padding:10px 18px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+.fiera-field{display:flex;flex-direction:column;gap:2px;flex:1;min-width:120px;}
+.fiera-label{font-size:0.44rem;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);}
+.fiera-input{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;font-family:'DM Mono',monospace;font-size:0.7rem;padding:5px 8px;outline:none;width:100%;}
+.fiera-input:focus{border-color:var(--gold);}
+.fiera-input::placeholder{color:rgba(255,255,255,0.3);}
+
+/* STATO */
+.stato-bar{padding:8px 18px;background:var(--cream);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:0.56rem;}
+#stato-txt{color:var(--muted);letter-spacing:0.08em;}
+#n-vendite{color:var(--green);font-weight:500;}
+
+/* LISTA LIBRI */
+.libri-list{padding:10px 12px;}
+.libro-card{background:white;border:1px solid var(--border);border-left:3px solid var(--border);margin-bottom:8px;padding:12px 14px;display:flex;align-items:center;gap:12px;border-radius:2px;transition:border-color 0.15s;}
+.libro-card.venduto{border-left-color:var(--gold);}
+.libro-info{flex:1;min-width:0;}
+.libro-titolo{font-size:0.78rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.libro-autore{font-size:0.58rem;color:var(--muted);margin-top:2px;}
+.libro-prezzo{font-size:0.62rem;color:var(--gold);margin-top:2px;font-family:'Cormorant Garamond',serif;}
+.libro-mag{font-size:0.52rem;color:var(--muted);}
+.libro-ctrl{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.btn-qty{width:32px;height:32px;border:1px solid var(--border);background:var(--paper);font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--ink);font-family:'DM Mono',monospace;border-radius:2px;}
+.btn-qty:active{background:var(--cream);}
+.btn-qty.plus{background:var(--ink2);color:white;border-color:var(--ink2);}
+.btn-qty.plus:active{background:var(--gold);border-color:var(--gold);}
+.qty-val{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:600;min-width:28px;text-align:center;color:var(--ink);}
+.qty-val.has-qty{color:var(--gold);}
+
+/* FOOTER AZIONI */
+.footer{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--ink);padding:12px 16px;display:flex;gap:10px;border-top:2px solid var(--gold);}
+.btn-action{flex:1;padding:12px 8px;font-family:'DM Mono',monospace;font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;border:none;border-radius:2px;font-weight:500;}
+.btn-scarica{background:var(--gold);color:var(--ink);}
+.btn-scarica:active{background:var(--gold-light);}
+.btn-pdf{background:transparent;color:white;border:1px solid rgba(255,255,255,0.3);}
+.btn-pdf:active{background:rgba(255,255,255,0.1);}
+.btn-reset{background:transparent;color:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.15);}
+.btn-reset:active{background:rgba(255,255,255,0.05);}
+
+/* PADDING BOTTOM per footer fisso */
+.libri-list{padding-bottom:90px;}
+
+/* EMPTY */
+.empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:0.7rem;}
+
+/* MODAL CONFERMA */
+.overlay{position:fixed;inset:0;background:rgba(10,22,40,0.7);display:none;align-items:flex-end;justify-content:center;z-index:200;}
+.overlay.open{display:flex;}
+.modal{background:var(--paper);border-top:3px solid var(--gold);padding:24px 20px;width:100%;max-width:480px;border-radius:0;}
+.modal-h{font-family:'Cormorant Garamond',serif;font-size:1.1rem;margin-bottom:12px;color:var(--ink2);}
+.modal-body{font-size:0.66rem;color:var(--muted);line-height:1.7;margin-bottom:18px;}
+.modal-actions{display:flex;gap:10px;}
+.btn-conf{flex:1;padding:12px;font-family:'DM Mono',monospace;font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;border:none;}
+.btn-conf-ok{background:var(--gold);color:var(--ink);}
+.btn-conf-no{background:var(--cream);color:var(--muted);border:1px solid var(--border);}
+
+/* TOAST */
+#toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--ink2);color:white;padding:10px 20px;font-size:0.62rem;letter-spacing:0.1em;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:999;border-left:3px solid var(--gold);white-space:nowrap;}
+
+/* PRINT / PDF */
+@media print{
+  .header,.fiera-info,.stato-bar,.footer,.overlay,#toast{display:none!important;}
+  body{background:white;max-width:100%;}
+  .libro-card{break-inside:avoid;border:1px solid #ccc;margin-bottom:4px;}
+  .btn-qty,.libro-ctrl{display:none;}
+  .libri-list{padding:0;}
+  .print-header{display:block!important;}
+}
+.print-header{display:none;margin-bottom:16px;}
+.print-title{font-family:'Cormorant Garamond',serif;font-size:1.4rem;}
+.print-sub{font-size:0.7rem;color:#666;margin-top:4px;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <h1>Peacock — Fiera</h1>
+      <div class="header-sub" id="data-oggi"></div>
+    </div>
+    <div class="header-totale">
+      <div class="tot-label">Incassato</div>
+      <div class="tot-val" id="tot-incassato">€ 0</div>
+    </div>
+  </div>
+</div>
+
+<div class="fiera-info">
+  <div class="fiera-field">
+    <span class="fiera-label">Nome fiera / evento</span>
+    <input class="fiera-input" id="nome-fiera" placeholder="es. BookCity Milano">
+  </div>
+  <div class="fiera-field">
+    <span class="fiera-label">Città</span>
+    <input class="fiera-input" id="citta-fiera" placeholder="es. Milano" style="max-width:120px">
+  </div>
+</div>
+
+<div class="stato-bar">
+  <span id="stato-txt">● Caricamento libri...</span>
+  <span id="n-vendite"></span>
+</div>
+
+<div class="libri-list" id="libri-list">
+  <div class="empty">Caricamento in corso...</div>
+</div>
+
+<!-- PRINT HEADER -->
+<div class="print-header" id="print-header"></div>
+
+<!-- MODAL CONFERMA SCARICO -->
+<div class="overlay" id="overlay-conf">
+  <div class="modal">
+    <div class="modal-h">Conferma scarico magazzino</div>
+    <div class="modal-body" id="modal-body-conf"></div>
+    <div class="modal-actions">
+      <button class="btn-conf btn-conf-ok" id="btn-conf-ok">Scarica nel magazzino</button>
+      <button class="btn-conf btn-conf-no" id="btn-conf-no">Annulla</button>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <button class="btn-action btn-scarica" id="btn-scarica">⬇ Scarica magazzino</button>
+  <button class="btn-action btn-pdf" id="btn-pdf">PDF</button>
+  <button class="btn-action btn-reset" id="btn-reset">Reset</button>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const JKEY_MAG = '$2a$10$fjUl8IVz2yeZDM9YIaHrk.5c2W8C7Lb1weJR8ye/zj.LHB3z4kHkm';
+const JBIN_MAG = '69bbb6caaa77b81da9fae591';
+const JURL_MAG = 'https://api.jsonbin.io/v3/b/' + JBIN_MAG;
+
+let libriMag = [];
+let vendite = {}; // {libro_id: quantita}
+const STORAGE_KEY = 'peacock_fiera_vendite';
+
+// Carica stato salvato localmente
+function caricaStatoLocale(){
+  try {
+    const s = localStorage.getItem(STORAGE_KEY);
+    if(s) vendite = JSON.parse(s);
+  } catch(e){ vendite = {}; }
+}
+
+function salvaStatoLocale(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(vendite));
+}
+
+// Carica libri dal magazzino
+async function caricaLibri(){
+  try {
+    const r = await fetch(JURL_MAG + '/latest', {headers:{'X-Master-Key':JKEY_MAG}});
+    const j = await r.json();
+    libriMag = (j.record && j.record.libri) ? j.record.libri : [];
+    document.getElementById('stato-txt').textContent = '● ' + libriMag.length + ' libri caricati';
+    renderLibri();
+  } catch(e) {
+    document.getElementById('stato-txt').textContent = '● Errore caricamento — riprova';
+    document.getElementById('libri-list').innerHTML = '<div class="empty">Impossibile caricare il magazzino.<br>Verifica connessione.</div>';
+  }
+}
+
+function renderLibri(){
+  const list = document.getElementById('libri-list');
+  if(!libriMag.length){ list.innerHTML = '<div class="empty">Nessun libro nel magazzino.</div>'; return; }
+
+  // Ordina per titolo
+  const ll = [...libriMag].sort((a,b)=>a.titolo.localeCompare(b.titolo));
+
+  list.innerHTML = ll.map(l => {
+    const qty = vendite[l.id] || 0;
+    const mag = l.magazzino || 0;
+    return `<div class="libro-card ${qty>0?'venduto':''}" id="card-${l.id}">
+      <div class="libro-info">
+        <div class="libro-titolo">${l.titolo}</div>
+        <div class="libro-autore">${l.autore||'—'}</div>
+        <div class="libro-prezzo">€ ${l.prezzo||0}</div>
+        <div class="libro-mag">Mag: ${mag} cop.</div>
+      </div>
+      <div class="libro-ctrl">
+        <button class="btn-qty minus" onclick="cambiaQty(${l.id},-1)">−</button>
+        <span class="qty-val ${qty>0?'has-qty':''}" id="qty-${l.id}">${qty}</span>
+        <button class="btn-qty plus" onclick="cambiaQty(${l.id},1)">+</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  aggiornaStats();
+}
+
+function cambiaQty(id, delta){
+  const lib = libriMag.find(l=>l.id===id);
+  if(!lib) return;
+  const mag = lib.magazzino || 0;
+  const attuale = vendite[id] || 0;
+  const nuova = Math.max(0, Math.min(mag, attuale + delta));
+  if(nuova === 0) delete vendite[id]; else vendite[id] = nuova;
+  salvaStatoLocale();
+
+  // Aggiorna solo la card
+  const qtyEl = document.getElementById('qty-'+id);
+  const card = document.getElementById('card-'+id);
+  if(qtyEl){ qtyEl.textContent = nuova; qtyEl.className = 'qty-val'+(nuova>0?' has-qty':''); }
+  if(card){ card.className = 'libro-card'+(nuova>0?' venduto':''); }
+  aggiornaStats();
+}
+
+function aggiornaStats(){
+  const ids = Object.keys(vendite);
+  const totCopie = ids.reduce((s,id)=>s+(vendite[id]||0),0);
+  const totEuro = ids.reduce((s,id)=>{
+    const lib = libriMag.find(l=>l.id===parseInt(id));
+    return s + (vendite[id]||0) * (lib?.prezzo||0);
+  },0);
+  document.getElementById('tot-incassato').textContent = '€ ' + totEuro.toFixed(2);
+  document.getElementById('n-vendite').textContent = totCopie > 0 ? totCopie + ' copie vendute' : '';
+}
+
+// SCARICA NEL MAGAZZINO
+document.getElementById('btn-scarica').addEventListener('click', function(){
+  const ids = Object.keys(vendite);
+  if(!ids.length){ toast('Nessuna vendita da scaricare'); return; }
+
+  const righe = ids.map(id=>{
+    const lib = libriMag.find(l=>l.id===parseInt(id));
+    const qty = vendite[id];
+    const tot = qty * (lib?.prezzo||0);
+    return `<strong>${lib?.titolo||'?'}</strong>: ${qty} cop. — € ${tot.toFixed(2)}`;
+  }).join('<br>');
+
+  const totEuro = ids.reduce((s,id)=>{
+    const lib = libriMag.find(l=>l.id===parseInt(id));
+    return s+(vendite[id]||0)*(lib?.prezzo||0);
+  },0);
+
+  document.getElementById('modal-body-conf').innerHTML =
+    righe + '<br><br><strong>Totale: € ' + totEuro.toFixed(2) + '</strong><br><br>' +
+    'Le vendite verranno registrate come <em>vendita diretta</em> nel magazzino.';
+  document.getElementById('overlay-conf').classList.add('open');
+});
+
+document.getElementById('btn-conf-no').addEventListener('click',()=>document.getElementById('overlay-conf').classList.remove('open'));
+
+document.getElementById('btn-conf-ok').addEventListener('click', async function(){
+  document.getElementById('overlay-conf').classList.remove('open');
+  toast('Scaricamento in corso...');
+
+  try {
+    // Ricarica dati freschi dal magazzino
+    const r = await fetch(JURL_MAG+'/latest',{headers:{'X-Master-Key':JKEY_MAG}});
+    const j = await r.json();
+    const DATA = j.record;
+
+    const oggi = new Date().toISOString().slice(0,10);
+    const nomeFiera = document.getElementById('nome-fiera').value || 'Fiera';
+    const ids = Object.keys(vendite);
+
+    ids.forEach(id=>{
+      const lid = parseInt(id);
+      const lib = DATA.libri.find(l=>l.id===lid);
+      const qty = vendite[id];
+      if(!lib||!qty) return;
+
+      // Aggiorna dir_vend nel libro
+      lib.dir_vend = (lib.dir_vend||0) + qty;
+      lib.magazzino = Math.max(0,(lib.magazzino||0) - qty);
+      lib.ricavi = (lib.ricavi||0) + qty*(lib.prezzo||0);
+
+      // Aggiungi movimento
+      if(!DATA.movimenti) DATA.movimenti=[];
+      DATA.movimenti.push({
+        id: Date.now() + Math.random(),
+        libro_id: lid,
+        tipo: 'vendita_dir',
+        copie: qty,
+        desc: nomeFiera + ' — ' + document.getElementById('citta-fiera').value,
+        data: oggi
+      });
+    });
+
+    // Salva magazzino aggiornato
+    const r2 = await fetch(JURL_MAG,{
+      method:'PUT',
+      headers:{'Content-Type':'application/json','X-Master-Key':JKEY_MAG},
+      body:JSON.stringify(DATA)
+    });
+    if(!r2.ok) throw new Error('HTTP '+r2.status);
+
+    toast('✓ Magazzino aggiornato!');
+    // Reset vendite
+    vendite = {};
+    salvaStatoLocale();
+    libriMag = DATA.libri;
+    renderLibri();
+
+  } catch(e){
+    toast('Errore: '+e.message);
+  }
+});
+
+// PDF
+document.getElementById('btn-pdf').addEventListener('click', function(){
+  const ids = Object.keys(vendite);
+  const nomeFiera = document.getElementById('nome-fiera').value || 'Fiera';
+  const citta = document.getElementById('citta-fiera').value || '';
+  const oggi = new Date().toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+  let righe = ids.map(id=>{
+    const lib = libriMag.find(l=>l.id===parseInt(id));
+    const qty = vendite[id];
+    const tot = qty*(lib?.prezzo||0);
+    return `<tr>
+      <td style="padding:6px 8px;border-bottom:1px solid #eee">${lib?.titolo||'?'}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:center">${qty}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right">€ ${(lib?.prezzo||0).toFixed(2)}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right">€ ${tot.toFixed(2)}</td>
+    </tr>`;
+  }).join('');
+
+  const totCopie = ids.reduce((s,id)=>s+(vendite[id]||0),0);
+  const totEuro = ids.reduce((s,id)=>{
+    const lib=libriMag.find(l=>l.id===parseInt(id));
+    return s+(vendite[id]||0)*(lib?.prezzo||0);
+  },0);
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Fiera ${nomeFiera} — ${oggi}</title>
+  <style>body{font-family:Georgia,serif;max-width:600px;margin:40px auto;color:#1a1714;}
+  h1{font-size:1.5rem;font-weight:300;letter-spacing:0.1em;border-bottom:2px solid #c4922a;padding-bottom:8px;}
+  .sub{font-size:0.75rem;color:#666;margin:4px 0 20px;}
+  table{width:100%;border-collapse:collapse;font-size:0.85rem;}
+  th{text-align:left;padding:6px 8px;background:#0a1628;color:white;font-size:0.7rem;letter-spacing:0.1em;}
+  .tot{font-weight:bold;background:#f0f4f8;}
+  </style></head><body>
+  <h1>Casa Editrice Peacock</h1>
+  <div class="sub">${nomeFiera}${citta?' — '+citta:''}<br>${oggi}</div>
+  <table>
+    <thead><tr><th>Titolo</th><th style="text-align:center">Copie</th><th style="text-align:right">Prezzo</th><th style="text-align:right">Totale</th></tr></thead>
+    <tbody>${righe}</tbody>
+    <tfoot><tr class="tot">
+      <td style="padding:8px">TOTALE</td>
+      <td style="padding:8px;text-align:center">${totCopie}</td>
+      <td></td>
+      <td style="padding:8px;text-align:right">€ ${totEuro.toFixed(2)}</td>
+    </tr></tfoot>
+  </table>
+  </body></html>`;
+
+  const w = window.open('','_blank');
+  w.document.write(html);
+  w.document.close();
+  setTimeout(()=>w.print(),300);
+});
+
+// RESET
+document.getElementById('btn-reset').addEventListener('click', function(){
+  if(!confirm('Azzerare tutte le vendite della giornata?')) return;
+  vendite = {};
+  salvaStatoLocale();
+  renderLibri();
+  toast('Reset effettuato');
+});
+
+// TOAST
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.style.opacity='1';
+  setTimeout(()=>t.style.opacity='0',3000);
+}
+
+// DATE
+document.getElementById('data-oggi').textContent =
+  new Date().toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long'});
+
+// INIT
+caricaStatoLocale();
+caricaLibri();
+</script>
+</body>
+</html>
