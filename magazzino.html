@@ -569,6 +569,12 @@ window.addEventListener('load',function(){
       <div class="sep"></div>
       <div style="font-size:0.54rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Deposito per distributore</div>
       <div id="b_dist_fields" class="g4"></div>
+      <div class="sep"></div>
+      <div style="font-size:0.54rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Conto vendita autore</div>
+      <div class="g4">
+        <div class="ff"><label>Autore — deposito</label><input type="number" id="bd_aut_dep" placeholder="0" value="0"></div>
+        <div class="ff"><label>Autore — vendute</label><input type="number" id="bd_aut_vend" placeholder="0" value="0"></div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn-s" onclick="closeModal('moBook')">Annulla</button>
@@ -1998,8 +2004,12 @@ function buildDistFields(b){
     <div class="ff"><label>${d.label} — deposito</label><input type="number" id="bd_${d.key}_dep" placeholder="0" value="${b&&b.dist&&b.dist[d.key]?b.dist[d.key].dep||0:0}"></div>
     <div class="ff"><label>${d.label} — vendute</label><input type="number" id="bd_${d.key}_vend" placeholder="0" value="${b&&b.dist&&b.dist[d.key]?b.dist[d.key].vend||0:0}" oninput="aggiornaRicavi()"></div>
   `).join('');
-}
-function openBookModal(id=null){
+  // Autore conto vendita
+  const autDep = document.getElementById('bd_aut_dep');
+  const autVend = document.getElementById('bd_aut_vend');
+  if(autDep) autDep.value = b&&b.aut_dep||0;
+  if(autVend) autVend.value = b&&b.aut_vend||0;
+}function openBookModal(id=null){
   EDITING_BOOK=id;
   const b=id?DATA.libri.find(x=>x.id===id):null;
   document.getElementById('moBook-title').textContent=b?'Modifica: '+b.titolo:'Nuovo titolo';
@@ -2039,6 +2049,9 @@ function saveBook(){
     const vend=parseFloat(document.getElementById(`bd_${d.key}_vend`)?.value)||0;
     obj.dist[d.key]={dep,vend};
   });
+  // Autore conto vendita
+  obj.aut_dep=parseFloat(document.getElementById('bd_aut_dep')?.value)||0;
+  obj.aut_vend=parseFloat(document.getElementById('bd_aut_vend')?.value)||0;
   if(EDITING_BOOK){
     const idx=DATA.libri.findIndex(b=>b.id===EDITING_BOOK);
     if(idx>=0){
