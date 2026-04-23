@@ -835,6 +835,15 @@ function handleLoad(e){
 window.addEventListener('beforeunload',e=>{if(DIRTY){e.preventDefault();e.returnValue='';}});
 
 // ═══════════════════════════════════════════════════════════════════════════
+
+// AUTORE DEP/VEND
+function aggiornaAutore(id, campo, val){
+  const b = DATA.libri.find(x=>x.id===id);
+  if(!b) return;
+  b[campo] = parseInt(val)||0;
+  saveData();
+}
+
 // HELPERS
 // ═══════════════════════════════════════════════════════════════════════════
 function fmt(n){return '€ '+Number(n||0).toLocaleString('it-IT',{minimumFractionDigits:0,maximumFractionDigits:0});}
@@ -1169,13 +1178,15 @@ function renderDistributori(){
   const thead=document.getElementById('dist-thead');
   const tbody=document.getElementById('dist-tbody');
   if(!thead||!tbody)return;
-  thead.innerHTML='<tr><th>Titolo</th><th>ISBN</th>'+DATA.distributori.map(d=>`<th colspan="2" style="text-align:center;">${d.label}</th>`).join('')+'<th>Eco</th><th>Dir.</th></tr><tr><th></th><th></th>'+DATA.distributori.map(()=>'<th style="text-align:center;font-size:0.44rem;">DEP.</th><th style="text-align:center;font-size:0.44rem;">VEND.</th>').join('')+'<th></th><th></th></tr>';
+  thead.innerHTML='<tr><th>Titolo</th><th>ISBN</th>'+DATA.distributori.map(d=>`<th colspan="2" style="text-align:center;">${d.label}</th>`).join('')+'<th>Eco</th><th>Dir.</th><th colspan="2" style="text-align:center;">Autore</th></tr><tr><th></th><th></th>'+DATA.distributori.map(()=>'<th style="text-align:center;font-size:0.44rem;">DEP.</th><th style="text-align:center;font-size:0.44rem;">VEND.</th>').join('')+'<th></th><th></th><th style="text-align:center;font-size:0.44rem;">DEP.</th><th style="text-align:center;font-size:0.44rem;">VEND.</th></tr>';
   tbody.innerHTML=DATA.libri.map(b=>`<tr>
     <td style="font-size:0.62rem;font-weight:500;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${b.titolo}</td>
     <td style="font-size:0.56rem;color:var(--muted);">${b.isbn||'—'}</td>
     ${DATA.distributori.map(d=>{const dd=b.dist&&b.dist[d.key]?b.dist[d.key]:{dep:0,vend:0};return `<td style="text-align:center;color:var(--ink2);">${dd.dep||0}</td><td style="text-align:center;color:var(--green);">${dd.vend||0}</td>`;}).join('')}
     <td style="text-align:center;color:var(--green);">${b.eco_vend||0}</td>
     <td style="text-align:center;color:var(--green);">${b.dir_vend||0}</td>
+    <td style="text-align:center;"><input type="number" min="0" value="${b.aut_dep||0}" onchange="aggiornaAutore(${b.id},'aut_dep',this.value)" style="width:44px;text-align:center;border:1px solid var(--border);background:var(--paper);font-family:'DM Mono',monospace;font-size:0.62rem;padding:2px 4px;color:var(--ink2);"></td>
+    <td style="text-align:center;"><input type="number" min="0" value="${b.aut_vend||0}" onchange="aggiornaAutore(${b.id},'aut_vend',this.value)" style="width:44px;text-align:center;border:1px solid var(--border);background:var(--paper);font-family:'DM Mono',monospace;font-size:0.62rem;padding:2px 4px;color:var(--green);"></td>
   </tr>`).join('');
 }
 
