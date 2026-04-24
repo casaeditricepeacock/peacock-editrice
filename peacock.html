@@ -701,6 +701,29 @@ async function loadData(){
     const d=j.record;
     if(d&&Object.keys(d).length>1){
       DATA=d;
+      // Migrazione: sposta fatture da mensile ad annuale se presenti
+      [2024,2025,2026].forEach(y=>{
+        if(!DATA[y]) return;
+        if(!DATA[y]._fatture) DATA[y]._fatture=[];
+        if(!DATA[y]._fattureP) DATA[y]._fattureP=[];
+        if(!DATA[y]._fattureE) DATA[y]._fattureE=[];
+        const MONTHS=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+        MONTHS.forEach(m=>{
+          if(!DATA[y][m]) return;
+          if(DATA[y][m].fatture&&DATA[y][m].fatture.length>0){
+            DATA[y]._fatture.push(...DATA[y][m].fatture);
+            DATA[y][m].fatture=[];
+          }
+          if(DATA[y][m].fattureP&&DATA[y][m].fattureP.length>0){
+            DATA[y]._fattureP.push(...DATA[y][m].fattureP);
+            DATA[y][m].fattureP=[];
+          }
+          if(DATA[y][m].fattureE&&DATA[y][m].fattureE.length>0){
+            DATA[y]._fattureE.push(...DATA[y][m].fattureE);
+            DATA[y][m].fattureE=[];
+          }
+        });
+      });
     } else {
       DATA=JSON.parse(JSON.stringify(SEED));
       await pushData();
@@ -710,6 +733,7 @@ async function loadData(){
     toast('⚠ Offline — dati non caricati dal cloud');
   }
   setStatus('saved');
+  renderDashboard();
 }
 
 async function pushData(){
@@ -788,11 +812,11 @@ function getSaldi(y,m){
   if(md.saldi&&(md.saldi.b||md.saldi.p||md.saldi.c)) return md.saldi;
   return (def[y]&&def[y][m])||{b:0,p:0,c:0};
 }
-function getFatture(y,m){return getMonth(y,m).fatture||[];}
+function getFatture(y){if(!DATA[y])DATA[y]={};if(!DATA[y]._fatture)DATA[y]._fatture=[];return DATA[y]._fatture;}
 
 
 // SCADENZARIO FATTURE DA PAGARE
-function getFattureP(y,m){return getMonth(y,m).fattureP||[];}
+function getFattureP(y){if(!DATA[y])DATA[y]={};if(!DATA[y]._fattureP)DATA[y]._fattureP=[];return DATA[y]._fattureP;}
 
 function addFatturaPag(){
   var desc=document.getElementById('fp_desc').value.trim();
@@ -800,9 +824,7 @@ function addFatturaPag(){
   var scad=document.getElementById('fp_scad').value;
   var cat=document.getElementById('fp_cat').value;
   if(!desc||!imp||imp<=0){alert('Inserisci descrizione e importo');return;}
-  var md=getMonth(CY,CM);
-  if(!md.fattureP) md.fattureP=[];
-  md.fattureP.push({id:Date.now(),desc:desc,importo:imp,scadenza:scad,categoria:cat,pagata:false});
+  getFattureP(CY).push({id:Date.now(),desc:desc,importo:imp,scadenza:scad,categoria:cat,pagata:false});
   saveData();
   document.getElementById('fp_desc').value='';
   document.getElementById('fp_imp').value='';
@@ -812,18 +834,18 @@ function addFatturaPag(){
 }
 
 function pagaFattura(id){
-  var fp=getFattureP(CY,CM).find(function(f){return f.id===id;});
+  var fp=getFattureP(CY).find(function(f){return f.id===id;});
   if(fp){fp.pagata=true;saveData();renderFattureP();renderFattureE();toast('Fattura pagata ✓');}
 }
 
 function deleteFatturaPag(id){
-  var md=getMonth(CY,CM);
-  md.fattureP=(md.fattureP||[]).filter(function(f){return f.id!==id;});
-  saveData();renderFattureP();renderFattureE();
+  if(!DATA[CY])return;
+  DATA[CY]._fattureP=(DATA[CY]._fattureP||[]).filter(function(f){return f.id!==id;});
+  saveData();renderFattureP();
 }
 
 function renderFattureP(){
-  var fp=getFattureP(CY,CM);
+  var fp=getFattureP(CY);
   var list=document.getElementById('fp-list');
   if(!list) return;
   var daPag=fp.filter(function(f){return !f.pagata;}).reduce(function(s,f){return s+f.importo;},0);
@@ -865,7 +887,7 @@ function renderFattureP(){
 
 
 // FATTURE DA EMETTERE
-function getFattureE(y,m){return getMonth(y,m).fattureE||[];}
+function getFattureE(y){if(!DATA[y])DATA[y]={};if(!DATA[y]._fattureE)DATA[y]._fattureE=[];return DATA[y]._fattureE;}
 
 function addFatturaEme(){
   var desc=document.getElementById('fe_desc').value.trim();
@@ -873,9 +895,7 @@ function addFatturaEme(){
   var data=document.getElementById('fe_data').value;
   var note=document.getElementById('fe_note').value.trim();
   if(!desc||!imp||imp<=0){alert('Inserisci descrizione e importo');return;}
-  var md=getMonth(CY,CM);
-  if(!md.fattureE) md.fattureE=[];
-  md.fattureE.push({id:Date.now(),desc:desc,importo:imp,data:data,note:note,emessa:false});
+  getFattureE(CY).push({id:Date.now(),desc:desc,importo:imp,data:data,note:note,emessa:false});
   saveData();
   document.getElementById('fe_desc').value='';
   document.getElementById('fe_imp').value='';
@@ -886,18 +906,18 @@ function addFatturaEme(){
 }
 
 function emettiFattura(id){
-  var fe=getFattureE(CY,CM).find(function(f){return f.id===id;});
+  var fe=getFattureE(CY).find(function(f){return f.id===id;});
   if(fe){fe.emessa=true;saveData();renderFattureE();toast('Fattura segnata come emessa ✓');}
 }
 
 function deleteFatturaEme(id){
-  var md=getMonth(CY,CM);
-  md.fattureE=(md.fattureE||[]).filter(function(f){return f.id!==id;});
+  if(!DATA[CY])return;
+  DATA[CY]._fattureE=(DATA[CY]._fattureE||[]).filter(function(f){return f.id!==id;});
   saveData();renderFattureE();
 }
 
 function renderFattureE(){
-  var fe=getFattureE(CY,CM);
+  var fe=getFattureE(CY);
   var list=document.getElementById('fe-list');
   if(!list) return;
   var daEme=fe.filter(function(f){return !f.emessa;}).reduce(function(s,f){return s+f.importo;},0);
@@ -1011,7 +1031,7 @@ function renderSaldiAttuali(){
   document.getElementById('sa_totale').textContent=fmt(tot);
   document.getElementById('saldo_aggiornato').textContent=sal.data||'—';
   // fatture attese
-  const fatture=getFatture(CY,CM);
+  const fatture=getFatture(CY);
   const attesa=fatture.filter(f=>!f.incassata).reduce((s,f)=>s+f.importo,0);
   document.getElementById('sa_attesa').textContent=attesa>0?`+ ${fmtS(attesa)} attese = ${fmtS(tot+attesa)}`:'';
 }
@@ -1083,26 +1103,24 @@ function addFattura(){
   const desc=document.getElementById('fat_desc').value;
   const imp=parseFloat(document.getElementById('fat_imp').value);
   if(!desc||!imp||imp<=0){alert('Inserisci descrizione e importo');return;}
-  const md=getMonth(CY,CM);
-  if(!md.fatture)md.fatture=[];
-  md.fatture.push({id:Date.now(),desc,importo:imp,scadenza:document.getElementById('fat_scad').value||'',incassata:false});
+  getFatture(CY).push({id:Date.now(),desc,importo:imp,scadenza:document.getElementById('fat_scad').value||'',incassata:false});
   saveData();
   document.getElementById('fat_desc').value='';
   document.getElementById('fat_imp').value='';
   document.getElementById('fat_scad').value='';
-  renderFatture();renderFattureP();renderFattureE();toast('Fattura aggiunta');
+  renderFatture();toast('Fattura aggiunta');
 }
 function incassaFattura(id){
-  const fat=getFatture(CY,CM).find(f=>f.id===id);
-  if(fat){fat.incassata=true;saveData();renderFatture();renderFattureP();renderFattureE();toast('Fattura incassata ✓');}
+  const fat=getFatture(CY).find(f=>f.id===id);
+  if(fat){fat.incassata=true;saveData();renderFatture();toast('Fattura incassata ✓');}
 }
 function deleteFattura(id){
-  const md=getMonth(CY,CM);
-  md.fatture=(md.fatture||[]).filter(f=>f.id!==id);
-  saveData();renderFatture();renderFattureP();renderFattureE();
+  if(!DATA[CY])return;
+  DATA[CY]._fatture=(DATA[CY]._fatture||[]).filter(f=>f.id!==id);
+  saveData();renderFatture();
 }
 function renderFatture(){
-  const fatture=getFatture(CY,CM);
+  const fatture=getFatture(CY);
   const list=document.getElementById('fattura-list');
   const attesa=fatture.filter(f=>!f.incassata).reduce((s,f)=>s+f.importo,0);
   const inc=fatture.filter(f=>f.incassata).reduce((s,f)=>s+f.importo,0);
@@ -1522,21 +1540,6 @@ async function init(){
   document.getElementById('f_data').value=new Date().toISOString().split('T')[0];
   document.getElementById('fat_scad').value=new Date().toISOString().split('T')[0];
   await loadData();
-  // Imposta anno e mese corrente automaticamente
-  const _oggi = new Date();
-  const _MONTHS = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
-  CY = _oggi.getFullYear();
-  CM = _MONTHS[_oggi.getMonth()];
-  // Se il mese corrente non ha dati, prendi l'ultimo con dati
-  if(DATA[CY]){
-    const _mesiConDati = Object.keys(DATA[CY]).filter(m=>{
-      const md=DATA[CY][m];
-      return md && ((md.rows&&md.rows.length>0)||(md.fatture&&md.fatture.length>0)||(md.fattureP&&md.fattureP.length>0)||(md.fattureE&&md.fattureE.length>0));
-    });
-    if(_mesiConDati.length>0 && !_mesiConDati.includes(CM)){
-      CM=_mesiConDati.sort((a,b)=>_MONTHS.indexOf(a)-_MONTHS.indexOf(b)).pop();
-    }
-  }
   renderMonthSel();
   renderDashboard();
 }
