@@ -99,8 +99,8 @@ body{font-family:'DM Mono',monospace;background:var(--paper);color:var(--ink);mi
 /* FATTURE DA RICEVERE */
 .fatture-section{background:white;border:1px solid var(--border);border-left:4px solid var(--gold);padding:18px;margin-bottom:20px;}
 .fatture-title{font-family:'Cormorant Garamond',serif;font-size:1rem;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
-.fatture-tot{font-size:0.72rem;color:var(--muted);}
-.fatture-tot span{color:var(--gold);font-weight:500;}
+.fatture-tot{font-size:0.82rem;color:var(--muted);}
+.fatture-tot span{font-family:'Cormorant Garamond',serif;font-size:1.15rem;color:var(--gold);font-weight:600;letter-spacing:0.02em;}
 .fattura-form{display:grid;grid-template-columns:1fr 100px 120px 36px;gap:8px;margin-bottom:12px;align-items:end;}
 .ff-small label{display:block;font-size:0.52rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:3px;}
 .ff-small input{width:100%;padding:6px 9px;border:1px solid var(--border);background:var(--paper);font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--ink);}
@@ -452,7 +452,7 @@ window.addEventListener('load',function(){
   <div class="fatture-pag-section">
     <div class="fatture-pag-title">
       Scadenzario Fatture da Pagare
-      <span class="fatture-tot">Da pagare: <span id="fp_tot" style="color:var(--red)">&#8364; 0</span> &nbsp;|&nbsp; Pagate: <span id="fp_pag">&#8364; 0</span></span>
+      <span class="fatture-tot">Da pagare: <span id="fp_tot" style="color:var(--red);font-family:'Cormorant Garamond',serif;font-size:1.15rem;font-weight:600;">&#8364; 0</span> &nbsp;|&nbsp; Pagate: <span id="fp_pag">&#8364; 0</span></span>
     </div>
     <div class="fp-form">
       <div class="ff-small"><label>Descrizione</label><input type="text" id="fp_desc" placeholder="es. Mediagraf fattura 123"></div>
@@ -479,7 +479,7 @@ window.addEventListener('load',function(){
   <div class="fatture-eme-section">
     <div class="fatture-eme-title">
       Fatture da Emettere
-      <span class="fatture-tot">Da emettere: <span id="fe_tot" style="color:var(--blue-mid)">&#8364; 0</span> &nbsp;|&nbsp; Emesse: <span id="fe_eme">&#8364; 0</span></span>
+      <span class="fatture-tot">Da emettere: <span id="fe_tot" style="color:var(--blue-mid);font-family:'Cormorant Garamond',serif;font-size:1.15rem;font-weight:600;">&#8364; 0</span> &nbsp;|&nbsp; Emesse: <span id="fe_eme">&#8364; 0</span></span>
     </div>
     <div class="fe-form">
       <div class="ff-small"><label>Descrizione</label><input type="text" id="fe_desc" placeholder="es. Rendiconto Torino Q1 2026"></div>
@@ -710,6 +710,7 @@ async function loadData(){
     toast('⚠ Offline — dati non caricati dal cloud');
   }
   setStatus('saved');
+  renderDashboard();
 }
 
 async function pushData(){
