@@ -710,7 +710,6 @@ async function loadData(){
     toast('⚠ Offline — dati non caricati dal cloud');
   }
   setStatus('saved');
-  renderDashboard();
 }
 
 async function pushData(){
@@ -1523,6 +1522,21 @@ async function init(){
   document.getElementById('f_data').value=new Date().toISOString().split('T')[0];
   document.getElementById('fat_scad').value=new Date().toISOString().split('T')[0];
   await loadData();
+  // Imposta anno e mese corrente automaticamente
+  const _oggi = new Date();
+  const _MONTHS = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+  CY = _oggi.getFullYear();
+  CM = _MONTHS[_oggi.getMonth()];
+  // Se il mese corrente non ha dati, prendi l'ultimo con dati
+  if(DATA[CY]){
+    const _mesiConDati = Object.keys(DATA[CY]).filter(m=>{
+      const md=DATA[CY][m];
+      return md && ((md.rows&&md.rows.length>0)||(md.fatture&&md.fatture.length>0)||(md.fattureP&&md.fattureP.length>0)||(md.fattureE&&md.fattureE.length>0));
+    });
+    if(_mesiConDati.length>0 && !_mesiConDati.includes(CM)){
+      CM=_mesiConDati.sort((a,b)=>_MONTHS.indexOf(a)-_MONTHS.indexOf(b)).pop();
+    }
+  }
   renderMonthSel();
   renderDashboard();
 }
