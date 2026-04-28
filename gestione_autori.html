@@ -356,7 +356,11 @@ async function pushData(){
   }catch(e){ setStatus('error'); toast('Errore: '+e.message); }
 }
 
-function markDirty(){ DIRTY=true; setStatus('dirty'); }
+function markDirty(){
+  DIRTY=true; setStatus('dirty');
+  clearTimeout(window._saveTimer);
+  window._saveTimer=setTimeout(()=>pushData(),1500);
+}
 
 // ═══════════════════════════════════════════
 // NAV
@@ -659,7 +663,7 @@ function calcolaRendiconto(autId){
       <td class="td-r col-com"><input class="inp-com" data-row="${i}" data-campo="distVend" value="${r.com.distVend}"></td>
       <td class="td-r col-com"><input class="inp-com" data-row="${i}" data-campo="ecoVend" value="${r.com.ecoVend}"></td>
       <td class="td-r col-com"><input class="inp-com" data-row="${i}" data-campo="dirVend" value="${r.com.dirVend}"></td>
-      <td class="td-r col-com" style="font-weight:500">€<span class="roy-com-val" data-row="${i}">${r.com.royTot.toFixed(2)}</span></td>
+      <td class="td-r col-com" style="font-weight:500">€<input class="inp-com inp-roy" data-row="${i}" data-campo="royTot" value="${r.com.royTot.toFixed(2)}" style="width:75px;font-weight:500;color:#7a5800"></td>
       <td class="td-r" style="color:${r.anticipoRes>0?'var(--red)':'var(--muted)'}">€${r.anticipoRes.toFixed(2)}</td>
       <td><input class="inp-com" data-row="${i}" data-campo="note" value="${r.com.note||''}" style="width:120px;text-align:left;font-size:0.56rem"></td>
     </tr>`;
@@ -679,6 +683,18 @@ function calcolaRendiconto(autId){
   </tr>`;
 
   html+=`</tbody></table></div>
+
+    <!-- DIVARIO -->
+    <div id="divario-box" style="margin-top:14px;padding:10px 14px;border-left:3px solid var(--red);background:rgba(139,38,53,0.05);font-size:0.62rem;">
+      <strong style="color:var(--red);font-family:'Cormorant Garamond',serif;font-size:0.85rem">Divario reale vs comunicato</strong>
+      <div id="divario-val" style="margin-top:4px;color:var(--muted)"></div>
+    </div>
+
+    <!-- RIEPILOGO ANNUALE -->
+    <div id="riepilogo-anno-box" style="margin-top:14px;padding:14px;background:var(--cream);border:1px solid var(--border);">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:0.85rem;color:var(--ink2);margin-bottom:8px">Riepilogo annuale comunicato — ${aut.nome} ${aut.cognome}</div>
+      <div id="riepilogo-anno-content" style="font-size:0.62rem"></div>
+    </div>
   </div>`;
 
   document.getElementById('rend-content').innerHTML=html;
@@ -688,19 +704,29 @@ function calcolaRendiconto(autId){
     inp.addEventListener('input',function(){
       const i=parseInt(this.dataset.row);
       const r=righe[i];
+      const royInp=document.querySelector(`.inp-roy[data-row="${i}"]`);
+      // Se modifica le copie e l'importo NON è stato manualmente sovrascritto, ricalcola
       if(this.dataset.campo==='distVend'||this.dataset.campo==='ecoVend'||this.dataset.campo==='dirVend'){
-        const dv=parseFloat(document.querySelector(`.inp-com[data-row="${i}"][data-campo="distVend"]`).value)||0;
-        const ev=parseFloat(document.querySelector(`.inp-com[data-row="${i}"][data-campo="ecoVend"]`).value)||0;
-        const dv2=parseFloat(document.querySelector(`.inp-com[data-row="${i}"][data-campo="dirVend"]`).value)||0;
-        const lib=r.lib;
-        const newTot=(dv*(r.la.perc?.dist||0)/100+ev*(r.la.perc?.eco||0)/100+dv2*(r.la.perc?.dir||0)/100)*lib.prezzo;
-        document.querySelector(`.roy-com-val[data-row="${i}"]`).textContent=newTot.toFixed(2);
-        // ricalcola grand total
-        let gt=0;
-        document.querySelectorAll('.roy-com-val').forEach(s=>gt+=parseFloat(s.textContent)||0);
-        document.getElementById('grand-tot-com').textContent=gt.toFixed(2);
-        document.getElementById('tot-com-val').textContent=gt.toFixed(2);
+        if(!royInp.dataset.manuale){
+          const dv=parseFloat(document.querySelector(`.inp-com[data-row="${i}"][data-campo="distVend"]`).value)||0;
+          const ev=parseFloat(document.querySelector(`.inp-com[data-row="${i}"][data-campo="ecoVend"]`).value)||0;
+          const dv2=parseFloat(document.querySelector(`.inp-com[data-row="${i}"][data-campo="dirVend"]`).value)||0;
+          const lib=r.lib;
+          const newTot=(dv*(r.la.perc?.dist||0)/100+ev*(r.la.perc?.eco||0)/100+dv2*(r.la.perc?.dir||0)/100)*lib.prezzo;
+          royInp.value=newTot.toFixed(2);
+        }
       }
+      // Se modifica direttamente il royTot, marca come manuale
+      if(this.dataset.campo==='royTot'){
+        this.dataset.manuale='1';
+      }
+      // Aggiorna grand total
+      let gt=0;
+      document.querySelectorAll('.inp-roy').forEach(s=>gt+=parseFloat(s.value)||0);
+      document.getElementById('grand-tot-com').textContent=gt.toFixed(2);
+      document.getElementById('tot-com-val').textContent=gt.toFixed(2);
+      // Aggiorna divario reale vs comunicato
+      aggiornaDivario(righe,gt);
     });
   });
 
@@ -711,11 +737,10 @@ function calcolaRendiconto(autId){
       const ev=parseFloat(document.querySelector(`.inp-com[data-row="${i}"][data-campo="ecoVend"]`).value)||0;
       const dv2=parseFloat(document.querySelector(`.inp-com[data-row="${i}"][data-campo="dirVend"]`).value)||0;
       const note=document.querySelector(`.inp-com[data-row="${i}"][data-campo="note"]`).value;
-      const lib=r.lib;
-      const newTot=(dv*(r.la.perc?.dist||0)/100+ev*(r.la.perc?.eco||0)/100+dv2*(r.la.perc?.dir||0)/100)*lib.prezzo;
+      const royManuale=parseFloat(document.querySelector(`.inp-roy[data-row="${i}"]`).value)||0;
       const anticipoRes=r.anticipoRes;
-      const netto=Math.max(0,newTot-anticipoRes);
-      r.la.com={distVend:dv,ecoVend:ev,dirVend:dv2,royTot:newTot,netto,note};
+      const netto=Math.max(0,royManuale-anticipoRes);
+      r.la.com={distVend:dv,ecoVend:ev,dirVend:dv2,royTot:royManuale,netto,note};
     });
     // Salva in storico
     if(!DATA.storici) DATA.storici=[];
@@ -730,10 +755,52 @@ function calcolaRendiconto(autId){
       righe:righe.map(r=>({titolo:r.lib.titolo,royReale:r.royTot.toFixed(2),royCom:r.la.com?.royTot?.toFixed(2)||0}))
     });
     markDirty(); toast('Comunicato salvato nello storico');
+    renderRiepilogoAnno(autId, anno);
   });
 
   // Stampa
   document.getElementById('btn-stampa-rend').addEventListener('click',()=>window.print());
+
+  // Mostra divario e riepilogo annuale
+  aggiornaDivario(righe, totCom);
+  renderRiepilogoAnno(autId, anno);
+}
+
+
+function aggiornaDivario(righe, totCom){
+  const totReale = righe.reduce((s,r)=>s+r.royTot,0);
+  const diff = totCom - totReale;
+  const pct = totReale>0 ? Math.round((diff/totReale)*100) : 0;
+  const el = document.getElementById('divario-val');
+  if(!el) return;
+  let segno = diff===0 ? '=' : diff>0 ? '+' : '−';
+  let colore = Math.abs(pct)<5 ? 'var(--green)' : Math.abs(pct)<15 ? 'var(--gold)' : 'var(--red)';
+  el.innerHTML = `Reale: <strong>€${totReale.toFixed(2)}</strong> &nbsp; → &nbsp; Comunicato: <strong>€${totCom.toFixed(2)}</strong> &nbsp; <span style="color:${colore};font-weight:500">${segno} €${Math.abs(diff).toFixed(2)} (${segno}${Math.abs(pct)}%)</span>`;
+}
+
+function renderRiepilogoAnno(autId, anno){
+  const el = document.getElementById('riepilogo-anno-content');
+  if(!el || !DATA.storici) return;
+  const stor = DATA.storici.filter(s=>s.autoreId===autId && String(s.anno)===String(anno));
+  if(!stor.length){
+    el.innerHTML = '<div style="color:var(--muted);font-style:italic">Nessun rendiconto salvato per il '+anno+'.</div>';
+    return;
+  }
+  let totRealeAnno=0, totComAnno=0;
+  const righeHtml = stor.map(s=>{
+    totRealeAnno += parseFloat(s.totReale)||0;
+    totComAnno += parseFloat(s.totCom)||0;
+    return `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dotted var(--border)">
+      <span>${s.periodo==='annuale'?'Anno '+s.anno:s.periodo+' '+s.anno} <span style="color:var(--muted);font-size:0.54rem">(${s.data})</span></span>
+      <span>Reale: <strong>€${s.totReale}</strong> · Comunicato: <strong style="color:#7a5800">€${s.totCom}</strong></span>
+    </div>`;
+  }).join('');
+  const diff = totComAnno - totRealeAnno;
+  el.innerHTML = righeHtml + `
+    <div style="display:flex;justify-content:space-between;padding:8px 0 0;margin-top:6px;border-top:2px solid var(--border);font-weight:500;font-family:'Cormorant Garamond',serif;font-size:0.78rem">
+      <span>Totale ${anno}</span>
+      <span>Reale: <span style="color:var(--green)">€${totRealeAnno.toFixed(2)}</span> · Comunicato: <span style="color:#7a5800">€${totComAnno.toFixed(2)}</span> · Differenza: <span style="color:${Math.abs(diff)<5?'var(--green)':'var(--red)'}">${diff>=0?'+':''}€${diff.toFixed(2)}</span></span>
+    </div>`;
 }
 
 // ═══════════════════════════════════════════
