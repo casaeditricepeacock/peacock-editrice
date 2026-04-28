@@ -560,6 +560,7 @@ window.addEventListener('load',function(){
         <div class="ff"><label>Magazzino attuale</label><input type="number" id="b_magazzino"></div>
         <div class="ff"><label>Costo stampa tot. €</label><input type="number" id="b_costo_stampa" step="0.01" oninput="aggiornaRicavi()"></div>
         <div class="ff"><label>Ricavi tot. €</label><input type="number" id="b_ricavi" step="0.01" oninput="aggiornaRicavi()"></div>
+        <div class="ff"><label>Costo autore €</label><input type="number" id="b_costo_autore" step="0.01" oninput="aggiornaRicavi()" placeholder="0"></div>
         <div class="ff"><label>Ricavo reale € <span style="font-size:0.44rem;color:var(--muted);">(calcolato)</span></label><input type="number" id="b_ricavo_reale" step="0.01" readonly style="background:var(--cream);font-weight:600;cursor:default;"></div>
         <div class="ff"><label>% Resa invest. <span style="font-size:0.44rem;color:var(--muted);">(calcolato)</span></label><input type="number" id="b_resa_invest" step="0.01" readonly style="background:var(--cream);font-weight:600;cursor:default;"></div>
         <div class="ff"><label>Ecommerce vendute</label><input type="number" id="b_eco_vend"></div>
@@ -2014,7 +2015,7 @@ function buildDistFields(b){
   const b=id?DATA.libri.find(x=>x.id===id):null;
   document.getElementById('moBook-title').textContent=b?'Modifica: '+b.titolo:'Nuovo titolo';
   const strF=['titolo','isbn','autore','genere','uscita','note'];
-  const numF=['stampati','magazzino','prezzo','costo_stampa','ricavi','resa_invest','eco_vend','dir_vend'];
+  const numF=['stampati','magazzino','prezzo','costo_stampa','costo_autore','ricavi','resa_invest','eco_vend','dir_vend'];
   [...strF,...numF].forEach(k=>{
     const el=document.getElementById('b_'+k);
     if(el)el.value=b?(b[k]||''):'';
@@ -2026,10 +2027,12 @@ function buildDistFields(b){
 function aggiornaRicavi(){
   const ricavi=parseFloat(document.getElementById('b_ricavi')?.value)||0;
   const costo=parseFloat(document.getElementById('b_costo_stampa')?.value)||0;
-  const reale=ricavi-costo;
+  const costoAutore=parseFloat(document.getElementById('b_costo_autore')?.value)||0;
+  const reale=ricavi-costo-costoAutore;
   const elReale=document.getElementById('b_ricavo_reale');
   if(elReale){elReale.value=reale.toFixed(2);elReale.style.color=reale>=0?'var(--green)':'var(--red)';}
-  const resa=costo>0?((reale/costo)*100):0;
+  const investTot=costo+costoAutore;
+  const resa=investTot>0?((reale/investTot)*100):0;
   const elResa=document.getElementById('b_resa_invest');
   if(elResa){elResa.value=resa.toFixed(2);elResa.style.color=resa>=0?'var(--green)':'var(--red)';}
 }
@@ -2037,7 +2040,7 @@ function aggiornaRicavoReale(){aggiornaRicavi();}
 function editBook(id){openBookModal(id);}
 function saveBook(){
   const strF=['titolo','isbn','autore','genere','uscita','note'];
-  const numF=['stampati','magazzino','prezzo','costo_stampa','ricavi','resa_invest','eco_vend','dir_vend'];
+  const numF=['stampati','magazzino','prezzo','costo_stampa','costo_autore','ricavi','resa_invest','eco_vend','dir_vend'];
   const obj={};
   strF.forEach(k=>{const el=document.getElementById('b_'+k);if(el)obj[k]=el.value;});
   numF.forEach(k=>{const el=document.getElementById('b_'+k);if(el)obj[k]=parseFloat(el.value)||0;});
