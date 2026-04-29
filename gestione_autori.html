@@ -568,45 +568,39 @@ function calcolaRendiconto(autId){
     return;
   }
 
-  // Calcola vendite reali per ogni libro dal magazzino
+  // Per ogni libro: pesca dati REALI dal magazzino, niente calcoli
   const righe=libriA.map(la=>{
     const lib=MAG.libri.find(x=>x.id===la.libroId);
     if(!lib) return null;
 
-    // Vendite distribuite: somma tutti i distributori
+    // COPIE REALI = somma vendite distributori + ecommerce + dirette
     const distVend = Object.values(lib.dist||{}).reduce((s,z)=>s+(z.vend||0),0);
     const ecoVend  = lib.eco_vend||0;
     const dirVend  = lib.dir_vend||0;
+    const autVend  = lib.aut_vend||0;
+    const copieReali = distVend + ecoVend + dirVend + autVend;
 
-    // Royalty reali
-    const royDist = distVend * (lib.prezzo||0) * (la.perc?.dist||0) / 100;
-    const royEco  = ecoVend  * (lib.prezzo||0) * (la.perc?.eco||0)  / 100;
-    const royDir  = dirVend  * (lib.prezzo||0) * (la.perc?.dir||0)  / 100;
-    const royTot  = royDist + royEco + royDir;
+    // IMPORTO REALE = ricavi totali dal magazzino (campo lib.ricavi)
+    const importoReale = parseFloat(lib.ricavi)||0;
 
-    // Anticipo residuo
-    const anticipoRes = Math.max(0, (la.anticipo||0) - (la.anticipoScalato||0));
-    const netto = Math.max(0, royTot - anticipoRes);
+    // GIA' PAGATO = campo costo_autore dal magazzino
+    const giaPagato = parseFloat(lib.costo_autore)||0;
 
-    return {
-      la, lib, distVend, ecoVend, dirVend,
-      royDist, royEco, royDir, royTot, anticipoRes, netto,
-      // Comunicato (modificabile)
-      com: {
-        distVend: la.com?.distVend??distVend,
-        ecoVend:  la.com?.ecoVend??ecoVend,
-        dirVend:  la.com?.dirVend??dirVend,
-        royTot:   la.com?.royTot??royTot,
-        netto:    la.com?.netto??netto,
-        note:     la.com?.note??''
-      }
+    // COMUNICATO (memorizzato in la.com)
+    const com = {
+      copie:  la.com?.copie  ?? copieReali,
+      importo: la.com?.importo ?? importoReale,
+      note:    la.com?.note    ?? ''
     };
+
+    return { la, lib, copieReali, importoReale, giaPagato, com };
   }).filter(Boolean);
 
-  const totReale  = righe.reduce((s,r)=>s+r.royTot,0);
-  const totNetto  = righe.reduce((s,r)=>s+r.netto,0);
-  const totCom    = righe.reduce((s,r)=>s+r.com.royTot,0);
-  const totNetCom = righe.reduce((s,r)=>s+r.com.netto,0);
+  const totCopReale = righe.reduce((s,r)=>s+r.copieReali,0);
+  const totImpReale = righe.reduce((s,r)=>s+r.importoReale,0);
+  const totGiaPag   = righe.reduce((s,r)=>s+r.giaPagato,0);
+  const totCopCom   = righe.reduce((s,r)=>s+(parseFloat(r.com.copie)||0),0);
+  const totImpCom   = righe.reduce((s,r)=>s+(parseFloat(r.com.importo)||0),0);
 
   let html=`
   <div class="panel">
@@ -621,16 +615,21 @@ function calcolaRendiconto(autId){
       </div>
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">
       <div style="background:var(--green-bg);border:1px solid rgba(45,90,61,0.2);padding:10px 14px">
-        <div style="font-size:0.5rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--green);margin-bottom:4px">Totale reale</div>
-        <div style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--green)">€ ${totReale.toFixed(2)}</div>
-        <div style="font-size:0.5rem;color:var(--muted)">Netto anticipo: € ${totNetto.toFixed(2)}</div>
+        <div style="font-size:0.5rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--green);margin-bottom:4px">Reale dal magazzino</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--green)">€ ${totImpReale.toFixed(2)}</div>
+        <div style="font-size:0.54rem;color:var(--muted)">${totCopReale} copie vendute</div>
       </div>
       <div style="background:rgba(196,146,42,0.06);border:1px solid rgba(196,146,42,0.25);padding:10px 14px">
-        <div style="font-size:0.5rem;letter-spacing:0.12em;text-transform:uppercase;color:#7a5800;margin-bottom:4px">Totale comunicato</div>
-        <div style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:#7a5800">€ <span id="tot-com-val">${totCom.toFixed(2)}</span></div>
-        <div style="font-size:0.5rem;color:var(--muted)">Netto anticipo: € <span id="tot-netto-com">${totNetCom.toFixed(2)}</span></div>
+        <div style="font-size:0.5rem;letter-spacing:0.12em;text-transform:uppercase;color:#7a5800;margin-bottom:4px">Comunicato</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:#7a5800">€ <span id="tot-imp-com">${totImpCom.toFixed(2)}</span></div>
+        <div style="font-size:0.54rem;color:var(--muted)"><span id="tot-cop-com">${totCopCom}</span> copie comunicate</div>
+      </div>
+      <div style="background:var(--cream);border:1px solid var(--border);padding:10px 14px">
+        <div style="font-size:0.5rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Già pagato all'autore</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--ink2)">€ ${totGiaPag.toFixed(2)}</div>
+        <div style="font-size:0.54rem;color:var(--muted)">dal campo "Costo autore"</div>
       </div>
     </div>
 
@@ -639,54 +638,48 @@ function calcolaRendiconto(autId){
       <thead>
         <tr>
           <th rowspan="2">Libro</th>
-          <th colspan="4" class="rend-head-reale">Reale (dal magazzino)</th>
+          <th colspan="2" class="rend-head-reale">Reale (dal magazzino)</th>
+          <th rowspan="2" class="rend-head-reale">Già pagato</th>
           <td class="rend-sep" rowspan="2"></td>
-          <th colspan="4" class="rend-head-com">Comunicato (modificabile)</th>
-          <th rowspan="2">Anticipo res.</th>
+          <th colspan="2" class="rend-head-com">Comunicato (modificabile)</th>
           <th rowspan="2">Note</th>
         </tr>
         <tr>
-          <th>Dist.</th><th>Eco.</th><th>Dir.</th><th>Royalty tot.</th>
-          <th>Dist.</th><th>Eco.</th><th>Dir.</th><th>Royalty tot.</th>
+          <th>Copie</th><th>Importo €</th>
+          <th>Copie</th><th>Importo €</th>
         </tr>
       </thead>
       <tbody>`;
 
   righe.forEach((r,i)=>{
     html+=`<tr>
-      <td style="font-weight:500">${r.lib.titolo}<div style="font-size:0.5rem;color:var(--muted)">Dist:${r.la.perc?.dist||0}% · Eco:${r.la.perc?.eco||0}% · Dir:${r.la.perc?.dir||0}%</div></td>
-      <td class="td-r col-reale">${r.distVend}</td>
-      <td class="td-r col-reale">${r.ecoVend}</td>
-      <td class="td-r col-reale">${r.dirVend}</td>
-      <td class="td-r col-reale" style="font-weight:500">€${r.royTot.toFixed(2)}</td>
+      <td style="font-weight:500">${r.lib.titolo}</td>
+      <td class="td-r col-reale">${r.copieReali}</td>
+      <td class="td-r col-reale" style="font-weight:500">€${r.importoReale.toFixed(2)}</td>
+      <td class="td-r col-reale" style="color:${r.giaPagato>0?'var(--ink2)':'var(--muted)'}">€${r.giaPagato.toFixed(2)}</td>
       <td class="rend-sep"></td>
-      <td class="td-r col-com"><input class="inp-com" data-row="${i}" data-campo="distVend" value="${r.com.distVend}"></td>
-      <td class="td-r col-com"><input class="inp-com" data-row="${i}" data-campo="ecoVend" value="${r.com.ecoVend}"></td>
-      <td class="td-r col-com"><input class="inp-com" data-row="${i}" data-campo="dirVend" value="${r.com.dirVend}"></td>
-      <td class="td-r col-com" style="font-weight:500">€<input class="inp-com inp-roy" data-row="${i}" data-campo="royTot" value="${r.com.royTot.toFixed(2)}" style="width:75px;font-weight:500;color:#7a5800"></td>
-      <td class="td-r" style="color:${r.anticipoRes>0?'var(--red)':'var(--muted)'}">€${r.anticipoRes.toFixed(2)}</td>
-      <td><input class="inp-com" data-row="${i}" data-campo="note" value="${r.com.note||''}" style="width:120px;text-align:left;font-size:0.56rem"></td>
+      <td class="td-r col-com"><input class="inp-com2" data-row="${i}" data-campo="copie" value="${r.com.copie}" style="width:60px"></td>
+      <td class="td-r col-com">€<input class="inp-com2" data-row="${i}" data-campo="importo" value="${parseFloat(r.com.importo).toFixed(2)}" style="width:80px;font-weight:500;color:#7a5800"></td>
+      <td><input class="inp-com2" data-row="${i}" data-campo="note" value="${r.com.note||''}" style="width:140px;text-align:left;font-size:0.56rem"></td>
     </tr>`;
   });
 
   html+=`<tr class="tot-row">
     <td>TOTALE</td>
-    <td class="td-r col-reale">${righe.reduce((s,r)=>s+r.distVend,0)}</td>
-    <td class="td-r col-reale">${righe.reduce((s,r)=>s+r.ecoVend,0)}</td>
-    <td class="td-r col-reale">${righe.reduce((s,r)=>s+r.dirVend,0)}</td>
-    <td class="td-r col-reale">€${totReale.toFixed(2)}</td>
+    <td class="td-r col-reale">${totCopReale}</td>
+    <td class="td-r col-reale">€${totImpReale.toFixed(2)}</td>
+    <td class="td-r col-reale">€${totGiaPag.toFixed(2)}</td>
     <td class="rend-sep"></td>
-    <td colspan="3" class="col-com"></td>
-    <td class="td-r col-com">€<span id="grand-tot-com">${totCom.toFixed(2)}</span></td>
-    <td class="td-r">€${righe.reduce((s,r)=>s+r.anticipoRes,0).toFixed(2)}</td>
+    <td class="td-r col-com" id="tot-cop-com-row">${totCopCom}</td>
+    <td class="td-r col-com">€<span id="tot-imp-com-row">${totImpCom.toFixed(2)}</span></td>
     <td></td>
   </tr>`;
 
   html+=`</tbody></table></div>
 
     <!-- DIVARIO -->
-    <div id="divario-box" style="margin-top:14px;padding:10px 14px;border-left:3px solid var(--red);background:rgba(139,38,53,0.05);font-size:0.62rem;">
-      <strong style="color:var(--red);font-family:'Cormorant Garamond',serif;font-size:0.85rem">Divario reale vs comunicato</strong>
+    <div id="divario-box" style="margin-top:14px;padding:10px 14px;border-left:3px solid var(--gold);background:rgba(196,146,42,0.05);font-size:0.62rem;">
+      <strong style="color:var(--ink2);font-family:'Cormorant Garamond',serif;font-size:0.85rem">Divario reale vs comunicato</strong>
       <div id="divario-val" style="margin-top:4px;color:var(--muted)"></div>
     </div>
 
@@ -699,50 +692,33 @@ function calcolaRendiconto(autId){
 
   document.getElementById('rend-content').innerHTML=html;
 
-  // Aggiorna totale comunicato al cambio
-  document.querySelectorAll('.inp-com[data-campo]').forEach(inp=>{
+  // Aggiorna totali al cambio dei campi comunicato
+  document.querySelectorAll('.inp-com2').forEach(inp=>{
     inp.addEventListener('input',function(){
-      const i=parseInt(this.dataset.row);
-      const r=righe[i];
-      const royInp=document.querySelector(`.inp-roy[data-row="${i}"]`);
-      // Se modifica le copie e l'importo NON è stato manualmente sovrascritto, ricalcola
-      if(this.dataset.campo==='distVend'||this.dataset.campo==='ecoVend'||this.dataset.campo==='dirVend'){
-        if(!royInp.dataset.manuale){
-          const dv=parseFloat(document.querySelector(`.inp-com[data-row="${i}"][data-campo="distVend"]`).value)||0;
-          const ev=parseFloat(document.querySelector(`.inp-com[data-row="${i}"][data-campo="ecoVend"]`).value)||0;
-          const dv2=parseFloat(document.querySelector(`.inp-com[data-row="${i}"][data-campo="dirVend"]`).value)||0;
-          const lib=r.lib;
-          const newTot=(dv*(r.la.perc?.dist||0)/100+ev*(r.la.perc?.eco||0)/100+dv2*(r.la.perc?.dir||0)/100)*lib.prezzo;
-          royInp.value=newTot.toFixed(2);
-        }
-      }
-      // Se modifica direttamente il royTot, marca come manuale
-      if(this.dataset.campo==='royTot'){
-        this.dataset.manuale='1';
-      }
-      // Aggiorna grand total
-      let gt=0;
-      document.querySelectorAll('.inp-roy').forEach(s=>gt+=parseFloat(s.value)||0);
-      document.getElementById('grand-tot-com').textContent=gt.toFixed(2);
-      document.getElementById('tot-com-val').textContent=gt.toFixed(2);
-      // Aggiorna divario reale vs comunicato
-      aggiornaDivario(righe,gt);
+      let totC=0, totI=0;
+      righe.forEach((r,i)=>{
+        const c=parseFloat(document.querySelector(`.inp-com2[data-row="${i}"][data-campo="copie"]`).value)||0;
+        const im=parseFloat(document.querySelector(`.inp-com2[data-row="${i}"][data-campo="importo"]`).value)||0;
+        totC+=c; totI+=im;
+      });
+      document.getElementById('tot-cop-com').textContent=totC;
+      document.getElementById('tot-imp-com').textContent=totI.toFixed(2);
+      document.getElementById('tot-cop-com-row').textContent=totC;
+      document.getElementById('tot-imp-com-row').textContent=totI.toFixed(2);
+      aggiornaDivario(totImpReale, totI, totCopReale, totC);
     });
   });
 
   // Salva comunicato
   document.getElementById('btn-salva-com').addEventListener('click',()=>{
+    let copComTot=0, impComTot=0;
     righe.forEach((r,i)=>{
-      const dv=parseFloat(document.querySelector(`.inp-com[data-row="${i}"][data-campo="distVend"]`).value)||0;
-      const ev=parseFloat(document.querySelector(`.inp-com[data-row="${i}"][data-campo="ecoVend"]`).value)||0;
-      const dv2=parseFloat(document.querySelector(`.inp-com[data-row="${i}"][data-campo="dirVend"]`).value)||0;
-      const note=document.querySelector(`.inp-com[data-row="${i}"][data-campo="note"]`).value;
-      const royManuale=parseFloat(document.querySelector(`.inp-roy[data-row="${i}"]`).value)||0;
-      const anticipoRes=r.anticipoRes;
-      const netto=Math.max(0,royManuale-anticipoRes);
-      r.la.com={distVend:dv,ecoVend:ev,dirVend:dv2,royTot:royManuale,netto,note};
+      const cop=parseFloat(document.querySelector(`.inp-com2[data-row="${i}"][data-campo="copie"]`).value)||0;
+      const imp=parseFloat(document.querySelector(`.inp-com2[data-row="${i}"][data-campo="importo"]`).value)||0;
+      const note=document.querySelector(`.inp-com2[data-row="${i}"][data-campo="note"]`).value;
+      r.la.com={copie:cop, importo:imp, note};
+      copComTot+=cop; impComTot+=imp;
     });
-    // Salva in storico
     if(!DATA.storici) DATA.storici=[];
     DATA.storici.unshift({
       id:Date.now(),
@@ -750,9 +726,17 @@ function calcolaRendiconto(autId){
       autoreNome:aut.nome+' '+aut.cognome,
       anno, periodo,
       data:new Date().toISOString().slice(0,10),
-      totReale:totReale.toFixed(2),
-      totCom:parseFloat(document.getElementById('grand-tot-com').textContent).toFixed(2),
-      righe:righe.map(r=>({titolo:r.lib.titolo,royReale:r.royTot.toFixed(2),royCom:r.la.com?.royTot?.toFixed(2)||0}))
+      totReale: totImpReale.toFixed(2),
+      totCom:   impComTot.toFixed(2),
+      copReale: totCopReale,
+      copCom:   copComTot,
+      righe: righe.map((r,i)=>({
+        titolo: r.lib.titolo,
+        copieReali: r.copieReali,
+        importoReale: r.importoReale.toFixed(2),
+        copieCom: parseFloat(document.querySelector(`.inp-com2[data-row="${i}"][data-campo="copie"]`).value)||0,
+        importoCom: (parseFloat(document.querySelector(`.inp-com2[data-row="${i}"][data-campo="importo"]`).value)||0).toFixed(2)
+      }))
     });
     markDirty(); toast('Comunicato salvato nello storico');
     renderRiepilogoAnno(autId, anno);
@@ -761,21 +745,26 @@ function calcolaRendiconto(autId){
   // Stampa
   document.getElementById('btn-stampa-rend').addEventListener('click',()=>window.print());
 
-  // Mostra divario e riepilogo annuale
-  aggiornaDivario(righe, totCom);
+  // Mostra divario e riepilogo annuale all'apertura
+  aggiornaDivario(totImpReale, totImpCom, totCopReale, totCopCom);
   renderRiepilogoAnno(autId, anno);
 }
 
 
-function aggiornaDivario(righe, totCom){
-  const totReale = righe.reduce((s,r)=>s+r.royTot,0);
-  const diff = totCom - totReale;
-  const pct = totReale>0 ? Math.round((diff/totReale)*100) : 0;
+function aggiornaDivario(totImpReale, totImpCom, totCopReale, totCopCom){
   const el = document.getElementById('divario-val');
   if(!el) return;
-  let segno = diff===0 ? '=' : diff>0 ? '+' : '−';
-  let colore = Math.abs(pct)<5 ? 'var(--green)' : Math.abs(pct)<15 ? 'var(--gold)' : 'var(--red)';
-  el.innerHTML = `Reale: <strong>€${totReale.toFixed(2)}</strong> &nbsp; → &nbsp; Comunicato: <strong>€${totCom.toFixed(2)}</strong> &nbsp; <span style="color:${colore};font-weight:500">${segno} €${Math.abs(diff).toFixed(2)} (${segno}${Math.abs(pct)}%)</span>`;
+  const diffImp = totImpCom - totImpReale;
+  const pctImp = totImpReale>0 ? Math.round((diffImp/totImpReale)*100) : 0;
+  const diffCop = totCopCom - totCopReale;
+  const segnoI = diffImp===0?'=':diffImp>0?'+':'−';
+  const segnoC = diffCop===0?'=':diffCop>0?'+':'−';
+  const coloreI = Math.abs(pctImp)<5 ? 'var(--green)' : Math.abs(pctImp)<15 ? 'var(--gold)' : 'var(--red)';
+  const coloreC = diffCop===0 ? 'var(--green)' : 'var(--red)';
+  el.innerHTML = `
+    <div style="margin-bottom:4px">Importo — Reale: <strong>€${totImpReale.toFixed(2)}</strong> → Comunicato: <strong>€${totImpCom.toFixed(2)}</strong> &nbsp;<span style="color:${coloreI};font-weight:500">${segnoI} €${Math.abs(diffImp).toFixed(2)} (${segnoI}${Math.abs(pctImp)}%)</span></div>
+    <div>Copie — Reali: <strong>${totCopReale}</strong> → Comunicate: <strong>${totCopCom}</strong> &nbsp;<span style="color:${coloreC};font-weight:500">${segnoC} ${Math.abs(diffCop)}</span></div>
+  `;
 }
 
 function renderRiepilogoAnno(autId, anno){
@@ -786,20 +775,29 @@ function renderRiepilogoAnno(autId, anno){
     el.innerHTML = '<div style="color:var(--muted);font-style:italic">Nessun rendiconto salvato per il '+anno+'.</div>';
     return;
   }
-  let totRealeAnno=0, totComAnno=0;
+  let totRealeAnno=0, totComAnno=0, copRealeAnno=0, copComAnno=0;
   const righeHtml = stor.map(s=>{
     totRealeAnno += parseFloat(s.totReale)||0;
     totComAnno += parseFloat(s.totCom)||0;
-    return `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dotted var(--border)">
+    copRealeAnno += s.copReale||0;
+    copComAnno += s.copCom||0;
+    return `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dotted var(--border);gap:10px;flex-wrap:wrap">
       <span>${s.periodo==='annuale'?'Anno '+s.anno:s.periodo+' '+s.anno} <span style="color:var(--muted);font-size:0.54rem">(${s.data})</span></span>
-      <span>Reale: <strong>€${s.totReale}</strong> · Comunicato: <strong style="color:#7a5800">€${s.totCom}</strong></span>
+      <span style="text-align:right">Copie: <strong>${s.copReale||0}</strong> reali · <strong style="color:#7a5800">${s.copCom||0}</strong> com. &nbsp;|&nbsp; Reale: <strong>€${s.totReale}</strong> · Comunicato: <strong style="color:#7a5800">€${s.totCom}</strong></span>
     </div>`;
   }).join('');
   const diff = totComAnno - totRealeAnno;
+  const diffCop = copComAnno - copRealeAnno;
   el.innerHTML = righeHtml + `
-    <div style="display:flex;justify-content:space-between;padding:8px 0 0;margin-top:6px;border-top:2px solid var(--border);font-weight:500;font-family:'Cormorant Garamond',serif;font-size:0.78rem">
-      <span>Totale ${anno}</span>
-      <span>Reale: <span style="color:var(--green)">€${totRealeAnno.toFixed(2)}</span> · Comunicato: <span style="color:#7a5800">€${totComAnno.toFixed(2)}</span> · Differenza: <span style="color:${Math.abs(diff)<5?'var(--green)':'var(--red)'}">${diff>=0?'+':''}€${diff.toFixed(2)}</span></span>
+    <div style="padding:8px 0 0;margin-top:6px;border-top:2px solid var(--border);font-weight:500;font-family:'Cormorant Garamond',serif;font-size:0.78rem">
+      <div style="display:flex;justify-content:space-between;padding:3px 0">
+        <span>Totale copie ${anno}</span>
+        <span>Reali: <span style="color:var(--green)">${copRealeAnno}</span> · Comunicate: <span style="color:#7a5800">${copComAnno}</span> · Differenza: <span style="color:${diffCop===0?'var(--green)':'var(--red)'}">${diffCop>=0?'+':''}${diffCop}</span></span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:3px 0">
+        <span>Totale royalty ${anno}</span>
+        <span>Reale: <span style="color:var(--green)">€${totRealeAnno.toFixed(2)}</span> · Comunicato: <span style="color:#7a5800">€${totComAnno.toFixed(2)}</span> · Differenza: <span style="color:${Math.abs(diff)<5?'var(--green)':'var(--red)'}">${diff>=0?'+':''}€${diff.toFixed(2)}</span></span>
+      </div>
     </div>`;
 }
 
