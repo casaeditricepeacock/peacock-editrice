@@ -126,9 +126,22 @@ tfoot td:first-child{font-family:'Cormorant Garamond',serif;color:var(--gold-lig
 
 /* PRINT BOLLA */
 @media print{
+  @page{size:A4;margin:15mm;}
   body *{visibility:hidden;}
   #print-area,#print-area *{visibility:visible;}
-  #print-area{position:fixed;top:0;left:0;width:100%;background:white;padding:20mm 15mm;font-family:'DM Mono',monospace;}
+  #print-area{position:absolute;top:0;left:0;right:0;background:white;padding:0;font-family:'DM Mono',monospace;}
+  /* Tabella che si spezza correttamente su più pagine */
+  .bolla-table{page-break-inside:auto;break-inside:auto;}
+  .bolla-table tr{page-break-inside:avoid;break-inside:avoid;page-break-after:auto;}
+  .bolla-table thead{display:table-header-group;}
+  .bolla-table tfoot{display:table-footer-group;}
+  /* Footer firme: NON forzato a stare sulla stessa pagina della tabella */
+  .bolla-footer{page-break-inside:avoid;break-inside:avoid;margin-top:30px;}
+  /* Header sempre integro */
+  .bolla-print-head,.bolla-dest{page-break-inside:avoid;break-inside:avoid;}
+  /* Compatta i font in stampa */
+  .bolla-table td{font-size:0.62rem;padding:5px 8px;}
+  .bolla-table th{font-size:0.55rem;padding:5px 8px;}
 }
 #print-area{display:none;}
 .bolla-print{font-family:'DM Mono',monospace;max-width:720px;margin:0 auto;}
@@ -142,8 +155,8 @@ tfoot td:first-child{font-family:'Cormorant Garamond',serif;color:var(--gold-lig
 .bolla-table th{background:#000;color:white;padding:6px 10px;text-align:left;font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase;}
 .bolla-table td{padding:7px 10px;border-bottom:1px solid #ddd;font-size:0.68rem;}
 .bolla-table tr:last-child td{border-bottom:2px solid #000;font-weight:600;}
-.bolla-footer{display:grid;grid-template-columns:1fr 1fr;gap:20px;font-size:0.68rem;}
-.bolla-sign{border-top:1px solid #000;padding-top:8px;margin-top:32px;font-size:0.6rem;color:#555;text-align:center;}
+.bolla-footer{display:grid;grid-template-columns:1fr 1fr;gap:20px;font-size:0.68rem;margin-top:20px;}
+.bolla-sign{border-top:1px solid #000;padding-top:6px;margin-top:24px;font-size:0.6rem;color:#555;text-align:center;}
 
 /* DIST MANAGER */
 .dist-manager-row{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);font-size:0.68rem;}
@@ -1152,8 +1165,79 @@ function renderStoricoBolle(){
     <td style="font-size:0.58rem;color:var(--muted);">${(b.data||'').split('-').reverse().join('/')}</td>
     <td style="font-size:0.6rem;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${b.destLabel}</td>
     <td style="text-align:right;font-size:0.62rem;">${(b.righe||[]).reduce((s,r)=>s+r.copie,0)}</td>
-    <td><button class="btn-d" onclick="deleteBolla(${b.id})" title="Elimina">✕</button></td>
+    <td style="white-space:nowrap;">
+      <button class="btn-s" onclick="riapriBolla(${b.id})" title="Visualizza/Stampa" style="padding:3px 8px;font-size:0.58rem;">🖨</button>
+      <button class="btn-d" onclick="deleteBolla(${b.id})" title="Elimina">✕</button>
+    </td>
   </tr>`).join(''):'<tr><td colspan="5" style="text-align:center;padding:14px;color:var(--muted);font-size:0.62rem;">Nessuna bolla</td></tr>';
+}
+
+function riapriBolla(id){
+  const b=(DATA.bolle||[]).find(x=>x.id===id);
+  if(!b){toast('Bolla non trovata');return;}
+  const d=DATA.distributori.find(x=>x.key===b.dest)||{label:b.destLabel};
+  const totCopie=(b.righe||[]).reduce((s,r)=>s+r.copie,0);
+  const pa=document.getElementById('print-area');
+  pa.style.display='block';
+  document.getElementById('bolla-print-content').innerHTML=`
+    <div class="bolla-print-head">
+      <div>
+        <div class="bolla-print-title">CASA EDITRICE PEACOCK</div>
+        <div class="bolla-print-sub">Via Regazzoni Alta, 32 · 35030 Galzignano Terme (PD)</div>
+        <div class="bolla-print-sub">P.IVA 05241730281</div>
+        <div class="bolla-print-sub">direzione@studiopeacock.net · www.studiopeacock.net</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:1rem;font-weight:700;letter-spacing:0.1em;">BOLLA DI CONSEGNA</div>
+        <div class="bolla-print-n">N° ${b.num}</div>
+        <div class="bolla-print-n">Data: ${(b.data||'').split('-').reverse().join('/')}</div>
+      </div>
+    </div>
+    <div class="bolla-dest">
+      <div class="bolla-dest-title">Destinatario</div>
+      <strong>${d.label||b.destLabel}</strong><br>
+      ${d.piva?`<span style="font-size:0.66rem;">P.IVA ${d.piva}</span><br>`:''}
+      ${d.referente?`<span style="font-size:0.66rem;">Ref. ${d.referente}</span><br>`:''}
+      <span style="white-space:pre-line;">${d.addr||''}</span>
+      ${d.tel?`<br><span style="font-size:0.66rem;">Tel. ${d.tel}</span>`:''}
+      ${d.email?`<br><span style="font-size:0.66rem;">${d.email}</span>`:''}
+    </div>
+    <table class="bolla-table">
+      <thead><tr>
+        <th style="width:40%;">Titolo</th>
+        <th>ISBN</th>
+        <th>Autore</th>
+        <th style="text-align:right;">Copie</th>
+        <th>Note</th>
+      </tr></thead>
+      <tbody>
+        ${(b.righe||[]).map(r=>`<tr>
+          <td>${r.titolo}</td>
+          <td style="font-size:0.64rem;">${r.isbn||'—'}</td>
+          <td style="font-size:0.64rem;">${r.autore||'—'}</td>
+          <td style="text-align:right;font-weight:600;">${r.copie}</td>
+          <td style="font-size:0.64rem;">${r.nota||''}</td>
+        </tr>`).join('')}
+        <tr>
+          <td colspan="3" style="text-align:right;font-weight:700;">TOTALE COPIE</td>
+          <td style="text-align:right;font-weight:700;font-size:0.9rem;">${totCopie}</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    ${b.note?`<div style="background:#f8f8f8;border:1px solid #ddd;padding:8px 12px;font-size:0.68rem;margin-bottom:12px;"><strong>Note:</strong> ${b.note}</div>`:''}
+    <div class="bolla-footer">
+      <div>
+        <div style="font-size:0.6rem;color:#555;margin-bottom:4px;">MITTENTE — Casa Editrice Peacock</div>
+        <div class="bolla-sign">Firma mittente</div>
+      </div>
+      <div>
+        <div style="font-size:0.6rem;color:#555;margin-bottom:4px;">DESTINATARIO — ${d.label||b.destLabel}</div>
+        <div class="bolla-sign">Firma destinatario per ricevuta</div>
+      </div>
+    </div>`;
+  window.print();
+  setTimeout(()=>{pa.style.display='none';},2000);
 }
 function deleteBolla(id){
   if(!confirm('Eliminare questa bolla dallo storico? Non modifica il magazzino.'))return;
