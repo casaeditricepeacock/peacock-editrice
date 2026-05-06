@@ -1038,16 +1038,17 @@ function renderSaldiAttuali(){
 
 // RIEPILOGO ANNO
 function calcYearFull(y){
-  let e=0,u=0,vend=0,stamp=0,dist=0,eco=0,ev=0,eb=0,altro_e=0;
+  let e=0,u=0,vend=0,stamp=0,dir=0,eb_n=0,dist=0,eco=0,ev=0,eb=0,altro_e=0;
   let sp_stampa=0,sp_sped=0,sp_camp=0,sp_quote=0,sp_admin=0,sp_altro=0;
   MONTHS.forEach(m=>{
     const t=calcMonth(y,m);
     e+=t.e;u+=t.u;vend+=t.vend;stamp+=t.stamp;
+    dir+=t.dir||0;eb_n+=t.eb_n||0;
     dist+=t.dist;eco+=t.eco;ev+=t.ev;eb+=t.eb;altro_e+=t.altro_e||0;
     sp_stampa+=t.sp_stampa;sp_sped+=t.sp_sped;sp_camp+=t.sp_camp;
     sp_quote+=t.sp_quote;sp_admin+=t.sp_admin;sp_altro+=t.sp_altro;
   });
-  return {e,u,vend,stamp,dist,eco,ev,eb,altro_e,utile:e-u,sp_stampa,sp_sped,sp_camp,sp_quote,sp_admin,sp_altro};
+  return {e,u,vend,stamp,dir,eb_n,dist,eco,ev,eb,altro_e,utile:e-u,sp_stampa,sp_sped,sp_camp,sp_quote,sp_admin,sp_altro};
 }
 function renderAnnual(){
   const a=calcYearFull(CY);
