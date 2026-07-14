@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Peacock — Sistema Promozionale</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#1a1714;--paper:#f7f4ef;--cream:#ede9e1;--gold:#b8860b;--gold-light:#d4a017;--rust:#8b3a2a;--sage:#4a6741;--border:#c8c0b0;--muted:#7a7060;--white:#fff;--shadow:0 2px 16px rgba(26,23,20,.1)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh}
+header{background:var(--ink);color:var(--paper);padding:13px 28px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--gold)}
+header h1{font-family:'Playfair Display',serif;font-size:17px;font-weight:700}
+header span{font-size:11px;color:var(--gold-light);letter-spacing:.1em;text-transform:uppercase}
+.tabs{display:flex;background:var(--ink);padding:0 28px}
+.tab{padding:9px 20px;font-size:11px;font-weight:500;color:#a09880;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;letter-spacing:.04em;text-transform:uppercase}
+.tab:hover{color:var(--paper)}.tab.active{color:var(--gold-light);border-bottom-color:var(--gold-light)}
+.main{display:flex;min-height:calc(100vh - 90px)}
+.sidebar{width:265px;min-width:265px;background:var(--cream);border-right:1px solid var(--border);padding:14px 0;overflow-y:auto;display:flex;flex-direction:column}
+.sidebar-title{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);padding:0 14px 8px;border-bottom:1px solid var(--border);margin-bottom:4px}
+.tipo-tabs{display:flex;border-bottom:1px solid var(--border)}
+.tipo-tab{flex:1;padding:8px;text-align:center;font-size:11px;font-weight:500;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:all .15s;text-transform:uppercase}
+.tipo-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.sidebar-search{padding:8px 14px}
+.sidebar-search input{font-size:12px;padding:6px 9px;width:100%;border:1px solid var(--border);border-radius:4px;background:var(--paper);outline:none}
+.sidebar-search input:focus{border-color:var(--gold)}
+.zone-group{margin-bottom:2px}
+.zone-header{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;cursor:pointer;font-size:13px;font-weight:500;color:var(--ink);transition:background .13s;user-select:none}
+.zone-header:hover{background:rgba(184,134,11,.07)}
+.zone-header .badge{font-size:10px;background:var(--ink);color:var(--paper);padding:1px 6px;border-radius:10px;font-weight:400}
+.zone-header .arrow{font-size:9px;color:var(--muted);transition:transform .18s;margin-left:4px}
+.zone-header.open .arrow{transform:rotate(90deg)}
+.zone-items{display:none}.zone-items.open{display:block}
+.contatto-item{display:flex;align-items:flex-start;gap:8px;padding:6px 14px 6px 26px;font-size:12px;cursor:pointer;transition:background .12s;border-left:2px solid transparent}
+.contatto-item:hover{background:rgba(184,134,11,.08);border-left-color:var(--gold)}
+.contatto-item.selected{background:rgba(184,134,11,.13);border-left-color:var(--gold);font-weight:500}
+.contatto-item input[type=checkbox]{accent-color:var(--gold);width:14px;height:14px;cursor:pointer;flex-shrink:0;margin-top:2px}
+.contatto-sub{font-size:10px;color:var(--muted);word-break:break-all}
+.sidebar-actions{padding:10px 14px;border-top:1px solid var(--border);margin-top:auto;display:flex;flex-direction:column;gap:6px}
+.content{flex:1;padding:22px 30px;overflow-y:auto}
+.section{display:none}.section.active{display:block}
+.card{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:16px;box-shadow:var(--shadow)}
+.card-title{font-family:'Playfair Display',serif;font-size:15px;font-weight:600;margin-bottom:14px;padding-bottom:9px;border-bottom:1px solid var(--cream);display:flex;align-items:center;gap:7px}
+.card-title .dot{width:7px;height:7px;border-radius:50%;background:var(--gold);flex-shrink:0}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-grid.three{grid-template-columns:1fr 1fr 1fr}
+.form-full{grid-column:1/-1}
+label{display:block;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;font-weight:500}
+input[type=text],input[type=email],input[type=password],textarea,select{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:5px;font-family:'DM Sans',sans-serif;font-size:13px;background:var(--paper);color:var(--ink);transition:border-color .18s;outline:none}
+input:focus,textarea:focus,select:focus{border-color:var(--gold)}
+textarea{resize:vertical;min-height:80px;line-height:1.55}
+.btn{padding:8px 15px;border-radius:5px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--paper);color:var(--ink);transition:all .16s;display:inline-flex;align-items:center;gap:5px}
+.btn:hover{background:var(--cream);border-color:var(--gold)}.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-primary{background:var(--ink);color:var(--paper);border-color:var(--ink)}.btn-primary:hover{background:#2c2924}
+.btn-gold{background:var(--gold);color:#fff;border-color:var(--gold);font-size:14px;padding:10px 22px}.btn-gold:hover{background:var(--gold-light)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-danger{color:var(--rust);border-color:#e8c0b8}.btn-danger:hover{background:#fdf0ee;border-color:var(--rust)}
+.upload-zone{border:2px dashed var(--border);border-radius:7px;padding:22px;text-align:center;cursor:pointer;transition:all .18s;background:var(--paper);position:relative}
+.upload-zone:hover{border-color:var(--gold)}.upload-zone.has-image{border-style:solid;border-color:var(--gold)}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.up-icon{font-size:26px;margin-bottom:6px}.up-text{font-size:13px;color:var(--muted)}.up-hint{font-size:11px;color:var(--border);margin-top:3px}
+.email-preview{background:var(--white);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.email-header-bar{background:var(--ink);padding:13px 20px;color:var(--paper)}
+.email-header-bar .from{font-size:11px;color:var(--gold-light);letter-spacing:.07em;text-transform:uppercase;margin-bottom:3px}
+.email-header-bar .subject{font-family:'Playfair Display',serif;font-size:16px;font-weight:600}
+.email-body{padding:20px 24px;font-size:14px;line-height:1.7;color:var(--ink)}
+.email-img-placeholder{border:1px dashed var(--border);border-radius:5px;padding:28px;text-align:center;color:var(--muted);font-size:13px;background:var(--paper)}
+.email-footer{padding:12px 24px;border-top:1px solid var(--cream);font-size:12px;color:var(--muted);background:var(--paper)}
+.selected-bar{background:var(--ink);color:var(--paper);padding:8px 14px;font-size:12px;display:flex;align-items:center;justify-content:space-between;border-radius:5px;margin-bottom:12px}
+.selected-bar strong{color:var(--gold-light)}
+.notifica{padding:10px 13px;border-radius:5px;font-size:13px;margin-bottom:12px;display:none;line-height:1.5}
+.notifica.success{background:rgba(74,103,65,.1);border:1px solid rgba(74,103,65,.3);color:var(--sage)}
+.notifica.info{background:rgba(184,134,11,.08);border:1px solid rgba(184,134,11,.25);color:#7a5800}
+.notifica.error{background:rgba(139,58,42,.08);border:1px solid rgba(139,58,42,.25);color:var(--rust)}
+.notifica.show{display:block}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.stat-card{background:var(--white);border:1px solid var(--border);border-radius:7px;padding:13px 16px;text-align:center}
+.stat-card .num{font-family:'Playfair Display',serif;font-size:24px;font-weight:700}
+.stat-card .lbl{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:3px}
+.action-row{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:14px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:7px 9px;font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:500;border-bottom:2px solid var(--border)}
+td{padding:8px 9px;border-bottom:1px solid var(--cream);vertical-align:middle}
+tr:hover td{background:rgba(184,134,11,.03)}
+.tag{display:inline-block;padding:2px 7px;border-radius:3px;font-size:11px;font-weight:500}
+.tag-zona{background:rgba(74,103,65,.12);color:var(--sage)}
+.tag-gruppo{background:rgba(184,134,11,.12);color:var(--gold)}
+.storico-item{display:flex;align-items:center;justify-content:space-between;padding:10px 13px;border:1px solid var(--border);border-radius:6px;margin-bottom:6px;background:var(--white);font-size:13px}
+.storico-item .data{color:var(--muted);font-size:11px;margin-top:2px}
+.storico-badge{font-size:11px;padding:2px 8px;border-radius:10px;background:rgba(74,103,65,.12);color:var(--sage)}
+.gruppo-card{border:1px solid var(--border);border-radius:7px;padding:14px 16px;margin-bottom:9px;background:var(--white)}
+.gruppo-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.gruppo-nome{font-weight:600;font-size:14px}
+.gruppo-emails{font-size:12px;color:var(--muted);line-height:1.65;word-break:break-all}
+.edit-inp{padding:4px 7px;font-size:12px;border:1px solid var(--gold);border-radius:4px;background:var(--paper);color:var(--ink);outline:none;width:100%}
+.hint{font-size:11px;color:var(--muted);margin-top:9px;line-height:1.5}
+.config-box{background:var(--cream);border:1px solid var(--border);border-radius:8px;padding:18px 20px;margin-bottom:16px}
+.config-box .config-title{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.config-status{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:3px 10px;border-radius:10px}
+.config-status.ok{background:rgba(74,103,65,.12);color:var(--sage)}
+.config-status.ko{background:rgba(139,58,42,.1);color:var(--rust)}
+.template-card{border:1px solid var(--border);border-radius:6px;padding:11px 13px;cursor:pointer;transition:all .16s;background:var(--paper);}
+.template-card:hover{border-color:var(--gold);background:rgba(184,134,11,.05);}
+.template-card-title{font-size:12px;font-weight:600;margin-bottom:3px;}
+.template-card-sub{font-size:11px;color:var(--muted);line-height:1.4;}
+.progress-bar-wrap{background:var(--cream);border-radius:10px;height:8px;overflow:hidden;margin:8px 0}
+.progress-bar{height:100%;background:var(--gold);border-radius:10px;transition:width .3s;width:0}
+.progress-label{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Sistema Promozionale &mdash; Casa Editrice Peacock</h1>
+  <span>Librerie &amp; Gruppi</span>
+</header>
+<div class="tabs">
+  <div class="tab active" id="tab-promo">Nuova Promozione</div>
+  <div class="tab" id="tab-archivio">Archivio Librerie</div>
+  <div class="tab" id="tab-gruppi">Gruppi</div>
+  <div class="tab" id="tab-config">Configurazione</div>
+  <div class="tab" id="tab-storico">Storico</div>
+</div>
+<div class="main">
+  <div class="sidebar">
+    <div class="sidebar-title">Seleziona destinatari</div>
+    <div class="tipo-tabs">
+      <div class="tipo-tab active" id="ttab-lib">Librerie</div>
+      <div class="tipo-tab" id="ttab-grp">Gruppi</div>
+    </div>
+    <div class="sidebar-search"><input type="text" id="cerca-dest" placeholder="Cerca..."></div>
+    <div id="panel-lib"><div id="zone-container"></div></div>
+    <div id="panel-grp" style="display:none"><div id="gruppi-container"></div></div>
+    <div class="sidebar-actions">
+      <button class="btn btn-sm" id="btn-sel-tutti">Seleziona tutti</button>
+      <button class="btn btn-sm" id="btn-desel-tutti">Deseleziona tutti</button>
+    </div>
+  </div>
+  <div class="content">
+    <section id="sec-promo" class="section active">
+      <div id="notifica" class="notifica"></div>
+      <div id="sel-bar" class="selected-bar" style="display:none">
+        <span>Selezionati: <strong id="sel-count">0</strong></span>
+        <button class="btn btn-sm" style="color:var(--paper);border-color:#555;padding:4px 9px" id="btn-desel2">X</button>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot"></span> Template marketing</div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">Clicca un template per caricarlo nei campi email. Puoi modificarlo prima di inviare.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;" id="template-grid"></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot"></span> Impostazioni email</div>
+        <div class="form-grid">
+          <div class="form-full"><label>Oggetto</label><input type="text" id="oggetto" placeholder="es. Novita Peacock - Cedola marzo 2026"></div>
+          <div class="form-full" style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;background:var(--cream);border:1px solid var(--border);border-radius:6px;padding:10px 14px">
+            <label style="display:flex;align-items:center;gap:7px;margin:0;text-transform:none;letter-spacing:0;font-size:12px;cursor:pointer">
+              <input type="checkbox" id="ogg-banner" checked style="accent-color:var(--gold);width:15px;height:15px;cursor:pointer">
+              Mostra l'oggetto come titolo colorato in cima alla mail
+            </label>
+            <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">Colore parole <input type="color" id="ogg-colore" value="#f7f4ef" style="width:36px;height:26px;border:1px solid var(--border);border-radius:4px;padding:1px;cursor:pointer;background:var(--paper)"></span>
+            <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">Colore sfondo <input type="color" id="ogg-sfondo" value="#b8860b" style="width:36px;height:26px;border:1px solid var(--border);border-radius:4px;padding:1px;cursor:pointer;background:var(--paper)"></span>
+            <span style="font-size:11px;color:var(--muted)">Nota: nella casella di posta l'oggetto resta testo semplice (limite del protocollo email); i colori appaiono nel corpo della mail.</span>
+          </div>
+          <div class="form-full"><label>Testo email</label><textarea id="apertura" rows="6" placeholder="Gentile Libraio,..."></textarea></div>
+          <div class="form-full"><label>Chiusura</label><textarea id="chiusura" rows="2" placeholder="Con i nostri migliori saluti, Casa Editrice Peacock"></textarea></div>
+          <div><label>Testo pulsante</label><input type="text" id="btn-testo" placeholder="es. Scopri il libro"></div>
+          <div><label>Link pulsante</label><input type="text" id="btn-link" placeholder="es. https://odabooks.it"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot"></span> Cedola (JPG / PNG / GIF)</div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:12px">L'immagine apparira nel corpo della mail.</p>
+        <div class="upload-zone" id="upload-zone">
+          <input type="file" id="file-cedola" accept="image/jpeg,image/jpg,image/png,image/gif">
+          <div class="up-icon">&#128444;</div>
+          <div class="up-text">Clicca per caricare la cedola</div>
+          <div class="up-hint">JPG, PNG o GIF animata</div>
+        </div>
+        <div id="img-preview-wrap" style="display:none;margin-top:12px">
+          <img id="img-preview" src="" alt="Cedola" style="max-width:100%;max-height:260px;border-radius:5px;border:1px solid var(--border);display:block">
+          <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+            <span id="img-nome" style="font-size:12px;color:var(--muted)"></span>
+            <button class="btn btn-sm btn-danger" id="btn-rimuovi-cedola">Rimuovi</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot"></span> Anteprima email</div>
+        <div class="email-preview">
+          <div class="email-header-bar">
+            <div class="from" id="prev-from">Da: casaeditricepeacock@gmail.com</div>
+            <div class="subject" id="prev-subject">Oggetto email</div>
+          </div>
+          <div class="email-body">
+            <div id="prev-banner" style="display:none;padding:15px 22px;border-radius:6px;font-family:'Playfair Display',Georgia,serif;font-size:19px;font-weight:700;text-align:center;margin-bottom:16px">Oggetto email</div>
+            <div style="white-space:pre-line;margin-bottom:14px" id="prev-apertura">Il testo apparira qui.</div>
+            <div style="margin:14px 0">
+              <div class="email-img-placeholder" id="prev-placeholder">La cedola apparira qui</div>
+              <img id="prev-img" src="" alt="Cedola" style="display:none;max-width:100%;border-radius:5px">
+            </div>
+            <div id="prev-btn-wrap" style="display:none;margin:16px 0;text-align:center">
+              <a id="prev-btn" href="#" style="display:inline-block;background:#1a1714;color:#f7f4ef;padding:12px 28px;border-radius:5px;text-decoration:none;font-size:14px;font-weight:500">Scopri il libro</a>
+            </div>
+          </div>
+          <div class="email-footer" id="prev-footer">Con i nostri migliori saluti</div>
+        </div>
+        <div class="invio-progress" id="invio-progress">
+          <div class="progress-label" id="progress-label">Invio in corso...</div>
+          <div class="progress-bar-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+          <div class="progress-label" id="progress-detail"></div>
+        </div>
+        <div class="action-row">
+          <button class="btn btn-gold" id="btn-invia">Invia con Gmail</button>
+          <button class="btn btn-primary" id="btn-copia">Copia testo</button>
+          <button class="btn" id="btn-storico">Salva nel registro</button>
+        </div>
+        <p class="hint" id="hint-config" style="color:var(--rust);display:none">Configura le credenziali Gmail nella tab Configurazione.</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot"></span> Backup dati</div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Esporta i dati su file JSON per il disco mobile. Importa su qualsiasi computer.</p>
+        <div class="action-row">
+          <button class="btn btn-primary" id="btn-esporta">Esporta dati</button>
+          <button class="btn" id="btn-importa-trigger">Importa dati</button>
+          <input type="file" id="file-import" accept=".json" style="display:none">
+          <div id="import-stato"></div>
+        </div>
+      </div>
+    </section>
+    <section id="sec-archivio" class="section">
+      <div class="stats-row" id="stats-archivio"></div>
+      <div class="card">
+        <div class="card-title"><span class="dot"></span> Aggiungi libreria</div>
+        <div class="form-grid three">
+          <div><label>Nome *</label><input type="text" id="new-nome" placeholder="es. Libreria Rinascita"></div>
+          <div><label>Email *</label><input type="email" id="new-email" placeholder="ordini@libreria.it"></div>
+          <div><label>Zona *</label><select id="new-zona"><option value="">seleziona o crea</option></select></div>
+          <div><label>Citta</label><input type="text" id="new-citta" placeholder="es. Milano"></div>
+          <div><label>Referente</label><input type="text" id="new-referente" placeholder="es. Mario Rossi"></div>
+          <div><label>Note</label><input type="text" id="new-note" placeholder="es. acquista illustrati"></div>
+        </div>
+        <div class="action-row">
+          <button class="btn btn-primary" id="btn-add-lib">+ Aggiungi libreria</button>
+          <button class="btn" id="btn-add-zona">+ Nuova zona</button>
+          <button class="btn btn-danger btn-sm" id="btn-del-zona" style="display:none">Elimina zona</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot"></span> Elenco librerie</div>
+        <div style="margin-bottom:10px"><input type="text" id="filtro-lib" placeholder="Filtra..." style="max-width:300px;font-size:12px;padding:6px 9px"></div>
+        <table><thead><tr><th>Libreria</th><th>Email</th><th>Zona</th><th>Citta</th><th>Referente</th><th>Note</th><th></th></tr></thead><tbody id="tabella-lib"></tbody></table>
+      </div>
+    </section>
+    <section id="sec-gruppi" class="section">
+      <div class="card">
+        <div class="card-title"><span class="dot"></span> Crea nuovo gruppo</div>
+        <div class="form-grid">
+          <div><label>Nome *</label><input type="text" id="grp-nome" placeholder="es. Possibili clienti Fiera Torino"></div>
+          <div><label>Descrizione</label><input type="text" id="grp-desc" placeholder="es. Contatti BookCity 2025"></div>
+          <div class="form-full"><label>Email - una per riga o separate da virgola</label><textarea id="grp-emails" rows="6" placeholder="mario@libreria.it&#10;info@altra.it"></textarea></div>
+        </div>
+        <div class="action-row"><button class="btn btn-primary" id="btn-add-gruppo">+ Crea gruppo</button></div>
+      </div>
+      <div id="lista-gruppi"></div>
+    </section>
+    <section id="sec-config" class="section">
+      <div class="card">
+        <div class="card-title"><span class="dot"></span> Credenziali Gmail API</div>
+        <div class="config-box">
+          <div class="config-title">Credenziali OAuth</div>
+          <div class="form-grid">
+            <div class="form-full"><label>Client ID</label><input type="text" id="cfg-client-id" placeholder="...apps.googleusercontent.com"></div>
+            <div class="form-full"><label>Client Secret</label><input type="password" id="cfg-client-secret" placeholder="GOCSPX-..."></div>
+            <div class="form-full"><label>Refresh Token</label><input type="password" id="cfg-refresh-token" placeholder="1//..."></div>
+            <div class="form-full"><label>Indirizzo mittente (Gmail)</label><input type="email" id="cfg-mittente" placeholder="casaeditricepeacock@gmail.com">
+            <p style="font-size:11px;color:var(--muted);margin-top:5px;text-transform:none;letter-spacing:0">Le mail partono direttamente dall'account Gmail. Non usare indirizzi @studiopeacock.net come mittente: Jimdo blocca la casella per volumi elevati.</p></div>
+          </div>
+          <div class="action-row">
+            <button class="btn btn-primary" id="btn-salva-cfg">Salva</button>
+            <button class="btn" id="btn-test-cfg">Testa connessione</button>
+            <button class="btn" id="btn-rigenera-token" style="background:#8b2635;color:white;border-color:#8b2635;">🔑 Rigenera Token</button>
+            <div id="config-stato"></div>
+          </div>
+          <div id="rigenera-box" style="display:none;margin-top:16px;background:#f7f4ef;border:1px solid #c8c0b0;padding:14px;font-size:12px;line-height:1.7;">
+            <div style="font-weight:600;margin-bottom:8px;">Procedura rinnovo token — segui i passi in ordine</div>
+            <div style="margin-bottom:10px;">
+              <strong>Passo 1</strong> — Clicca il link qui sotto. Accedi con <strong>casaeditricepeacock@gmail.com</strong> e dai i permessi.<br>
+              <span style="color:#7a7060;">Dopo aver autorizzato, il browser andrà su una pagina "localhost" che non si apre — è normale.</span><br>
+              <a id="rigenera-link" href="#" target="_blank" style="color:#1a1714;font-weight:600;text-decoration:underline;">Clicca qui per autorizzare su Google →</a>
+            </div>
+            <div style="margin-bottom:10px;">
+              <strong>Passo 2</strong> — Copia il <strong>codice</strong> dall'URL del browser.<br>
+              <span style="color:#7a7060;">L'URL sarà tipo: <code>http://localhost/?code=4/0AX4XfWi...&scope=...</code><br>Copia solo la parte dopo <code>code=</code> e prima di <code>&scope</code></span>
+            </div>
+            <div style="margin-bottom:10px;">
+              <strong>Passo 3</strong> — Incolla il codice qui:<br>
+              <input type="text" id="rigenera-code" placeholder="4/0AX4XfWi..." style="width:100%;padding:6px 9px;border:1px solid #c8c0b0;font-family:monospace;font-size:12px;margin-top:4px;">
+            </div>
+            <button class="btn btn-primary" id="btn-scambia-code" style="font-size:12px;padding:6px 16px;">Ottieni nuovo Refresh Token</button>
+            <div id="rigenera-stato" style="margin-top:8px;font-size:12px;"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section id="sec-storico" class="section">
+      <div class="card">
+        <div class="card-title"><span class="dot"></span> Registro invii</div>
+        <div id="storico-lista"></div>
+      </div>
+    </section>
+  </div>
+</div>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+window.onload = function() {
+
+var librerie = JSON.parse(localStorage.getItem('pk3_lib') || '[]');
+var zone     = JSON.parse(localStorage.getItem('pk3_zone') || '[]');
+var gruppi   = JSON.parse(localStorage.getItem('pk3_grp') || '[]');
+var storico  = JSON.parse(localStorage.getItem('pk3_sto') || '[]');
+var cfg      = JSON.parse(localStorage.getItem('pk3_cfg') || '{}');
+var selezionate = new Set();
+var tipoTab = 'librerie';
+var cedolaDataUrl = null, cedolaNome = '', cedolaMimeType = '';
+
+function salva() {
+  localStorage.setItem('pk3_lib',  JSON.stringify(librerie));
+  localStorage.setItem('pk3_zone', JSON.stringify(zone));
+  localStorage.setItem('pk3_grp',  JSON.stringify(gruppi));
+  localStorage.setItem('pk3_sto',  JSON.stringify(storico));
+}
+function salvaCfg() { localStorage.setItem('pk3_cfg', JSON.stringify(cfg)); }
+
+function mostraNota(msg, tipo) {
+  var n = document.getElementById('notifica');
+  n.textContent = msg;
+  n.className = 'notifica ' + tipo + ' show';
+  setTimeout(function() { n.classList.remove('show'); }, 6000);
+}
+
+// TABS
+var tabNames = ['promo','archivio','gruppi','config','storico'];
+tabNames.forEach(function(t) {
+  document.getElementById('tab-' + t).addEventListener('click', function() { showTab(t); });
+});
+function showTab(t) {
+  tabNames.forEach(function(x) {
+    document.getElementById('tab-' + x).classList.toggle('active', x === t);
+    document.getElementById('sec-' + x).classList.toggle('active', x === t);
+  });
+  if (t === 'archivio') renderArchivio();
+  if (t === 'gruppi')   renderGruppiLista();
+  if (t === 'config')   caricaCampiConfig();
+  if (t === 'storico')  renderStorico();
+}
+
+// SIDEBAR TIPO
+document.getElementById('ttab-lib').addEventListener('click', function() { switchTipo('librerie'); });
+document.getElementById('ttab-grp').addEventListener('click', function() { switchTipo('gruppi'); });
+function switchTipo(tipo) {
+  tipoTab = tipo;
+  document.getElementById('ttab-lib').classList.toggle('active', tipo === 'librerie');
+  document.getElementById('ttab-grp').classList.toggle('active', tipo === 'gruppi');
+  document.getElementById('panel-lib').style.display = tipo === 'librerie' ? '' : 'none';
+  document.getElementById('panel-grp').style.display = tipo === 'gruppi' ? '' : 'none';
+  renderSidebar();
+}
+
+document.getElementById('cerca-dest').addEventListener('input', renderSidebar);
+document.getElementById('btn-sel-tutti').addEventListener('click', function() {
+  if (tipoTab === 'librerie') librerie.forEach(function(l) { selezionate.add(l.id); });
+  else gruppi.forEach(function(g) { selezionate.add('g:' + g.id); });
+  renderSidebar();
+});
+document.getElementById('btn-desel-tutti').addEventListener('click', function() { selezionate.clear(); renderSidebar(); });
+document.getElementById('btn-desel2').addEventListener('click', function() { selezionate.clear(); renderSidebar(); });
+
+function renderSidebar() {
+  var cerca = document.getElementById('cerca-dest').value.toLowerCase();
+  if (tipoTab === 'librerie') {
+    var c = document.getElementById('zone-container'); c.innerHTML = '';
+    if (!zone.length) { c.innerHTML = '<p style="padding:10px 14px;font-size:12px;color:var(--muted)">Nessuna zona. Creane una in Archivio.</p>'; aggiornaSelCount(); return; }
+    zone.forEach(function(zona) {
+      var libs = librerie.filter(function(l) { return l.zona === zona && (!cerca || l.nome.toLowerCase().includes(cerca) || (l.email||'').toLowerCase().includes(cerca)); });
+      if (!libs.length && cerca) return;
+      var d = document.createElement('div'); d.className = 'zone-group';
+      var items = libs.length ? libs.map(function(l) {
+        return '<div class="contatto-item ' + (selezionate.has(l.id) ? 'selected' : '') + '" data-id="' + l.id + '">'
+          + '<input type="checkbox" ' + (selezionate.has(l.id) ? 'checked' : '') + ' data-id="' + l.id + '">'
+          + '<div><div>' + l.nome + '</div><div class="contatto-sub">' + (l.email || 'nessuna email') + '</div></div></div>';
+      }).join('') : '<div style="padding:5px 14px 5px 24px;font-size:12px;color:var(--muted)">Nessuna libreria</div>';
+      d.innerHTML = '<div class="zone-header open"><span>' + zona + '</span><span style="display:flex;align-items:center;gap:4px"><span class="badge">' + libs.length + '</span><span class="arrow">&#9658;</span></span></div><div class="zone-items open">' + items + '</div>';
+      d.querySelector('.zone-header').addEventListener('click', function() { this.classList.toggle('open'); this.nextElementSibling.classList.toggle('open'); });
+      d.querySelectorAll('.contatto-item').forEach(function(el) {
+        el.addEventListener('click', function(e) {
+          var id = parseInt(this.dataset.id);
+          if (selezionate.has(id)) selezionate.delete(id); else selezionate.add(id);
+          renderSidebar();
+        });
+      });
+      c.appendChild(d);
+    });
+    var senza = librerie.filter(function(l) { return !zone.includes(l.zona) && (!cerca || l.nome.toLowerCase().includes(cerca)); });
+    if (senza.length) {
+      var d2 = document.createElement('div'); d2.className = 'zone-group';
+      d2.innerHTML = '<div class="zone-header open"><span style="color:var(--muted)">Senza zona</span><span style="display:flex;align-items:center;gap:4px"><span class="badge">' + senza.length + '</span><span class="arrow">&#9658;</span></span></div><div class="zone-items open">'
+        + senza.map(function(l) { return '<div class="contatto-item ' + (selezionate.has(l.id) ? 'selected' : '') + '" data-id="' + l.id + '"><input type="checkbox" ' + (selezionate.has(l.id) ? 'checked' : '') + ' data-id="' + l.id + '"><div><div>' + l.nome + '</div><div class="contatto-sub">' + (l.email||'') + '</div></div></div>'; }).join('') + '</div>';
+      d2.querySelector('.zone-header').addEventListener('click', function() { this.classList.toggle('open'); this.nextElementSibling.classList.toggle('open'); });
+      d2.querySelectorAll('.contatto-item').forEach(function(el) {
+        el.addEventListener('click', function() { var id = parseInt(this.dataset.id); if (selezionate.has(id)) selezionate.delete(id); else selezionate.add(id); renderSidebar(); });
+      });
+      c.appendChild(d2);
+    }
+  } else {
+    var cg = document.getElementById('gruppi-container'); cg.innerHTML = '';
+    if (!gruppi.length) { cg.innerHTML = '<p style="padding:10px 14px;font-size:12px;color:var(--muted)">Nessun gruppo. Creane uno nella tab Gruppi.</p>'; aggiornaSelCount(); return; }
+    gruppi.forEach(function(g) {
+      var key = 'g:' + g.id; var em = parseEmails(g.emailsRaw);
+      if (cerca && !g.nome.toLowerCase().includes(cerca)) return;
+      var dg = document.createElement('div'); dg.className = 'zone-group';
+      dg.innerHTML = '<div class="zone-header open"><span>' + g.nome + '</span><span style="display:flex;align-items:center;gap:4px"><span class="badge">' + em.length + '</span><span class="arrow">&#9658;</span></span></div>'
+        + '<div class="zone-items open"><div class="contatto-item ' + (selezionate.has(key) ? 'selected' : '') + '" data-key="' + key + '" style="padding-left:14px">'
+        + '<input type="checkbox" ' + (selezionate.has(key) ? 'checked' : '') + '>'
+        + '<div><div style="font-weight:500">' + g.nome + '</div><div class="contatto-sub">' + em.length + ' contatti' + (g.desc ? ' - ' + g.desc : '') + '</div></div></div></div>';
+      dg.querySelector('.zone-header').addEventListener('click', function() { this.classList.toggle('open'); this.nextElementSibling.classList.toggle('open'); });
+      dg.querySelector('.contatto-item').addEventListener('click', function() { var k = this.dataset.key; if (selezionate.has(k)) selezionate.delete(k); else selezionate.add(k); renderSidebar(); });
+      cg.appendChild(dg);
+    });
+  }
+  aggiornaSelCount();
+}
+
+function aggiornaSelCount() {
+  var n = selezionate.size;
+  document.getElementById('sel-count').textContent = n;
+  document.getElementById('sel-bar').style.display = n > 0 ? 'flex' : 'none';
+}
+
+// CEDOLA
+document.getElementById('file-cedola').addEventListener('change', function() {
+  var file = this.files[0]; if (!file) return;
+  cedolaNome = file.name; cedolaMimeType = file.type || 'image/jpeg';
+  var r = new FileReader();
+  r.onload = function(e) {
+    cedolaDataUrl = e.target.result;
+    document.getElementById('img-preview').src = cedolaDataUrl;
+    document.getElementById('img-preview-wrap').style.display = 'block';
+    document.getElementById('img-nome').textContent = file.name;
+    document.getElementById('upload-zone').classList.add('has-image');
+    aggiornaPreview();
+  };
+  r.readAsDataURL(file);
+});
+document.getElementById('btn-rimuovi-cedola').addEventListener('click', function() {
+  cedolaDataUrl = null; cedolaNome = ''; cedolaMimeType = '';
+  document.getElementById('img-preview').src = '';
+  document.getElementById('img-preview-wrap').style.display = 'none';
+  document.getElementById('file-cedola').value = '';
+  document.getElementById('upload-zone').classList.remove('has-image');
+  aggiornaPreview();
+});
+
+// PREVIEW
+function leggiBanner() {
+  return {
+    attivo: document.getElementById('ogg-banner').checked,
+    testo:  document.getElementById('oggetto').value.trim(),
+    colore: document.getElementById('ogg-colore').value,
+    sfondo: document.getElementById('ogg-sfondo').value
+  };
+}
+function aggiornaPreview() {
+  document.getElementById('prev-subject').textContent = document.getElementById('oggetto').value || 'Oggetto email';
+  var b = leggiBanner();
+  var pb = document.getElementById('prev-banner');
+  if (b.attivo && b.testo) {
+    pb.style.display = 'block';
+    pb.textContent = b.testo;
+    pb.style.color = b.colore;
+    pb.style.background = b.sfondo;
+  } else { pb.style.display = 'none'; }
+  document.getElementById('prev-apertura').textContent = document.getElementById('apertura').value || 'Il testo apparira qui.';
+  var ch = document.getElementById('chiusura').value || 'Con i nostri migliori saluti,\nCasa Editrice Peacock';
+  document.getElementById('prev-footer').innerHTML = ch.replace(/\n/g, '<br>');
+  if (cedolaDataUrl) {
+    document.getElementById('prev-placeholder').style.display = 'none';
+    document.getElementById('prev-img').src = cedolaDataUrl;
+    document.getElementById('prev-img').style.display = 'block';
+  } else {
+    document.getElementById('prev-placeholder').style.display = '';
+    document.getElementById('prev-img').style.display = 'none';
+  }
+  var bt = document.getElementById('btn-testo').value.trim();
+  var bl = document.getElementById('btn-link').value.trim();
+  var wrap = document.getElementById('prev-btn-wrap');
+  if (bt || bl) {
+    wrap.style.display = 'block';
+    document.getElementById('prev-btn').textContent = bt || 'Scopri il libro';
+    document.getElementById('prev-btn').href = bl || '#';
+  } else { wrap.style.display = 'none'; }
+}
+['oggetto','apertura','chiusura','btn-testo','btn-link','ogg-colore','ogg-sfondo'].forEach(function(id) {
+  document.getElementById(id).addEventListener('input', aggiornaPreview);
+});
+document.getElementById('ogg-banner').addEventListener('change', aggiornaPreview);
+
+// EMAIL SENDING
+function raccogliEmail() {
+  var em = [];
+  selezionate.forEach(function(id) {
+    if (typeof id === 'string' && id.startsWith('g:')) {
+      var g = gruppi.find(function(x) { return x.id === parseInt(id.slice(2)); });
+      if (g) em = em.concat(parseEmails(g.emailsRaw));
+    } else {
+      var l = librerie.find(function(x) { return x.id === id; });
+      if (l && l.email) em.push(l.email);
+    }
+  });
+  return em.filter(function(v, i, a) { return v && a.indexOf(v) === i; });
+}
+function parseEmails(raw) {
+  if (!raw) return [];
+  return raw.split(/[\n,;]+/).map(function(e) { return e.trim(); }).filter(function(e) { return e.includes('@'); });
+}
+function strToBase64(str) {
+  var bytes = new TextEncoder().encode(str); var bin = '';
+  for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+function uint8ToBase64url(bytes) {
+  var bin = '';
+  for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function costruisciHTML(apertura, chiusura, imgBase64, mimeType, btnTesto, btnLink, banner) {
+  var bannerHtml = (banner && banner.attivo && banner.testo)
+    ? '<div style="background:' + banner.sfondo + ';color:' + banner.colore + ';padding:16px 24px;border-radius:6px;font-family:Georgia,serif;font-size:20px;font-weight:bold;text-align:center;margin-bottom:22px;line-height:1.4">' + banner.testo + '</div>'
+    : '';
+  var imgHtml = imgBase64 ? '<div style="margin:20px 0"><img src="data:' + mimeType + ';base64,' + imgBase64 + '" style="max-width:100%;border-radius:6px" alt="Cedola"></div>' : '';
+  var btnHtml = (btnTesto && btnLink) ? '<div style="text-align:center;margin:24px 0"><a href="' + btnLink + '" style="display:inline-block;background:#1a1714;color:#f7f4ef;padding:13px 32px;border-radius:5px;text-decoration:none;font-family:Georgia,serif;font-size:15px;font-weight:500">' + btnTesto + '</a></div>' : '';
+  return '<!DOCTYPE html><html><body style="font-family:Georgia,serif;color:#1a1714;max-width:600px;margin:0 auto;padding:20px">' + bannerHtml + '<div style="white-space:pre-line;font-size:15px;line-height:1.7">' + apertura + '</div>' + imgHtml + btnHtml + '<div style="margin-top:20px;padding-top:16px;border-top:1px solid #c8c0b0;font-size:13px;color:#7a7060;white-space:pre-line">' + chiusura + '</div></body></html>';
+}
+var GMAIL_MITTENTE = 'casaeditricepeacock@gmail.com';
+// Migrazione: se il mittente salvato non è un indirizzo Gmail, lo sostituisce con l'account Gmail
+if (cfg.mittente && !/@gmail\.com$/i.test(cfg.mittente)) { cfg.mittente = GMAIL_MITTENTE; salvaCfg(); }
+function costruisciMIME(to, subject, htmlBody) {
+  var mittente = (cfg.mittente && /@gmail\.com$/i.test(cfg.mittente)) ? cfg.mittente : GMAIL_MITTENTE;
+  var mime = ['MIME-Version: 1.0', 'From: Casa Editrice Peacock <' + mittente + '>', 'To: ' + to, 'Subject: =?UTF-8?B?' + strToBase64(subject) + '?=', 'Content-Type: text/html; charset=UTF-8', 'Content-Transfer-Encoding: base64', '', strToBase64(htmlBody)].join('\r\n');
+  return uint8ToBase64url(new TextEncoder().encode(mime));
+}
+function getAccessToken() {
+  if (!cfg.clientId || !cfg.clientSecret || !cfg.refreshToken) return Promise.reject(new Error('Credenziali mancanti'));
+  return fetch('https://oauth2.googleapis.com/token', { method: 'POST', headers: {'Content-Type':'application/x-www-form-urlencoded'}, body: new URLSearchParams({client_id:cfg.clientId,client_secret:cfg.clientSecret,refresh_token:cfg.refreshToken,grant_type:'refresh_token'}) })
+    .then(function(r) { return r.json(); }).then(function(d) { if (!d.access_token) throw new Error(d.error_description||'Token non ottenuto'); return d.access_token; });
+}
+
+document.getElementById('btn-invia').addEventListener('click', function() {
+  if (!cfg.clientId || !cfg.clientSecret || !cfg.refreshToken) { mostraNota('Configura le credenziali Gmail.', 'error'); document.getElementById('hint-config').style.display='block'; return; }
+  var emails = raccogliEmail();
+  if (!emails.length) { mostraNota('Seleziona almeno un destinatario.', 'info'); return; }
+  var oggetto  = document.getElementById('oggetto').value || 'Proposta promozionale - Casa Editrice Peacock';
+  var apertura = document.getElementById('apertura').value || '';
+  var chiusura = document.getElementById('chiusura').value || 'Con i nostri migliori saluti,\nCasa Editrice Peacock';
+  var btnTesto = document.getElementById('btn-testo').value.trim();
+  var btnLink  = document.getElementById('btn-link').value.trim();
+  var imgBase64 = cedolaDataUrl ? cedolaDataUrl.split(',')[1] : null;
+  var btn = document.getElementById('btn-invia'); btn.disabled = true;
+  var progress = document.getElementById('invio-progress'); progress.style.display = 'block';
+  document.getElementById('progress-label').textContent = 'Ottenendo autorizzazione Gmail...';
+  getAccessToken().then(function(token) {
+    var ok = 0, errori = 0, i = 0;
+    function inviaUno() {
+      if (i >= emails.length) {
+        btn.disabled = false; progress.style.display = 'none'; document.getElementById('progress-bar').style.width = '0';
+        if (errori === 0) mostraNota('Inviate ' + ok + ' email con la cedola nel corpo.', 'success');
+        else mostraNota('Inviate ' + ok + '. Errori: ' + errori, 'info');
+        return;
+      }
+      var email = emails[i];
+      document.getElementById('progress-bar').style.width = Math.round(((i+1)/emails.length)*100) + '%';
+      document.getElementById('progress-detail').textContent = 'Invio a ' + email + ' (' + (i+1) + '/' + emails.length + ')';
+      var raw = costruisciMIME(email, oggetto, costruisciHTML(apertura, chiusura, imgBase64, cedolaMimeType, btnTesto, btnLink, leggiBanner()));
+      fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', { method:'POST', headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'}, body:JSON.stringify({raw:raw}) })
+        .then(function(r) { return r.json().then(function(d) { return {ok:r.ok,d:d}; }); })
+        .then(function(res) {
+          if (res.ok) ok++; else { mostraNota('Errore su ' + email + ': ' + (res.d&&res.d.error?res.d.error.message:JSON.stringify(res.d)), 'error'); errori++; }
+          i++; setTimeout(inviaUno, 300);
+        }).catch(function() { errori++; i++; setTimeout(inviaUno, 300); });
+    }
+    inviaUno();
+  }).catch(function(e) { mostraNota('Errore: ' + e.message, 'error'); btn.disabled=false; progress.style.display='none'; });
+});
+
+document.getElementById('btn-copia').addEventListener('click', function() {
+  navigator.clipboard.writeText((document.getElementById('apertura').value||'') + '\n\n' + (document.getElementById('chiusura').value||'')).then(function() { mostraNota('Testo copiato.', 'success'); });
+});
+
+document.getElementById('btn-storico').addEventListener('click', function() {
+  var record = {
+    id: Date.now(),
+    data: new Date().toLocaleDateString('it-IT'),
+    ora: new Date().toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit'}),
+    oggetto: document.getElementById('oggetto').value || '(senza oggetto)',
+    apertura: document.getElementById('apertura').value || '',
+    chiusura: document.getElementById('chiusura').value || '',
+    btnTesto: document.getElementById('btn-testo').value.trim(),
+    btnLink: document.getElementById('btn-link').value.trim(),
+    nDest: raccogliEmail().length,
+    bannerAttivo: document.getElementById('ogg-banner').checked,
+    bannerColore: document.getElementById('ogg-colore').value,
+    bannerSfondo: document.getElementById('ogg-sfondo').value,
+    cedola: cedolaNome || '',
+    cedolaDataUrl: cedolaDataUrl || null,
+    cedolaMimeType: cedolaMimeType || ''
+  };
+  storico.unshift(record);
+  salva();
+  mostraNota('✓ Salvato nel registro con contenuto completo.', 'success');
+});
+
+// BACKUP
+document.getElementById('btn-esporta').addEventListener('click', function() {
+  var blob = new Blob([JSON.stringify({versione:'1.0',data:new Date().toLocaleDateString('it-IT'),librerie:librerie,zone:zone,gruppi:gruppi,storico:storico,cfg:cfg},null,2)], {type:'application/json'});
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'peacock_dati_' + new Date().toISOString().slice(0,10) + '.json'; a.click();
+  mostraNota('Dati esportati.', 'success');
+});
+document.getElementById('btn-importa-trigger').addEventListener('click', function() { document.getElementById('file-import').click(); });
+document.getElementById('file-import').addEventListener('change', function() {
+  var file = this.files[0]; if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var dati = JSON.parse(e.target.result);
+      if (!confirm('Importare i dati? Sostituiranno quelli attuali.')) return;
+      librerie = dati.librerie||[]; zone = dati.zone||[]; gruppi = dati.gruppi||[]; storico = dati.storico||[];
+      if (dati.cfg) { cfg = dati.cfg; salvaCfg(); caricaCampiConfig(); }
+      salva(); renderSidebar();
+      document.getElementById('import-stato').innerHTML = '<span class="config-status ok" style="font-size:12px">Importati: ' + librerie.length + ' librerie, ' + gruppi.length + ' gruppi</span>';
+      mostraNota('Dati importati.', 'success');
+    } catch(err) { mostraNota('Errore: ' + err.message, 'error'); }
+  };
+  reader.readAsText(file); this.value = '';
+});
+
+// RIGENERA TOKEN
+document.getElementById('btn-rigenera-token').addEventListener('click', function() {
+  var box = document.getElementById('rigenera-box');
+  var aperto = box.style.display !== 'none';
+  box.style.display = aperto ? 'none' : 'block';
+  if (!aperto) {
+    var clientId = document.getElementById('cfg-client-id').value.trim() || cfg.clientId || '';
+    if (!clientId) { mostraNota('Inserisci prima il Client ID.', 'error'); box.style.display='none'; return; }
+    var url = 'https://accounts.google.com/o/oauth2/auth'
+      + '?client_id=' + encodeURIComponent(clientId)
+      + '&redirect_uri=' + encodeURIComponent('http://localhost')
+      + '&response_type=code'
+      + '&scope=' + encodeURIComponent('https://mail.google.com/')
+      + '&access_type=offline'
+      + '&prompt=consent';
+    var link = document.getElementById('rigenera-link');
+    link.href = url;
+    link.textContent = 'Clicca qui per autorizzare su Google →';
+    document.getElementById('rigenera-stato').innerHTML = '';
+    document.getElementById('rigenera-code').value = '';
+  }
+});
+
+document.getElementById('btn-scambia-code').addEventListener('click', function() {
+  var code = document.getElementById('rigenera-code').value.trim();
+  var clientId = document.getElementById('cfg-client-id').value.trim() || cfg.clientId || '';
+  var clientSecret = document.getElementById('cfg-client-secret').value.trim() || cfg.clientSecret || '';
+  var stato = document.getElementById('rigenera-stato');
+  if (!code) { stato.innerHTML = '<span style="color:#8b2635;">Incolla il codice di autorizzazione.</span>'; return; }
+  if (!clientId || !clientSecret) { stato.innerHTML = '<span style="color:#8b2635;">Client ID e Client Secret mancanti.</span>'; return; }
+  stato.innerHTML = '<span style="color:#7a7060;">Contatto Google...</span>';
+  fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      code: code,
+      redirect_uri: 'http://localhost',
+      grant_type: 'authorization_code'
+    })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.refresh_token) {
+      // Salva automaticamente il nuovo token
+      cfg.refreshToken = d.refresh_token;
+      cfg.clientId = clientId;
+      cfg.clientSecret = clientSecret;
+      salvaCfg();
+      document.getElementById('cfg-refresh-token').value = d.refresh_token;
+      document.getElementById('rigenera-box').style.display = 'none';
+      aggiornaStatoConfig();
+      mostraNota('✓ Nuovo Refresh Token salvato automaticamente.', 'success');
+    } else {
+      stato.innerHTML = '<span style="color:#8b2635;">Errore: ' + (d.error_description || d.error || JSON.stringify(d)) + '</span>';
+    }
+  })
+  .catch(function(e) {
+    stato.innerHTML = '<span style="color:#8b2635;">Errore di rete: ' + e.message + '</span>';
+  });
+});
+
+// CONFIG
+function caricaCampiConfig() {
+  if (cfg.clientId)     document.getElementById('cfg-client-id').value     = cfg.clientId;
+  if (cfg.clientSecret) document.getElementById('cfg-client-secret').value = cfg.clientSecret;
+  if (cfg.refreshToken) document.getElementById('cfg-refresh-token').value = cfg.refreshToken;
+  if (cfg.mittente)     document.getElementById('cfg-mittente').value       = cfg.mittente;
+  aggiornaStatoConfig();
+}
+function aggiornaStatoConfig() {
+  var ok = cfg.clientId && cfg.clientSecret && cfg.refreshToken && cfg.mittente;
+  document.getElementById('prev-from').textContent = 'Da: ' + (cfg.mittente || 'ufficiostampa@studiopeacock.net');
+  document.getElementById('hint-config').style.display = ok ? 'none' : 'block';
+}
+document.getElementById('btn-salva-cfg').addEventListener('click', function() {
+  cfg.clientId      = document.getElementById('cfg-client-id').value.trim();
+  cfg.clientSecret  = document.getElementById('cfg-client-secret').value.trim();
+  cfg.refreshToken  = document.getElementById('cfg-refresh-token').value.trim();
+  cfg.mittente      = document.getElementById('cfg-mittente').value.trim();
+  salvaCfg(); aggiornaStatoConfig(); mostraNota('Configurazione salvata.', 'success');
+});
+document.getElementById('btn-test-cfg').addEventListener('click', function() {
+  var stato = document.getElementById('config-stato');
+  stato.innerHTML = '<span style="font-size:12px;color:var(--muted)">Test...</span>';
+  getAccessToken().then(function(token) {
+    return fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', {headers:{'Authorization':'Bearer '+token}});
+  }).then(function(r) { return r.json().then(function(d) { return {ok:r.ok,d:d}; }); })
+  .then(function(res) {
+    stato.innerHTML = res.ok ? '<span class="config-status ok">Connesso come: ' + res.d.emailAddress + '</span>' : '<span class="config-status ko">Errore: ' + (res.d&&res.d.error?res.d.error.message:JSON.stringify(res.d)) + '</span>';
+  }).catch(function(e) { stato.innerHTML = '<span class="config-status ko">Errore: ' + e.message + '</span>'; });
+});
+
+// ARCHIVIO
+function renderArchivio() {
+  document.getElementById('stats-archivio').innerHTML = '<div class="stat-card"><div class="num">' + librerie.length + '</div><div class="lbl">Librerie</div></div><div class="stat-card"><div class="num">' + zone.length + '</div><div class="lbl">Zone</div></div><div class="stat-card"><div class="num">' + librerie.filter(function(l){return l.email;}).length + '</div><div class="lbl">Con email</div></div><div class="stat-card"><div class="num">' + storico.length + '</div><div class="lbl">Promozioni</div></div>';
+  var sel = document.getElementById('new-zona'); var prec = sel.value;
+  sel.innerHTML = '<option value="">seleziona o crea</option>' + zone.map(function(z) { return '<option value="' + z + '"' + (z===prec?' selected':'') + '>' + z + '</option>'; }).join('');
+  document.getElementById('btn-del-zona').style.display = sel.value ? '' : 'none';
+  var filtro = document.getElementById('filtro-lib').value.toLowerCase();
+  var righe = librerie.filter(function(l) { return !filtro || l.nome.toLowerCase().includes(filtro) || (l.zona||'').toLowerCase().includes(filtro) || (l.citta||'').toLowerCase().includes(filtro); });
+  document.getElementById('tabella-lib').innerHTML = righe.map(function(l) {
+    return '<tr><td><strong>' + l.nome + '</strong></td><td><span style="cursor:pointer;border-bottom:1px dashed var(--border)" data-id="' + l.id + '" data-campo="email">' + (l.email||'-') + '</span></td><td><span class="tag tag-zona">' + (l.zona||'-') + '</span></td><td><span style="cursor:pointer;border-bottom:1px dashed var(--border)" data-id="' + l.id + '" data-campo="citta">' + (l.citta||'-') + '</span></td><td><span style="cursor:pointer;border-bottom:1px dashed var(--border)" data-id="' + l.id + '" data-campo="referente">' + (l.referente||'-') + '</span></td><td><span style="cursor:pointer;border-bottom:1px dashed var(--border)" data-id="' + l.id + '" data-campo="note">' + (l.note||'-') + '</span></td><td><button class="btn btn-sm btn-danger" data-del="' + l.id + '">X</button></td></tr>';
+  }).join('');
+  document.getElementById('tabella-lib').querySelectorAll('span[data-campo]').forEach(function(el) {
+    el.addEventListener('click', function() {
+      var id = parseInt(this.dataset.id); var campo = this.dataset.campo;
+      var val = this.textContent === '-' ? '' : this.textContent;
+      this.innerHTML = '<input class="edit-inp" value="' + val + '">';
+      var inp = this.querySelector('input'); inp.focus();
+      inp.addEventListener('blur', function() { var l = librerie.find(function(x){return x.id===id;}); if(l){l[campo]=this.value.trim();salva();renderSidebar();renderArchivio();} });
+      inp.addEventListener('keydown', function(e) { if(e.key==='Enter') this.blur(); });
+    });
+  });
+  document.getElementById('tabella-lib').querySelectorAll('button[data-del]').forEach(function(el) {
+    el.addEventListener('click', function() {
+      if (!confirm('Eliminare?')) return;
+      var id = parseInt(this.dataset.del);
+      librerie = librerie.filter(function(l){return l.id!==id;}); selezionate.delete(id); salva(); renderSidebar(); renderArchivio();
+    });
+  });
+}
+document.getElementById('filtro-lib').addEventListener('input', renderArchivio);
+document.getElementById('new-zona').addEventListener('change', function() { document.getElementById('btn-del-zona').style.display = this.value ? '' : 'none'; });
+document.getElementById('btn-add-lib').addEventListener('click', function() {
+  var nome = document.getElementById('new-nome').value.trim(); if (!nome) { mostraNota('Inserisci il nome.','info'); return; }
+  librerie.push({id:Date.now(),nome:nome,email:document.getElementById('new-email').value.trim(),zona:document.getElementById('new-zona').value,citta:document.getElementById('new-citta').value.trim(),referente:document.getElementById('new-referente').value.trim(),note:document.getElementById('new-note').value.trim()});
+  salva(); ['new-nome','new-email','new-citta','new-referente','new-note'].forEach(function(i){document.getElementById(i).value='';}); renderSidebar(); renderArchivio(); mostraNota('Libreria aggiunta.','success');
+});
+document.getElementById('btn-add-zona').addEventListener('click', function() {
+  var n = prompt('Nome nuova zona:'); if (!n||!n.trim()) return;
+  if (!zone.includes(n.trim())) { zone.push(n.trim()); salva(); renderSidebar(); renderArchivio(); }
+});
+document.getElementById('btn-del-zona').addEventListener('click', function() {
+  var s = document.getElementById('new-zona').value; if (!s) return;
+  if (!confirm('Eliminare la zona "' + s + '"?')) return;
+  zone = zone.filter(function(z){return z!==s;}); salva(); renderSidebar(); renderArchivio();
+});
+
+// GRUPPI
+function renderGruppiLista() {
+  var c = document.getElementById('lista-gruppi');
+  if (!gruppi.length) { c.innerHTML = '<p style="color:var(--muted);font-size:13px">Nessun gruppo ancora.</p>'; return; }
+  c.innerHTML = gruppi.map(function(g,i) {
+    var em = parseEmails(g.emailsRaw);
+    return '<div class="gruppo-card"><div class="gruppo-card-header"><div><span class="gruppo-nome">' + g.nome + '</span>' + (g.desc?'<span style="font-size:12px;color:var(--muted);margin-left:8px">'+g.desc+'</span>':'') + '</div><div style="display:flex;gap:7px;align-items:center"><span class="tag tag-gruppo">' + em.length + ' contatti</span><button class="btn btn-sm" data-modifica="' + i + '">Modifica</button><button class="btn btn-sm btn-danger" data-elimina="' + i + '">X</button></div></div><div class="gruppo-emails">' + em.slice(0,10).join(' - ') + (em.length>10?' e altri '+(em.length-10)+'...':'') + '</div></div>';
+  }).join('');
+  c.querySelectorAll('button[data-modifica]').forEach(function(el) {
+    el.addEventListener('click', function() {
+      var i = parseInt(this.dataset.modifica); var g = gruppi[i];
+      document.getElementById('grp-nome').value = g.nome; document.getElementById('grp-desc').value = g.desc||''; document.getElementById('grp-emails').value = g.emailsRaw||'';
+      gruppi.splice(i,1); salva(); renderGruppiLista(); renderSidebar(); window.scrollTo(0,0); mostraNota('Caricato - modifica e salva.','info');
+    });
+  });
+  c.querySelectorAll('button[data-elimina]').forEach(function(el) {
+    el.addEventListener('click', function() {
+      if (!confirm('Eliminare?')) return; var i = parseInt(this.dataset.elimina);
+      selezionate.delete('g:'+gruppi[i].id); gruppi.splice(i,1); salva(); renderGruppiLista(); renderSidebar();
+    });
+  });
+}
+document.getElementById('btn-add-gruppo').addEventListener('click', function() {
+  var nome = document.getElementById('grp-nome').value.trim(); if (!nome) { mostraNota('Inserisci il nome.','info'); return; }
+  gruppi.push({id:Date.now(),nome:nome,desc:document.getElementById('grp-desc').value.trim(),emailsRaw:document.getElementById('grp-emails').value.trim()});
+  salva(); document.getElementById('grp-nome').value=''; document.getElementById('grp-desc').value=''; document.getElementById('grp-emails').value='';
+  renderSidebar(); renderGruppiLista(); mostraNota('Gruppo creato.','success');
+});
+
+// STORICO
+function riaprDaStorico(i) {
+  var s = storico[i];
+  document.getElementById('oggetto').value   = s.oggetto || '';
+  document.getElementById('apertura').value  = s.apertura || '';
+  document.getElementById('chiusura').value  = s.chiusura || '';
+  document.getElementById('btn-testo').value = s.btnTesto || '';
+  document.getElementById('btn-link').value  = s.btnLink  || '';
+  document.getElementById('ogg-banner').checked = s.bannerAttivo !== undefined ? s.bannerAttivo : true;
+  if (s.bannerColore) document.getElementById('ogg-colore').value = s.bannerColore;
+  if (s.bannerSfondo) document.getElementById('ogg-sfondo').value = s.bannerSfondo;
+  // Ripristina cedola se salvata
+  if (s.cedolaDataUrl) {
+    cedolaDataUrl  = s.cedolaDataUrl;
+    cedolaNome     = s.cedola || '';
+    cedolaMimeType = s.cedolaMimeType || 'image/jpeg';
+    var prev = document.getElementById('img-preview');
+    prev.src = cedolaDataUrl;
+    document.getElementById('img-preview-wrap').style.display = 'block';
+    document.getElementById('img-nome').textContent = cedolaNome;
+    document.getElementById('prev-img').src = cedolaDataUrl;
+    document.getElementById('prev-img').style.display = 'block';
+    document.getElementById('prev-placeholder').style.display = 'none';
+    document.getElementById('upload-zone').classList.add('has-image');
+  }
+  aggiornaPreview();
+  showTab('promo');
+  mostraNota('✓ Mail riaperta — modifica e rinvia.', 'success');
+}
+function renderStorico() {
+  var c = document.getElementById('storico-lista');
+  if (!storico.length) { c.innerHTML = '<p style="color:var(--muted);font-size:13px;padding:10px 0">Nessun invio registrato.<br><span style="font-size:11px">Dopo ogni invio clicca "Salva nel registro" per archiviarlo.</span></p>'; return; }
+  c.innerHTML = storico.map(function(s,i) {
+    var haContenuto = s.apertura || s.cedolaDataUrl;
+    return '<div class="storico-item" style="flex-direction:column;align-items:stretch;gap:6px;">'
+      + '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:6px;">'
+      + '<div style="flex:1;min-width:0;">'
+      + '<strong style="font-size:13px;">' + s.oggetto + '</strong>'
+      + (s.cedola ? ' <span style="font-size:11px;color:var(--gold)">📎 ' + s.cedola + '</span>' : '')
+      + '<div class="data">' + s.data + (s.ora ? ' · ' + s.ora : '') + ' · <span class="storico-badge">' + (s.nDest||0) + ' destinatari</span></div>'
+      + '</div>'
+      + '<div style="display:flex;gap:6px;flex-shrink:0;">'
+      + (haContenuto ? '<button class="btn btn-sm btn-primary" data-riapri="' + i + '">↩ Riapri</button>' : '')
+      + '<button class="btn btn-sm btn-danger" data-del-storico="' + i + '">✕</button>'
+      + '</div></div>'
+      + (s.apertura ? '<div style="font-size:11px;color:var(--muted);background:var(--paper);border:1px solid var(--border);border-radius:4px;padding:7px 10px;white-space:pre-line;max-height:60px;overflow:hidden;">' + s.apertura.substring(0,180) + (s.apertura.length>180?'…':'') + '</div>' : '')
+      + '</div>';
+  }).join('');
+  c.querySelectorAll('button[data-riapri]').forEach(function(el) {
+    el.addEventListener('click', function() { riaprDaStorico(parseInt(this.dataset.riapri)); });
+  });
+  c.querySelectorAll('button[data-del-storico]').forEach(function(el) {
+    el.addEventListener('click', function() {
+      if (!confirm('Eliminare questo record?')) return;
+      storico.splice(parseInt(this.dataset.delStorico),1);
+      salva(); renderStorico();
+    });
+  });
+}
+renderSidebar();
+renderArchivio();
+aggiornaStatoConfig();
+aggiornaPreview();
+// TEMPLATE MARKETING
+var TEMPLATES = [
+  {
+    titolo: '📚 Novità catalogo',
+    sub: 'Presentazione nuovo titolo',
+    oggetto: 'Novità Casa Editrice Peacock — [titolo]',
+    apertura: 'Gentile Libraio,\n\nsiamo lieti di presentarle l\'ultima novità del nostro catalogo.\n\nIn allegato trova la cedola con tutti i dettagli: ISBN, prezzo, condizioni e modalità d\'ordine.\n\nIl volume è già disponibile per l\'ordine tramite il nostro distributore.',
+    chiusura: 'Restiamo a disposizione per qualsiasi informazione.\n\nCon i migliori saluti,\nCasa Editrice Peacock\nufficiostampa@studiopeacock.net'
+  },
+  {
+    titolo: '🔁 Riordino / Ristampa',
+    sub: 'Nuova tiratura disponibile',
+    oggetto: 'Disponibile nuova tiratura — [titolo] · Casa Editrice Peacock',
+    apertura: 'Gentile Libraio,\n\nla informiamo che [titolo] è di nuovo disponibile in nuova tiratura.\n\nIl titolo ha riscosso ottimo interesse e le scorte si stanno esaurendo rapidamente.\n\nLe consigliamo di effettuare l\'ordine entro breve per garantirsi la disponibilità.',
+    chiusura: 'Per ordini e informazioni siamo a sua disposizione.\n\nCordiali saluti,\nCasa Editrice Peacock'
+  },
+  {
+    titolo: '🎄 Promozione stagionale',
+    sub: 'Natale / fiere del libro',
+    oggetto: 'Proposta speciale stagione natalizia · Casa Editrice Peacock',
+    apertura: 'Gentile Libraio,\n\nin occasione della stagione natalizia le proponiamo una selezione dei nostri titoli più apprezzati, ideali come regalo.\n\nAbbiamo preparato una cedola con i titoli consigliati e le condizioni dedicate per gli ordini effettuati entro il [data].',
+    chiusura: 'Buona stagione di vendite.\n\nCordialmente,\nCasa Editrice Peacock'
+  },
+  {
+    titolo: '📖 Primo contatto',
+    sub: 'Catalogo a nuove librerie',
+    oggetto: 'Catalogo 2026 · Casa Editrice Peacock',
+    apertura: 'Gentile Libraio,\n\nmi permetto di contattarla per presentarle Casa Editrice Peacock, realtà editoriale padovana specializzata in letteratura giapponese, guide culturali e illustrati d\'autore.\n\nIn allegato trova la nostra cedola con il catalogo aggiornato. Saremmo lieti di avviare una collaborazione.',
+    chiusura: 'Rimango a disposizione per qualsiasi informazione.\n\nDistinti saluti,\nStefano Giglio\nCasa Editrice Peacock\nufficiostampa@studiopeacock.net'
+  },
+  {
+    titolo: '🏆 Best seller',
+    sub: 'Segnalazione alta rotazione',
+    oggetto: '[Titolo] · Il più venduto di Peacock — ancora disponibile',
+    apertura: 'Gentile Libraio,\n\n[Titolo] si conferma tra i nostri titoli con la migliore rotazione in libreria.\n\nSe le scorte si stanno esaurendo, questo è il momento giusto per il riordine.\n\nSpedizione garantita in 48 ore.',
+    chiusura: 'Cordiali saluti,\nCasa Editrice Peacock'
+  },
+  {
+    titolo: '✉️ Follow-up fiera',
+    sub: 'Dopo incontro a fiera del libro',
+    oggetto: 'In seguito al nostro incontro · Casa Editrice Peacock',
+    apertura: 'Gentile [Nome],\n\nè stato un piacere incontrarla a [Fiera].\n\nCome promesso, le invio la nostra documentazione con il catalogo aggiornato e le condizioni commerciali.\n\nSono disponibile per qualsiasi approfondimento.',
+    chiusura: 'A presto,\nStefano Giglio\nCasa Editrice Peacock'
+  }
+];
+function renderTemplate() {
+  var g = document.getElementById('template-grid');
+  if (!g) return;
+  g.innerHTML = TEMPLATES.map(function(t,i) {
+    return '<div class="template-card" data-tpl="' + i + '" style="border:1px solid var(--border);border-radius:6px;padding:11px 13px;cursor:pointer;transition:all .16s;background:var(--paper);">'
+      + '<div style="font-size:12px;font-weight:600;margin-bottom:3px;">' + t.titolo + '</div>'
+      + '<div style="font-size:11px;color:var(--muted);">' + t.sub + '</div>'
+      + '</div>';
+  }).join('');
+  g.querySelectorAll('[data-tpl]').forEach(function(el) {
+    el.addEventListener('mouseover', function() { this.style.borderColor='var(--gold)'; this.style.background='rgba(184,134,11,.05)'; });
+    el.addEventListener('mouseout',  function() { this.style.borderColor='var(--border)'; this.style.background='var(--paper)'; });
+    el.addEventListener('click', function() {
+      var t = TEMPLATES[parseInt(this.dataset.tpl)];
+      document.getElementById('oggetto').value  = t.oggetto;
+      document.getElementById('apertura').value = t.apertura;
+      document.getElementById('chiusura').value = t.chiusura;
+      aggiornaPreview();
+      mostraNota('Template caricato — modifica i campi e aggiungi la cedola.', 'info');
+    });
+  });
+}
+
+renderTemplate();
+
+}; // end window.onload
+</script>
+</body>
+</html>
