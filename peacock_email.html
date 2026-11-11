@@ -312,22 +312,47 @@ tr:hover td{background:rgba(184,134,11,.03)}
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 window.onload = function() {
 
-var librerie = JSON.parse(localStorage.getItem('pk3_lib') || '[]');
-var zone     = JSON.parse(localStorage.getItem('pk3_zone') || '[]');
-var gruppi   = JSON.parse(localStorage.getItem('pk3_grp') || '[]');
-var storico  = JSON.parse(localStorage.getItem('pk3_sto') || '[]');
-var cfg      = JSON.parse(localStorage.getItem('pk3_cfg') || '{}');
+// archivio sicuro: se il browser blocca o ha dati rovinati, l'app parte lo stesso (dati in memoria)
+var memStore = {};
+function leggi(chiave, vuoto) {
+  try {
+    var raw = window.localStorage.getItem(chiave);
+    if (raw === null || raw === undefined || raw === '') return vuoto;
+    var v = JSON.parse(raw);
+    return (v === null || typeof v !== typeof vuoto) ? vuoto : v;
+  } catch (e) {
+    if (memStore[chiave] !== undefined) { try { return JSON.parse(memStore[chiave]); } catch (e2) {} }
+    return vuoto;
+  }
+}
+function scrivi(chiave, valore) {
+  var txt = JSON.stringify(valore);
+  memStore[chiave] = txt;
+  try { window.localStorage.setItem(chiave, txt); return true; } catch (e) { return false; }
+}
+var memoriaAvviso = false;
+var librerie = leggi('pk3_lib', []);
+var zone     = leggi('pk3_zone', []);
+var gruppi   = leggi('pk3_grp', []);
+var storico  = leggi('pk3_sto', []);
+var cfg      = leggi('pk3_cfg', {});
+if (!Array.isArray(librerie)) librerie = [];
+if (!Array.isArray(zone)) zone = [];
+if (!Array.isArray(gruppi)) gruppi = [];
+if (!Array.isArray(storico)) storico = [];
 var selezionate = new Set();
 var tipoTab = 'librerie';
 var cedolaDataUrl = null, cedolaNome = '', cedolaMimeType = '';
 
-function salva() {
-  localStorage.setItem('pk3_lib',  JSON.stringify(librerie));
-  localStorage.setItem('pk3_zone', JSON.stringify(zone));
-  localStorage.setItem('pk3_grp',  JSON.stringify(gruppi));
-  localStorage.setItem('pk3_sto',  JSON.stringify(storico));
+function avvisaMemoria() {
+  if (memoriaAvviso) return; memoriaAvviso = true;
+  try { mostraNota('Il browser non permette di salvare in automatico: esporta i dati con Esporta prima di chiudere.', 'error'); } catch (e) {}
 }
-function salvaCfg() { localStorage.setItem('pk3_cfg', JSON.stringify(cfg)); }
+function salva() {
+  var ok = scrivi('pk3_lib', librerie) & scrivi('pk3_zone', zone) & scrivi('pk3_grp', gruppi) & scrivi('pk3_sto', storico);
+  if (!ok) avvisaMemoria();
+}
+function salvaCfg() { if (!scrivi('pk3_cfg', cfg)) avvisaMemoria(); }
 
 function mostraNota(msg, tipo) {
   var n = document.getElementById('notifica');
@@ -628,8 +653,9 @@ document.getElementById('file-import').addEventListener('change', function() {
   var reader = new FileReader();
   reader.onload = function(e) {
     try {
-      var dati = JSON.parse(e.target.result);
-      if (!confirm('Importare i dati? Sostituiranno quelli attuali.')) return;
+      var dati = JSON.parse(String(e.target.result).replace(/^\uFEFF/,''));
+      var conferma = true; try { conferma = confirm('Importare i dati? Sostituiranno quelli attuali.'); } catch (c) { conferma = true; }
+      if (!conferma) return;
       librerie = dati.librerie||[]; zone = dati.zone||[]; gruppi = dati.gruppi||[]; storico = dati.storico||[];
       if (dati.cfg) { cfg = dati.cfg; salvaCfg(); caricaCampiConfig(); }
       salva(); renderSidebar();
