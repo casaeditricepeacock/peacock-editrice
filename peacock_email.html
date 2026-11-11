@@ -340,6 +340,24 @@ if (!Array.isArray(librerie)) librerie = [];
 if (!Array.isArray(zone)) zone = [];
 if (!Array.isArray(gruppi)) gruppi = [];
 if (!Array.isArray(storico)) storico = [];
+// conferma che funziona anche quando il browser blocca le finestre di dialogo
+function chiedi(msg) {
+  var t = Date.now(), r;
+  try { r = window.confirm(msg); } catch (e) { return true; }
+  if (!r && Date.now() - t < 150) return true;
+  return r;
+}
+// id sempre numerici e univoci (un id mancante o doppio impediva modifica ed eliminazione)
+function normalizzaId() {
+  var visti = {}, prossimo = Date.now();
+  librerie.forEach(function(l) {
+    var n = (typeof l.id === 'number' && isFinite(l.id)) ? l.id : parseInt(l.id);
+    if (!isFinite(n) || visti[n]) { n = ++prossimo; while (visti[n]) n++; }
+    visti[n] = true; l.id = n;
+  });
+}
+normalizzaId();
+function esc(t) { return String(t === undefined || t === null ? '' : t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 var selezionate = new Set();
 var tipoTab = 'librerie';
 var cedolaDataUrl = null, cedolaNome = '', cedolaMimeType = '';
@@ -654,9 +672,9 @@ document.getElementById('file-import').addEventListener('change', function() {
   reader.onload = function(e) {
     try {
       var dati = JSON.parse(String(e.target.result).replace(/^\uFEFF/,''));
-      var conferma = true; try { conferma = confirm('Importare i dati? Sostituiranno quelli attuali.'); } catch (c) { conferma = true; }
+      var conferma = chiedi('Importare i dati? Sostituiranno quelli attuali.');
       if (!conferma) return;
-      librerie = dati.librerie||[]; zone = dati.zone||[]; gruppi = dati.gruppi||[]; storico = dati.storico||[];
+      librerie = dati.librerie||[]; zone = dati.zone||[]; gruppi = dati.gruppi||[]; storico = dati.storico||[]; normalizzaId();
       if (dati.cfg) { cfg = dati.cfg; salvaCfg(); caricaCampiConfig(); }
       salva(); renderSidebar();
       document.getElementById('import-stato').innerHTML = '<span class="config-status ok" style="font-size:12px">Importati: ' + librerie.length + ' librerie, ' + gruppi.length + ' gruppi</span>';
@@ -769,23 +787,44 @@ function renderArchivio() {
   var filtro = document.getElementById('filtro-lib').value.toLowerCase();
   var righe = librerie.filter(function(l) { return !filtro || l.nome.toLowerCase().includes(filtro) || (l.zona||'').toLowerCase().includes(filtro) || (l.citta||'').toLowerCase().includes(filtro); });
   document.getElementById('tabella-lib').innerHTML = righe.map(function(l) {
-    return '<tr><td><strong>' + l.nome + '</strong></td><td><span style="cursor:pointer;border-bottom:1px dashed var(--border)" data-id="' + l.id + '" data-campo="email">' + (l.email||'-') + '</span></td><td><span class="tag tag-zona">' + (l.zona||'-') + '</span></td><td><span style="cursor:pointer;border-bottom:1px dashed var(--border)" data-id="' + l.id + '" data-campo="citta">' + (l.citta||'-') + '</span></td><td><span style="cursor:pointer;border-bottom:1px dashed var(--border)" data-id="' + l.id + '" data-campo="referente">' + (l.referente||'-') + '</span></td><td><span style="cursor:pointer;border-bottom:1px dashed var(--border)" data-id="' + l.id + '" data-campo="note">' + (l.note||'-') + '</span></td><td><button class="btn btn-sm btn-danger" data-del="' + l.id + '">X</button></td></tr>';
+    return '<tr><td><span class="mod" style="cursor:pointer;border-bottom:1px dashed var(--border);font-weight:600" data-id="' + l.id + '" data-campo="nome">' + esc(l.nome||'-') + '</span></td><td><span class="mod" style="cursor:pointer;border-bottom:1px dashed var(--border)" data-id="' + l.id + '" data-campo="email">' + (esc(l.email)||'-') + '</span></td><td><span class="tag tag-zona mod" style="cursor:pointer" data-id="' + l.id + '" data-campo="zona">' + esc(l.zona||'-') + '</span></td><td><span class="mod" style="cursor:pointer;border-bottom:1px dashed var(--border)" data-id="' + l.id + '" data-campo="citta">' + (esc(l.citta)||'-') + '</span></td><td><span class="mod" style="cursor:pointer;border-bottom:1px dashed var(--border)" data-id="' + l.id + '" data-campo="referente">' + (esc(l.referente)||'-') + '</span></td><td><span class="mod" style="cursor:pointer;border-bottom:1px dashed var(--border)" data-id="' + l.id + '" data-campo="note">' + (esc(l.note)||'-') + '</span></td><td><button class="btn btn-sm btn-danger" data-del="' + l.id + '">Elimina</button></td></tr>';
   }).join('');
   document.getElementById('tabella-lib').querySelectorAll('span[data-campo]').forEach(function(el) {
     el.addEventListener('click', function() {
-      var id = parseInt(this.dataset.id); var campo = this.dataset.campo;
-      var val = this.textContent === '-' ? '' : this.textContent;
-      this.innerHTML = '<input class="edit-inp" value="' + val + '">';
-      var inp = this.querySelector('input'); inp.focus();
-      inp.addEventListener('blur', function() { var l = librerie.find(function(x){return x.id===id;}); if(l){l[campo]=this.value.trim();salva();renderSidebar();renderArchivio();} });
-      inp.addEventListener('keydown', function(e) { if(e.key==='Enter') this.blur(); });
+      if (this.querySelector('input,select')) return;
+      var id = this.dataset.id; var campo = this.dataset.campo;
+      var l = librerie.find(function(x){ return String(x.id) === id; }); if (!l) return;
+      var campoEl, fine = false;
+      if (campo === 'zona') {
+        campoEl = document.createElement('select'); campoEl.className = 'edit-inp';
+        var opz = ['']; zone.forEach(function(z){ opz.push(z); });
+        if (l.zona && opz.indexOf(l.zona) < 0) opz.push(l.zona);
+        opz.forEach(function(z){ var o = document.createElement('option'); o.value = z; o.textContent = z || '(nessuna)'; if (z === (l.zona||'')) o.selected = true; campoEl.appendChild(o); });
+      } else {
+        campoEl = document.createElement('input'); campoEl.className = 'edit-inp'; campoEl.value = l[campo] || '';
+        campoEl.style.minWidth = '140px';
+      }
+      this.textContent = ''; this.appendChild(campoEl); campoEl.focus();
+      function chiudi(salvaIt) {
+        if (fine) return; fine = true;
+        if (salvaIt) {
+          var v = campoEl.value.trim();
+          if (campo === 'nome' && !v) { mostraNota('Il nome non può restare vuoto.', 'error'); }
+          else { l[campo] = v; salva(); }
+        }
+        renderSidebar(); renderArchivio();
+      }
+      campoEl.addEventListener('blur', function() { chiudi(true); });
+      campoEl.addEventListener('change', function() { if (campo === 'zona') chiudi(true); });
+      campoEl.addEventListener('keydown', function(e) { if (e.key === 'Enter') chiudi(true); if (e.key === 'Escape') chiudi(false); });
     });
   });
   document.getElementById('tabella-lib').querySelectorAll('button[data-del]').forEach(function(el) {
     el.addEventListener('click', function() {
-      if (!confirm('Eliminare?')) return;
-      var id = parseInt(this.dataset.del);
-      librerie = librerie.filter(function(l){return l.id!==id;}); selezionate.delete(id); salva(); renderSidebar(); renderArchivio();
+      if (!chiedi('Eliminare?')) return;
+      var id = this.dataset.del;
+      var idNum = parseInt(id);
+      librerie = librerie.filter(function(l){return String(l.id)!==id;}); selezionate.delete(idNum); salva(); renderSidebar(); renderArchivio();
     });
   });
 }
@@ -802,7 +841,7 @@ document.getElementById('btn-add-zona').addEventListener('click', function() {
 });
 document.getElementById('btn-del-zona').addEventListener('click', function() {
   var s = document.getElementById('new-zona').value; if (!s) return;
-  if (!confirm('Eliminare la zona "' + s + '"?')) return;
+  if (!chiedi('Eliminare la zona "' + s + '"?')) return;
   zone = zone.filter(function(z){return z!==s;}); salva(); renderSidebar(); renderArchivio();
 });
 
@@ -823,7 +862,7 @@ function renderGruppiLista() {
   });
   c.querySelectorAll('button[data-elimina]').forEach(function(el) {
     el.addEventListener('click', function() {
-      if (!confirm('Eliminare?')) return; var i = parseInt(this.dataset.elimina);
+      if (!chiedi('Eliminare?')) return; var i = parseInt(this.dataset.elimina);
       selezionate.delete('g:'+gruppi[i].id); gruppi.splice(i,1); salva(); renderGruppiLista(); renderSidebar();
     });
   });
@@ -888,7 +927,7 @@ function renderStorico() {
   });
   c.querySelectorAll('button[data-del-storico]').forEach(function(el) {
     el.addEventListener('click', function() {
-      if (!confirm('Eliminare questo record?')) return;
+      if (!chiedi('Eliminare questo record?')) return;
       storico.splice(parseInt(this.dataset.delStorico),1);
       salva(); renderStorico();
     });
