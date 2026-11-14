@@ -687,7 +687,7 @@ function calcolaRendiconto(autId){
 
     <!-- DIVARIO -->
     <div id="divario-box" style="margin-top:14px;padding:10px 14px;border-left:3px solid var(--gold);background:rgba(196,146,42,0.05);font-size:0.62rem;">
-      <strong style="color:var(--ink2);font-family:'Cormorant Garamond',serif;font-size:0.85rem">Divario reale vs comunicato — per libro</strong>
+      <strong style="color:var(--ink2);font-family:'Cormorant Garamond',serif;font-size:0.85rem">Divario reale vs comunicato</strong>
       <div id="divario-val" style="margin-top:4px;color:var(--muted)"></div>
     </div>
 
@@ -766,22 +766,30 @@ function calcolaRendiconto(autId){
 function aggiornaDivario(righe){
   const el = document.getElementById('divario-val');
   if(!el) return;
-  el.innerHTML = righe.map((r,i)=>{
-    const cop = parseFloat(document.querySelector(`.inp-com2[data-row="${i}"][data-campo="copie"]`)?.value)||0;
-    const imp = parseFloat(document.querySelector(`.inp-com2[data-row="${i}"][data-campo="importo"]`)?.value)||0;
-    const diffImp = imp - r.importoReale;
-    const pctImp = r.importoReale!==0 ? Math.round((diffImp/Math.abs(r.importoReale))*100) : 0;
-    const diffCop = cop - r.copieReali;
-    const segnoI = diffImp===0?'=':diffImp>0?'+':'−';
-    const segnoC = diffCop===0?'=':diffCop>0?'+':'−';
-    const coloreI = Math.abs(pctImp)<5 ? 'var(--green)' : Math.abs(pctImp)<15 ? 'var(--gold)' : 'var(--red)';
-    const coloreC = diffCop===0 ? 'var(--green)' : 'var(--red)';
-    return `<div style="padding:6px 0;border-bottom:1px dotted var(--border)">
-      <div style="font-weight:500;color:var(--ink);margin-bottom:3px">${r.lib.titolo}</div>
-      <div style="margin-bottom:3px">Importo — Reale: <strong>€${r.importoReale.toFixed(2)}</strong> → Comunicato: <strong>€${imp.toFixed(2)}</strong> &nbsp;<span style="color:${coloreI};font-weight:500">${segnoI} €${Math.abs(diffImp).toFixed(2)} (${segnoI}${Math.abs(pctImp)}%)</span></div>
-      <div>Copie — Reali: <strong>${r.copieReali}</strong> → Comunicate: <strong>${cop}</strong> &nbsp;<span style="color:${coloreC};font-weight:500">${segnoC} ${Math.abs(diffCop)}</span></div>
+  const val = (i,c)=>parseFloat(document.querySelector(`.inp-com2[data-row="${i}"][data-campo="${c}"]`)?.value)||0;
+  let totImpReale=0, totImpCom=0, totCopReale=0, totCopCom=0;
+  righe.forEach((r,i)=>{ totImpReale+=r.importoReale; totImpCom+=val(i,'importo'); totCopReale+=r.copieReali; totCopCom+=val(i,'copie'); });
+  const diffImp = totImpCom - totImpReale;
+  const pctImp = totImpReale!==0 ? Math.round((diffImp/Math.abs(totImpReale))*100) : 0;
+  const diffCop = totCopCom - totCopReale;
+  const segnoI = diffImp===0?'=':diffImp>0?'+':'−';
+  const segnoC = diffCop===0?'=':diffCop>0?'+':'−';
+  const coloreI = Math.abs(pctImp)<5 ? 'var(--green)' : Math.abs(pctImp)<15 ? 'var(--gold)' : 'var(--red)';
+  const coloreC = diffCop===0 ? 'var(--green)' : 'var(--red)';
+  const perTitolo = righe.map((r,i)=>{
+    const cop=val(i,'copie'), d=cop-r.copieReali;
+    const sg = d===0?'=':d>0?'+':'−';
+    const col = d===0?'var(--green)':'var(--red)';
+    return `<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;border-bottom:1px dotted var(--border)">
+      <span>${r.lib.titolo}</span>
+      <span>Reali: <strong>${r.copieReali}</strong> → Comunicate: <strong style="color:#7a5800">${cop}</strong> &nbsp;<span style="color:${col};font-weight:500">${sg} ${Math.abs(d)}</span></span>
     </div>`;
   }).join('');
+  el.innerHTML = `
+    <div style="margin-bottom:4px">Importo — Reale: <strong>€${totImpReale.toFixed(2)}</strong> → Comunicato: <strong>€${totImpCom.toFixed(2)}</strong> &nbsp;<span style="color:${coloreI};font-weight:500">${segnoI} €${Math.abs(diffImp).toFixed(2)} (${segnoI}${Math.abs(pctImp)}%)</span></div>
+    <div>Copie — Reali: <strong>${totCopReale}</strong> → Comunicate: <strong>${totCopCom}</strong> &nbsp;<span style="color:${coloreC};font-weight:500">${segnoC} ${Math.abs(diffCop)}</span></div>
+    <div style="margin-top:10px;font-size:0.5rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted)">Copie comunicate per titolo</div>
+    ${perTitolo}`;
 }
 
 function renderRiepilogoAnno(autId, anno){
