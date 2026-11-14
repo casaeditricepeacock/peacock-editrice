@@ -813,6 +813,22 @@ function renderRiepilogoAnno(autId, anno){
   }).join('');
   const diff = totComAnno - totRealeAnno;
   const diffCop = copComAnno - copRealeAnno;
+  // Scomposizione per libro: somma di tutti i rendiconti salvati nell'anno
+  const perLibro = {};
+  stor.forEach(s=>(s.righe||[]).forEach(r=>{
+    const o = perLibro[r.titolo] || (perLibro[r.titolo]={copR:0,copC:0,impR:0,impC:0});
+    o.copR += parseFloat(r.copieReali)||0;
+    o.copC += parseFloat(r.copieCom)||0;
+    o.impR += parseFloat(r.importoReale)||0;
+    o.impC += parseFloat(r.importoCom)||0;
+  }));
+  const libriHtml = Object.entries(perLibro).map(([t,o])=>{
+    const dc=o.copC-o.copR, di=o.impC-o.impR;
+    return `<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dotted var(--border);gap:10px;flex-wrap:wrap">
+      <span>${t}</span>
+      <span>Copie: <strong>${o.copR}</strong> reali · <strong style="color:#7a5800">${o.copC}</strong> com. <span style="color:${dc===0?'var(--green)':'var(--red)'}">(${dc>=0?'+':''}${dc})</span> &nbsp;|&nbsp; Reale: <strong>€${o.impR.toFixed(2)}</strong> · Comunicato: <strong style="color:#7a5800">€${o.impC.toFixed(2)}</strong> <span style="color:${Math.abs(di)<5?'var(--green)':'var(--red)'}">(${di>=0?'+':''}€${di.toFixed(2)})</span></span>
+    </div>`;
+  }).join('');
   el.innerHTML = righeHtml + `
     <div style="padding:8px 0 0;margin-top:6px;border-top:2px solid var(--border);font-weight:500;font-family:'Cormorant Garamond',serif;font-size:0.78rem">
       <div style="display:flex;justify-content:space-between;padding:3px 0">
@@ -823,7 +839,9 @@ function renderRiepilogoAnno(autId, anno){
         <span>Totale royalty ${anno}</span>
         <span>Reale: <span style="color:var(--green)">€${totRealeAnno.toFixed(2)}</span> · Comunicato: <span style="color:#7a5800">€${totComAnno.toFixed(2)}</span> · Differenza: <span style="color:${Math.abs(diff)<5?'var(--green)':'var(--red)'}">${diff>=0?'+':''}€${diff.toFixed(2)}</span></span>
       </div>
-    </div>`;
+    </div>
+    <div style="margin-top:12px;font-size:0.5rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted)">Totale ${anno} per libro</div>
+    ${libriHtml}`;
 }
 
 // ═══════════════════════════════════════════
