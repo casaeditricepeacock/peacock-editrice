@@ -809,7 +809,6 @@ function calcolaRendiconto(autId){
       copComTot+=cop; impComTot+=imp;
     });
     if(!DATA.storici) DATA.storici=[];
-    DATA.storici=DATA.storici.filter(x=>!(x.autoreId===autId && String(x.anno)===String(anno) && x.periodo===periodo));
     DATA.storici.unshift({
       id:Date.now(),
       autoreId:autId,
@@ -885,7 +884,7 @@ function aggiornaDivario(righe){
 function renderRiepilogoAnno(autId, anno){
   const el = document.getElementById('riepilogo-anno-content');
   if(!el || !DATA.storici) return;
-  const stor = storiciDedup(DATA.storici).filter(s=>s.autoreId===autId && String(s.anno)===String(anno));
+  const stor = DATA.storici.filter(s=>s.autoreId===autId && String(s.anno)===String(anno));
   if(!stor.length){
     el.innerHTML = '<div style="color:var(--muted);font-style:italic">Nessun rendiconto salvato per il '+anno+'.</div>';
     return;
@@ -972,7 +971,7 @@ function renderStorico(){
   }
 
   // LISTA RENDICONTI SALVATI (ultimo per periodo)
-  const lista=storiciDedup(DATA.storici||[]).filter(s=>(!filtId||s.autoreId===filtId)&&(!filtY||String(s.anno)===filtY)&&(!filtP||s.periodo===filtP));
+  const lista=(DATA.storici||[]).filter(s=>(!filtId||s.autoreId===filtId)&&(!filtY||String(s.anno)===filtY)&&(!filtP||s.periodo===filtP));
   box.innerHTML = lista.length ?
     lista.map(s=>`
       <div class="storico-item">
