@@ -205,6 +205,18 @@ tr:hover td{background:var(--blue-light);}
       <select class="fil-select" id="stor-autore-sel" style="min-width:220px">
         <option value="">Tutti</option>
       </select>
+      <span class="fil-label">Anno</span>
+      <select class="fil-select" id="stor-anno"><option value="">Tutti</option></select>
+      <span class="fil-label">Periodo</span>
+      <select class="fil-select" id="stor-periodo">
+        <option value="">Tutti</option>
+        <option value="Q1">Q1 (gen-mar)</option>
+        <option value="Q2">Q2 (apr-giu)</option>
+        <option value="Q3">Q3 (lug-set)</option>
+        <option value="Q4">Q4 (ott-dic)</option>
+        <option value="annuale">Rendiconto annuale</option>
+        <option value="somma">Riepilogo anno (somma di tutto)</option>
+      </select>
     </div>
     <div id="lista-storico"></div>
   </div>
@@ -542,6 +554,70 @@ document.getElementById('btn-ml-elimina').addEventListener('click',()=>{
   renderAutori(); toast('Collegamento rimosso');
 });
 
+
+// ═══════════════════════════════════════════
+// HELPER STORICO / PDF
+// ═══════════════════════════════════════════
+function periodoLabel(periodo,anno){
+  if(periodo==='annuale') return 'Anno '+anno;
+  if(periodo==='somma') return 'Riepilogo anno '+anno;
+  const m={Q1:'1° trimestre (gennaio-marzo)',Q2:'2° trimestre (aprile-giugno)',Q3:'3° trimestre (luglio-settembre)',Q4:'4° trimestre (ottobre-dicembre)'};
+  return (m[periodo]||periodo)+' '+anno;
+}
+// tiene solo l'ultimo rendiconto per autore+anno+periodo (storici è ordinato dal più recente)
+function storiciDedup(list){
+  const seen=new Set();
+  return list.filter(x=>{const k=x.autoreId+'|'+x.anno+'|'+x.periodo; if(seen.has(k))return false; seen.add(k); return true;});
+}
+// somma per titolo di tutti i rendiconti salvati di un autore in un anno
+function sommaAnnoPerLibro(autId,anno){
+  const lista=storiciDedup(DATA.storici||[]).filter(x=>x.autoreId===autId && String(x.anno)===String(anno));
+  const per={};
+  lista.forEach(x=>(x.righe||[]).forEach(r=>{
+    const o=per[r.titolo]||(per[r.titolo]={t:r.titolo,c:0,im:0,cr:0,imr:0});
+    o.c+=parseFloat(r.copieCom)||0; o.im+=parseFloat(r.importoCom)||0;
+    o.cr+=parseFloat(r.copieReali)||0; o.imr+=parseFloat(r.importoReale)||0;
+  }));
+  return {lista, righe:Object.values(per)};
+}
+function stampaComunicatoPdf(autoreNome, perLabel, rows){
+  const esc=t=>String(t??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const totC=rows.reduce((x,r)=>x+r.c,0), totI=rows.reduce((x,r)=>x+r.im,0);
+  const conNote=rows.some(r=>r.n);
+  const eur=n=>'€ '+n.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const oggi=new Date().toLocaleDateString('it-IT',{day:'numeric',month:'long',year:'numeric'});
+  const doc=`<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Rendiconto ${esc(autoreNome)} - ${esc(perLabel)}</title>
+<style>
+@page{size:A4;margin:20mm}
+body{font-family:Georgia,'Times New Roman',serif;color:#111;font-size:12pt;margin:0}
+h1{font-size:18pt;font-weight:400;letter-spacing:.12em;text-transform:uppercase;margin:0 0 2px}
+.sub{font-size:9pt;letter-spacing:.2em;text-transform:uppercase;color:#555;border-bottom:2px solid #c4922a;padding-bottom:10px;margin-bottom:22px}
+h2{font-size:14pt;font-weight:400;margin:0 0 4px}
+.meta{font-size:10pt;color:#444;margin-bottom:20px}
+table{width:100%;border-collapse:collapse;font-size:11pt}
+th{text-align:left;font-size:9pt;letter-spacing:.1em;text-transform:uppercase;color:#555;border-bottom:1.5px solid #111;padding:6px 8px}
+td{padding:7px 8px;border-bottom:1px solid #ddd}
+.r{text-align:right;font-variant-numeric:tabular-nums}
+tr.tot td{font-weight:700;border-top:1.5px solid #111;border-bottom:none}
+.foot{margin-top:30px;font-size:9pt;color:#666}
+</style></head><body>
+<h1>Casa Editrice Peacock</h1><div class="sub">Rendiconto royalty</div>
+<h2>${esc(autoreNome)}</h2>
+<div class="meta">Periodo: ${esc(perLabel)} &nbsp;·&nbsp; Emesso il ${esc(oggi)}</div>
+<table><thead><tr><th>Titolo</th><th class="r">Copie</th><th class="r">Importo</th>${conNote?'<th>Note</th>':''}</tr></thead><tbody>
+${rows.map(r=>`<tr><td>${esc(r.t)}</td><td class="r">${r.c}</td><td class="r">${eur(r.im)}</td>${conNote?`<td>${esc(r.n||'')}</td>`:''}</tr>`).join('')}
+<tr class="tot"><td>Totale</td><td class="r">${totC}</td><td class="r">${eur(totI)}</td>${conNote?'<td></td>':''}</tr>
+</tbody></table>
+<div class="foot">Casa Editrice Peacock · Galzignano Terme (PD)</div>
+</body></html>`;
+  const old=document.getElementById('pdf-frame'); if(old) old.remove();
+  const fr=document.createElement('iframe');
+  fr.id='pdf-frame'; fr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';
+  document.body.appendChild(fr);
+  fr.contentDocument.open(); fr.contentDocument.write(doc); fr.contentDocument.close();
+  setTimeout(()=>{fr.contentWindow.focus();fr.contentWindow.print();},300);
+}
+
 // ═══════════════════════════════════════════
 // RENDICONTO
 // ═══════════════════════════════════════════
@@ -568,6 +644,9 @@ function calcolaRendiconto(autId){
     return;
   }
 
+  // Rendiconto già salvato per questo autore / anno / periodo (l'ultimo)
+  const savedRend = storiciDedup(DATA.storici||[]).find(x=>x.autoreId===autId && String(x.anno)===String(anno) && x.periodo===periodo);
+
   // Per ogni libro: pesca dati REALI dal magazzino, niente calcoli
   const righe=libriA.map(la=>{
     const lib=MAG.libri.find(x=>x.id===la.libroId);
@@ -589,10 +668,11 @@ function calcolaRendiconto(autId){
     const importoReale = (parseFloat(lib.ricavi)||0) - (parseFloat(lib.costo_stampa)||0) - giaPagato;
 
     // COMUNICATO (memorizzato in la.com)
+    const sr = savedRend?.righe?.find(x=>x.titolo===lib.titolo);
     const com = {
-      copie:  la.com?.copie  ?? copieReali,
-      importo: la.com?.importo ?? importoReale,
-      note:    la.com?.note    ?? ''
+      copie:  sr?.copieCom ?? copieReali,
+      importo: sr?.importoCom ?? importoReale,
+      note:    sr?.note ?? ''
     };
 
     return { la, lib, distVend, altroVend, ecoVend, dirVend, autVend, copieReali, importoReale, giaPagato, com };
@@ -611,7 +691,7 @@ function calcolaRendiconto(autId){
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
       <div>
         <div style="font-family:'Cormorant Garamond',serif;font-size:1.2rem">${aut.nome} ${aut.cognome}</div>
-        <div style="font-size:0.56rem;color:var(--muted)">Rendiconto ${periodo==='annuale'?anno:periodo+' '+anno}</div>
+        <div style="font-size:0.56rem;color:var(--muted)">Rendiconto ${periodo==='annuale'?anno:periodo+' '+anno} · ${savedRend?'comunicato salvato il '+savedRend.data:'nessun comunicato salvato per questo periodo'}</div>
       </div>
       <div style="display:flex;gap:8px">
         <button class="btn-sm" id="btn-salva-com">Salva comunicato</button>
@@ -729,6 +809,7 @@ function calcolaRendiconto(autId){
       copComTot+=cop; impComTot+=imp;
     });
     if(!DATA.storici) DATA.storici=[];
+    DATA.storici=DATA.storici.filter(x=>!(x.autoreId===autId && String(x.anno)===String(anno) && x.periodo===periodo));
     DATA.storici.unshift({
       id:Date.now(),
       autoreId:autId,
@@ -748,7 +829,8 @@ function calcolaRendiconto(autId){
         copieAltro: r.altroVend,
         importoReale: r.importoReale.toFixed(2),
         copieCom: parseFloat(document.querySelector(`.inp-com2[data-row="${i}"][data-campo="copie"]`).value)||0,
-        importoCom: (parseFloat(document.querySelector(`.inp-com2[data-row="${i}"][data-campo="importo"]`).value)||0).toFixed(2)
+        importoCom: (parseFloat(document.querySelector(`.inp-com2[data-row="${i}"][data-campo="importo"]`).value)||0).toFixed(2),
+        note: document.querySelector(`.inp-com2[data-row="${i}"][data-campo="note"]`).value
       }))
     });
     markDirty(); toast('Comunicato salvato nello storico');
@@ -758,46 +840,11 @@ function calcolaRendiconto(autId){
   // Stampa
   document.getElementById('btn-stampa-rend').addEventListener('click',()=>window.print());
 
-  // PDF per l'autore: solo i dati comunicati
+  // PDF per l'autore: solo i dati comunicati (valori attualmente nei campi)
   document.getElementById('btn-pdf-com').addEventListener('click',()=>{
-    const esc=t=>String(t??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     const val=(i,c)=>document.querySelector(`.inp-com2[data-row="${i}"][data-campo="${c}"]`)?.value||'';
     const rows=righe.map((r,i)=>({t:r.lib.titolo,c:parseFloat(val(i,'copie'))||0,im:parseFloat(val(i,'importo'))||0,n:val(i,'note').trim()}));
-    const totC=rows.reduce((x,r)=>x+r.c,0), totI=rows.reduce((x,r)=>x+r.im,0);
-    const conNote=rows.some(r=>r.n);
-    const eur=n=>'€ '+n.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});
-    const per=periodo==='annuale'?'Anno '+anno:({Q1:'1° trimestre (gennaio-marzo)',Q2:'2° trimestre (aprile-giugno)',Q3:'3° trimestre (luglio-settembre)',Q4:'4° trimestre (ottobre-dicembre)'}[periodo]||periodo)+' '+anno;
-    const oggi=new Date().toLocaleDateString('it-IT',{day:'numeric',month:'long',year:'numeric'});
-    const doc=`<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Rendiconto ${esc(aut.nome+' '+aut.cognome)} - ${esc(per)}</title>
-<style>
-@page{size:A4;margin:20mm}
-body{font-family:Georgia,'Times New Roman',serif;color:#111;font-size:12pt;margin:0}
-h1{font-size:18pt;font-weight:400;letter-spacing:.12em;text-transform:uppercase;margin:0 0 2px}
-.sub{font-size:9pt;letter-spacing:.2em;text-transform:uppercase;color:#555;border-bottom:2px solid #c4922a;padding-bottom:10px;margin-bottom:22px}
-h2{font-size:14pt;font-weight:400;margin:0 0 4px}
-.meta{font-size:10pt;color:#444;margin-bottom:20px}
-table{width:100%;border-collapse:collapse;font-size:11pt}
-th{text-align:left;font-size:9pt;letter-spacing:.1em;text-transform:uppercase;color:#555;border-bottom:1.5px solid #111;padding:6px 8px}
-td{padding:7px 8px;border-bottom:1px solid #ddd}
-.r{text-align:right;font-variant-numeric:tabular-nums}
-tr.tot td{font-weight:700;border-top:1.5px solid #111;border-bottom:none}
-.foot{margin-top:30px;font-size:9pt;color:#666}
-</style></head><body>
-<h1>Casa Editrice Peacock</h1><div class="sub">Rendiconto royalty</div>
-<h2>${esc(aut.nome+' '+aut.cognome)}</h2>
-<div class="meta">Periodo: ${esc(per)} &nbsp;·&nbsp; Emesso il ${esc(oggi)}</div>
-<table><thead><tr><th>Titolo</th><th class="r">Copie</th><th class="r">Importo</th>${conNote?'<th>Note</th>':''}</tr></thead><tbody>
-${rows.map(r=>`<tr><td>${esc(r.t)}</td><td class="r">${r.c}</td><td class="r">${eur(r.im)}</td>${conNote?`<td>${esc(r.n)}</td>`:''}</tr>`).join('')}
-<tr class="tot"><td>Totale</td><td class="r">${totC}</td><td class="r">${eur(totI)}</td>${conNote?'<td></td>':''}</tr>
-</tbody></table>
-<div class="foot">Casa Editrice Peacock · Galzignano Terme (PD)</div>
-</body></html>`;
-    const old=document.getElementById('pdf-frame'); if(old) old.remove();
-    const fr=document.createElement('iframe');
-    fr.id='pdf-frame'; fr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';
-    document.body.appendChild(fr);
-    fr.contentDocument.open(); fr.contentDocument.write(doc); fr.contentDocument.close();
-    setTimeout(()=>{fr.contentWindow.focus();fr.contentWindow.print();},300);
+    stampaComunicatoPdf(aut.nome+' '+aut.cognome, periodoLabel(periodo,anno), rows);
   });
 
   // Mostra divario e riepilogo annuale all'apertura
@@ -838,7 +885,7 @@ function aggiornaDivario(righe){
 function renderRiepilogoAnno(autId, anno){
   const el = document.getElementById('riepilogo-anno-content');
   if(!el || !DATA.storici) return;
-  const stor = DATA.storici.filter(s=>s.autoreId===autId && String(s.anno)===String(anno));
+  const stor = storiciDedup(DATA.storici).filter(s=>s.autoreId===autId && String(s.anno)===String(anno));
   if(!stor.length){
     el.innerHTML = '<div style="color:var(--muted);font-style:italic">Nessun rendiconto salvato per il '+anno+'.</div>';
     return;
@@ -891,12 +938,43 @@ function renderRiepilogoAnno(autId, anno){
 // STORICO
 // ═══════════════════════════════════════════
 function renderStorico(){
-  const sel=document.getElementById('stor-autore-sel');
-  sel.innerHTML='<option value="">Tutti</option>'+DATA.autori.map(a=>`<option value="${a.id}">${a.nome} ${a.cognome}</option>`).join('');
-  const filtId=parseInt(sel.value)||null;
-  const lista=DATA.storici?.filter(s=>!filtId||s.autoreId===filtId)||[];
-  document.getElementById('lista-storico').innerHTML = lista.length ?
-    lista.map((s,i)=>`
+  const selA=document.getElementById('stor-autore-sel');
+  const selY=document.getElementById('stor-anno');
+  const selP=document.getElementById('stor-periodo');
+  const vA=selA.value, vY=selY.value;
+  selA.innerHTML='<option value="">Tutti</option>'+DATA.autori.map(a=>`<option value="${a.id}">${a.nome} ${a.cognome}</option>`).join('');
+  selA.value=vA;
+  const anni=[...new Set((DATA.storici||[]).map(x=>String(x.anno)))].sort().reverse();
+  selY.innerHTML='<option value="">Tutti</option>'+anni.map(y=>`<option value="${y}">${y}</option>`).join('');
+  selY.value=vY;
+  const filtId=parseInt(selA.value)||null, filtY=selY.value, filtP=selP.value;
+  const box=document.getElementById('lista-storico');
+
+  // RIEPILOGO ANNO (somma di tutti i periodi salvati)
+  if(filtP==='somma'){
+    if(!filtId||!filtY){ box.innerHTML='<p style="font-size:0.62rem;color:var(--muted);padding:16px 0">Per il riepilogo annuale seleziona un autore e un anno.</p>'; return; }
+    const aut=DATA.autori.find(a=>a.id===filtId);
+    const {lista,righe}=sommaAnnoPerLibro(filtId,filtY);
+    if(!lista.length){ box.innerHTML='<p style="font-size:0.62rem;color:var(--muted);padding:16px 0">Nessun rendiconto salvato per questo autore nel '+filtY+'.</p>'; return; }
+    const totC=righe.reduce((x,r)=>x+r.c,0), totI=righe.reduce((x,r)=>x+r.im,0);
+    box.innerHTML=`<div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div><div style="font-family:'Cormorant Garamond',serif;font-size:1.2rem">${aut.nome} ${aut.cognome}</div>
+        <div style="font-size:0.56rem;color:var(--muted)">Riepilogo ${filtY} · somma di: ${lista.map(x=>x.periodo==='annuale'?'Annuale':x.periodo).join(', ')}</div></div>
+        <button class="btn-sm btn-green" id="btn-pdf-somma">PDF riepilogo anno</button>
+      </div>
+      <table class="rend-table"><thead><tr><th>Titolo</th><th style="text-align:right">Copie</th><th style="text-align:right">Importo €</th></tr></thead><tbody>
+      ${righe.map(r=>`<tr><td>${r.t}</td><td class="td-r">${r.c}</td><td class="td-r">€${r.im.toFixed(2)}</td></tr>`).join('')}
+      <tr class="tot-row"><td>TOTALE</td><td class="td-r">${totC}</td><td class="td-r">€${totI.toFixed(2)}</td></tr></tbody></table></div>`;
+    document.getElementById('btn-pdf-somma').addEventListener('click',()=>
+      stampaComunicatoPdf(aut.nome+' '+aut.cognome, periodoLabel('somma',filtY), righe.map(r=>({t:r.t,c:r.c,im:r.im,n:''}))));
+    return;
+  }
+
+  // LISTA RENDICONTI SALVATI (ultimo per periodo)
+  const lista=storiciDedup(DATA.storici||[]).filter(s=>(!filtId||s.autoreId===filtId)&&(!filtY||String(s.anno)===filtY)&&(!filtP||s.periodo===filtP));
+  box.innerHTML = lista.length ?
+    lista.map(s=>`
       <div class="storico-item">
         <div>
           <div style="font-weight:500">${s.autoreNome}</div>
@@ -905,21 +983,27 @@ function renderStorico(){
         </div>
         <div style="text-align:right">
           <div style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--green)">€${s.totCom}</div>
-          <div style="font-size:0.5rem;color:var(--muted)">Reale: €${s.totReale}</div>
-          <button class="btn-edit" style="margin-top:4px" data-del="${i}">✕ Elimina</button>
+          <div style="font-size:0.5rem;color:var(--muted)">Copie comunicate: ${s.copCom}</div>
+          <div style="margin-top:4px;display:flex;gap:6px;justify-content:flex-end">
+            <button class="btn-sm" data-pdf="${s.id}">PDF</button>
+            <button class="btn-edit" data-del="${s.id}">✕ Elimina</button>
+          </div>
         </div>
       </div>`).join('') :
-    '<p style="font-size:0.62rem;color:var(--muted);padding:16px 0">Nessun rendiconto salvato.</p>';
+    '<p style="font-size:0.62rem;color:var(--muted);padding:16px 0">Nessun rendiconto salvato per questi filtri.</p>';
 
-  document.getElementById('lista-storico').querySelectorAll('[data-del]').forEach(b=>{
-    b.addEventListener('click',()=>{
-      if(!confirm('Eliminare questo rendiconto dallo storico?')) return;
-      DATA.storici.splice(parseInt(b.dataset.del),1);
-      markDirty(); renderStorico();
-    });
-  });
+  box.querySelectorAll('[data-pdf]').forEach(b=>b.addEventListener('click',()=>{
+    const s=DATA.storici.find(x=>String(x.id)===b.dataset.pdf); if(!s) return;
+    stampaComunicatoPdf(s.autoreNome, periodoLabel(s.periodo,s.anno),
+      (s.righe||[]).map(r=>({t:r.titolo,c:parseFloat(r.copieCom)||0,im:parseFloat(r.importoCom)||0,n:(r.note||'').trim()})));
+  }));
+  box.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{
+    if(!confirm('Eliminare questo rendiconto dallo storico?')) return;
+    DATA.storici=DATA.storici.filter(x=>String(x.id)!==b.dataset.del);
+    markDirty(); renderStorico();
+  }));
 }
-document.getElementById('stor-autore-sel').addEventListener('change',renderStorico);
+['stor-autore-sel','stor-anno','stor-periodo'].forEach(id=>document.getElementById(id).addEventListener('change',renderStorico));
 
 // ═══════════════════════════════════════════
 // SETTINGS
