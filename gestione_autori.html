@@ -615,7 +615,8 @@ function calcolaRendiconto(autId){
       </div>
       <div style="display:flex;gap:8px">
         <button class="btn-sm" id="btn-salva-com">Salva comunicato</button>
-        <button class="btn-sm btn-green" id="btn-stampa-rend">Stampa / PDF</button>
+        <button class="btn-sm btn-green" id="btn-pdf-com">PDF per l'autore</button>
+        <button class="btn-sm" id="btn-stampa-rend">Stampa pagina</button>
       </div>
     </div>
 
@@ -756,6 +757,48 @@ function calcolaRendiconto(autId){
 
   // Stampa
   document.getElementById('btn-stampa-rend').addEventListener('click',()=>window.print());
+
+  // PDF per l'autore: solo i dati comunicati
+  document.getElementById('btn-pdf-com').addEventListener('click',()=>{
+    const esc=t=>String(t??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const val=(i,c)=>document.querySelector(`.inp-com2[data-row="${i}"][data-campo="${c}"]`)?.value||'';
+    const rows=righe.map((r,i)=>({t:r.lib.titolo,c:parseFloat(val(i,'copie'))||0,im:parseFloat(val(i,'importo'))||0,n:val(i,'note').trim()}));
+    const totC=rows.reduce((x,r)=>x+r.c,0), totI=rows.reduce((x,r)=>x+r.im,0);
+    const conNote=rows.some(r=>r.n);
+    const eur=n=>'€ '+n.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});
+    const per=periodo==='annuale'?'Anno '+anno:({Q1:'1° trimestre (gennaio-marzo)',Q2:'2° trimestre (aprile-giugno)',Q3:'3° trimestre (luglio-settembre)',Q4:'4° trimestre (ottobre-dicembre)'}[periodo]||periodo)+' '+anno;
+    const oggi=new Date().toLocaleDateString('it-IT',{day:'numeric',month:'long',year:'numeric'});
+    const doc=`<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Rendiconto ${esc(aut.nome+' '+aut.cognome)} - ${esc(per)}</title>
+<style>
+@page{size:A4;margin:20mm}
+body{font-family:Georgia,'Times New Roman',serif;color:#111;font-size:12pt;margin:0}
+h1{font-size:18pt;font-weight:400;letter-spacing:.12em;text-transform:uppercase;margin:0 0 2px}
+.sub{font-size:9pt;letter-spacing:.2em;text-transform:uppercase;color:#555;border-bottom:2px solid #c4922a;padding-bottom:10px;margin-bottom:22px}
+h2{font-size:14pt;font-weight:400;margin:0 0 4px}
+.meta{font-size:10pt;color:#444;margin-bottom:20px}
+table{width:100%;border-collapse:collapse;font-size:11pt}
+th{text-align:left;font-size:9pt;letter-spacing:.1em;text-transform:uppercase;color:#555;border-bottom:1.5px solid #111;padding:6px 8px}
+td{padding:7px 8px;border-bottom:1px solid #ddd}
+.r{text-align:right;font-variant-numeric:tabular-nums}
+tr.tot td{font-weight:700;border-top:1.5px solid #111;border-bottom:none}
+.foot{margin-top:30px;font-size:9pt;color:#666}
+</style></head><body>
+<h1>Casa Editrice Peacock</h1><div class="sub">Rendiconto royalty</div>
+<h2>${esc(aut.nome+' '+aut.cognome)}</h2>
+<div class="meta">Periodo: ${esc(per)} &nbsp;·&nbsp; Emesso il ${esc(oggi)}</div>
+<table><thead><tr><th>Titolo</th><th class="r">Copie</th><th class="r">Importo</th>${conNote?'<th>Note</th>':''}</tr></thead><tbody>
+${rows.map(r=>`<tr><td>${esc(r.t)}</td><td class="r">${r.c}</td><td class="r">${eur(r.im)}</td>${conNote?`<td>${esc(r.n)}</td>`:''}</tr>`).join('')}
+<tr class="tot"><td>Totale</td><td class="r">${totC}</td><td class="r">${eur(totI)}</td>${conNote?'<td></td>':''}</tr>
+</tbody></table>
+<div class="foot">Casa Editrice Peacock · Galzignano Terme (PD)</div>
+</body></html>`;
+    const old=document.getElementById('pdf-frame'); if(old) old.remove();
+    const fr=document.createElement('iframe');
+    fr.id='pdf-frame'; fr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';
+    document.body.appendChild(fr);
+    fr.contentDocument.open(); fr.contentDocument.write(doc); fr.contentDocument.close();
+    setTimeout(()=>{fr.contentWindow.focus();fr.contentWindow.print();},300);
+  });
 
   // Mostra divario e riepilogo annuale all'apertura
   aggiornaDivario(righe);
